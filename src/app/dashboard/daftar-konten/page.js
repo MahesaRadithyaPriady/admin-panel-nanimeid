@@ -1,0 +1,722 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { Plus, Pencil, Trash2, List, ChevronDown, ChevronRight, Film } from 'lucide-react';
+import { useSession } from '@/hooks/useSession';
+import { getSession } from '@/lib/auth';
+import { listAnime, createAnime, updateAnime, deleteAnime, listEpisodes, createEpisode, updateEpisode, deleteEpisode } from '@/lib/api';
+
+export default function DaftarKontenPage() {
+  const router = useRouter();
+  const { user, loading } = useSession();
+  const role = (user?.role || '').toLowerCase();
+  const canAccess = role === 'superadmin' || role === 'uploader';
+
+  // List state
+  const [items, setItems] = useState([]);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [total, setTotal] = useState(0);
+  const [q, setQ] = useState('');
+  const [loadingList, setLoadingList] = useState(false);
+  const [expanded, setExpanded] = useState(() => new Set()); // anime ids expanded
+
+  // Form state (add/edit)
+  const [mode, setMode] = useState('add'); // add | edit
+  const [activeTab, setActiveTab] = useState('anime'); // anime | episode
+  const [form, setForm] = useState({
+    id: null,
+    nama_anime: '',
+    gambar_anime: '',
+    rating_anime: '',
+    status_anime: '',
+    sinopsis_anime: '',
+    label_anime: '',
+    tags_anime: '',
+    genre_anime: '',
+    studio_anime: '',
+    fakta_menarik: '',
+    tanggal_rilis_anime: '',
+  });
+  const resetForm = () => setForm({
+    id: null,
+    nama_anime: '',
+    gambar_anime: '',
+    rating_anime: '',
+    status_anime: '',
+    sinopsis_anime: '',
+    label_anime: '',
+    tags_anime: '',
+    genre_anime: '',
+    studio_anime: '',
+    fakta_menarik: '',
+    tanggal_rilis_anime: '',
+  });
+
+  useEffect(() => {
+    if (!loading && !user) router.replace('/');
+  }, [loading, user, router]);
+
+  const loadList = async (opts = {}) => {
+    if (!canAccess) return;
+    setLoadingList(true);
+    try {
+      const token = getSession()?.token;
+      const params = { page, limit, q, ...opts };
+      const data = await listAnime({ token, ...params });
+      setItems(data.items || []);
+      setPage(data.page || 1);
+      setLimit(data.limit || 20);
+      setTotal(data.total || 0);
+    } catch (err) {
+      toast.error(err?.message || 'Gagal memuat anime');
+    } finally {
+      setLoadingList(false);
+    }
+  };
+
+  // Global Tab: Tambah Episode (under search)
+  const [tabEpisode, setTabEpisode] = useState({
+    animeId: '',
+    judul_episode: '',
+    nomor_episode: 1,
+    thumbnail_episode: '',
+    deskripsi_episode: '',
+    durasi_episode: 0,
+    tanggal_rilis_episode: '',
+    qualities: [],
+  });
+  const addTabQuality = () => setTabEpisode((s) => ({ ...s, qualities: [...(s?.qualities || []), { nama_quality: '', source_quality: '' }] }));
+  const removeTabQuality = (i) => setTabEpisode((s) => ({ ...s, qualities: (s.qualities || []).filter((_, idx) => idx !== i) }));
+  const updateTabQualityField = (index, key, value) => {
+    setTabEpisode((s) => {
+      const arr = Array.isArray(s.qualities) ? [...s.qualities] : [];
+      arr[index] = { ...arr[index], [key]: value };
+      return { ...s, qualities: arr };
+    });
+  };
+  const onSubmitCreateEpisodeFromTab = async () => {
+    if (!tabEpisode?.animeId) {
+      toast.error('Pilih anime terlebih dahulu');
+      return;
+    }
+    const token = getSession()?.token;
+    const payload = {
+      judul_episode: tabEpisode.judul_episode,
+      nomor_episode: Number(tabEpisode.nomor_episode),
+      thumbnail_episode: tabEpisode.thumbnail_episode,
+      deskripsi_episode: tabEpisode.deskripsi_episode || null,
+      durasi_episode: Number(tabEpisode.durasi_episode) || 0,
+      tanggal_rilis_episode: tabEpisode.tanggal_rilis_episode ? new Date(tabEpisode.tanggal_rilis_episode).toISOString() : undefined,
+    };
+    if (Array.isArray(tabEpisode.qualities)) {
+      payload.qualities = tabEpisode.qualities
+        .filter((q) => (q.nama_quality || '').trim() && (q.source_quality || '').trim())
+        .map((q) => ({ nama_quality: q.nama_quality, source_quality: q.source_quality }));
+    }
+    try {
+      const res = await createEpisode({ token, animeId: tabEpisode.animeId, payload });
+      toast.success(res?.message || 'Episode dibuat');
+      // reload episodes for selected anime (expand if not already)
+      setExpanded((prev) => {
+        const next = new Set(prev);
+        next.add(tabEpisode.animeId);
+        return next;
+      });
+      await loadEpisodes(tabEpisode.animeId);
+      // reset form values (keep anime selection)
+      setTabEpisode((s) => ({ ...s, judul_episode: '', nomor_episode: 1, thumbnail_episode: '', deskripsi_episode: '', durasi_episode: 0, tanggal_rilis_episode: '', qualities: [] }));
+    } catch (err) {
+      toast.error(err?.message || 'Gagal membuat episode');
+    }
+  };
+
+  const loadEpisodes = async (animeId) => {
+    try {
+      const token = getSession()?.token;
+      const data = await listEpisodes({ token, animeId, page: 1, limit: 200 });
+      setItems((prev) => prev.map((a) => a.id === animeId ? { ...a, episodes: data.items || [] } : a));
+    } catch (err) {
+      toast.error(err?.message || 'Gagal memuat episodes');
+    }
+  };
+
+  const toggleExpand = (id) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      const expanding = !next.has(id);
+      if (expanding) {
+        next.add(id);
+        // lazy load episodes from API to ensure terbaru
+        loadEpisodes(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  // Episode edit/delete mockup states & handlers
+  const [editingEpisode, setEditingEpisode] = useState(null); // { animeId, id, judul_episode, ... }
+  const onEditEpisode = (animeId, ep) => {
+    setEditingEpisode({
+      animeId,
+      id: ep.id,
+      judul_episode: ep.judul_episode || '',
+      nomor_episode: ep.nomor_episode || 0,
+      thumbnail_episode: ep.thumbnail_episode || '',
+      deskripsi_episode: ep.deskripsi_episode || '',
+      durasi_episode: ep.durasi_episode || 0,
+      tanggal_rilis_episode: ep.tanggal_rilis_episode ? new Date(ep.tanggal_rilis_episode).toISOString().slice(0, 16) : '', // yyyy-mm-ddThh:mm
+      qualities: Array.isArray(ep.qualities)
+        ? ep.qualities.map((q) => ({ id: q.id, nama_quality: q.nama_quality || '', source_quality: q.source_quality || '' }))
+        : [],
+    });
+  };
+  const onCancelEditEpisode = () => setEditingEpisode(null);
+  const onSubmitEpisode = async (e) => {
+    e.preventDefault();
+    if (!editingEpisode) return;
+    const token = getSession()?.token;
+    const payload = {
+      judul_episode: editingEpisode.judul_episode,
+      nomor_episode: editingEpisode.nomor_episode,
+      thumbnail_episode: editingEpisode.thumbnail_episode,
+      deskripsi_episode: editingEpisode.deskripsi_episode ?? null,
+      durasi_episode: editingEpisode.durasi_episode,
+      tanggal_rilis_episode: editingEpisode.tanggal_rilis_episode ? new Date(editingEpisode.tanggal_rilis_episode).toISOString() : undefined,
+    };
+    if (Array.isArray(editingEpisode.qualities)) {
+      payload.qualities = editingEpisode.qualities
+        .filter((q) => (q.nama_quality || '').trim() && (q.source_quality || '').trim())
+        .map((q) => ({ nama_quality: q.nama_quality, source_quality: q.source_quality }));
+    }
+    try {
+      const res = await updateEpisode({ token, id: editingEpisode.id, payload });
+      toast.success(res?.message || 'Episode diperbarui');
+      const animeId = editingEpisode.animeId;
+      setEditingEpisode(null);
+      await loadEpisodes(animeId);
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menyimpan episode');
+    }
+  };
+  const updateQualityField = (index, key, value) => {
+    setEditingEpisode((s) => {
+      if (!s) return s;
+      const arr = Array.isArray(s.qualities) ? [...s.qualities] : [];
+      arr[index] = { ...arr[index], [key]: value };
+      return { ...s, qualities: arr };
+    });
+  };
+  const addQuality = () => {
+    setEditingEpisode((s) => ({
+      ...s,
+      qualities: [...(s?.qualities || []), { id: undefined, nama_quality: '', source_quality: '' }],
+    }));
+  };
+  const removeQuality = (index) => {
+    setEditingEpisode((s) => {
+      if (!s) return s;
+      const arr = [...(s.qualities || [])];
+      arr.splice(index, 1);
+      return { ...s, qualities: arr };
+    });
+  };
+  const [confirmEpOpen, setConfirmEpOpen] = useState(false);
+  const [confirmEpTarget, setConfirmEpTarget] = useState(null); // {id, judul_episode}
+  const onRequestDeleteEpisode = (ep) => { setConfirmEpTarget(ep); setConfirmEpOpen(true); };
+  const onCancelDeleteEpisode = () => { setConfirmEpOpen(false); setConfirmEpTarget(null); };
+  const onConfirmDeleteEpisode = async () => {
+    if (!confirmEpTarget) return;
+    const token = getSession()?.token;
+    try {
+      const res = await deleteEpisode({ token, id: confirmEpTarget.id });
+      toast.success(res?.message || 'Episode dihapus');
+      // find anime id to reload
+      const parent = items.find((a) => Array.isArray(a.episodes) && a.episodes.some((e) => e.id === confirmEpTarget.id));
+      const animeId = parent?.id || editingEpisode?.animeId;
+      await loadEpisodes(animeId);
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menghapus episode');
+    } finally {
+      setConfirmEpOpen(false);
+      setConfirmEpTarget(null);
+    }
+  };
+
+  // Create Episode state & handlers
+  const [creatingForAnime, setCreatingForAnime] = useState(null); // animeId or null
+  const [newEpisode, setNewEpisode] = useState(null);
+  const startCreateEpisode = (animeId) => {
+    setCreatingForAnime(animeId);
+    setNewEpisode({
+      judul_episode: '',
+      nomor_episode: 1,
+      thumbnail_episode: '',
+      deskripsi_episode: '',
+      durasi_episode: 0,
+      tanggal_rilis_episode: '', // yyyy-mm-ddThh:mm
+      qualities: [],
+    });
+  };
+  const cancelCreateEpisode = () => { setCreatingForAnime(null); setNewEpisode(null); };
+  const updateNewQualityField = (index, key, value) => {
+    setNewEpisode((s) => {
+      if (!s) return s;
+      const arr = Array.isArray(s.qualities) ? [...s.qualities] : [];
+      arr[index] = { ...arr[index], [key]: value };
+      return { ...s, qualities: arr };
+    });
+  };
+  const addNewQuality = () => setNewEpisode((s) => ({ ...s, qualities: [...(s?.qualities || []), { nama_quality: '', source_quality: '' }] }));
+  const removeNewQuality = (i) => setNewEpisode((s) => ({ ...s, qualities: (s.qualities || []).filter((_, idx) => idx !== i) }));
+  const onSubmitCreateEpisode = async (e) => {
+    e.preventDefault();
+    if (!creatingForAnime || !newEpisode) return;
+    const token = getSession()?.token;
+    const payload = {
+      judul_episode: newEpisode.judul_episode,
+      nomor_episode: Number(newEpisode.nomor_episode),
+      thumbnail_episode: newEpisode.thumbnail_episode,
+      deskripsi_episode: newEpisode.deskripsi_episode ?? null,
+      durasi_episode: Number(newEpisode.durasi_episode) || 0,
+      tanggal_rilis_episode: newEpisode.tanggal_rilis_episode ? new Date(newEpisode.tanggal_rilis_episode).toISOString() : undefined,
+    };
+    if (Array.isArray(newEpisode.qualities)) {
+      payload.qualities = newEpisode.qualities
+        .filter((q) => (q.nama_quality || '').trim() && (q.source_quality || '').trim())
+        .map((q) => ({ nama_quality: q.nama_quality, source_quality: q.source_quality }));
+    }
+    try {
+      const res = await createEpisode({ token, animeId: creatingForAnime, payload });
+      toast.success(res?.message || 'Episode dibuat');
+      await loadEpisodes(creatingForAnime);
+      cancelCreateEpisode();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal membuat episode');
+    }
+  };
+
+  useEffect(() => {
+    if (!canAccess) return;
+    loadList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, limit, canAccess]);
+
+  const onSearch = (e) => {
+    e.preventDefault();
+    setPage(1);
+    loadList({ page: 1 });
+  };
+
+  const parseMaybeArray = (val) => {
+    if (!val) return undefined;
+    // allow comma separated -> array, if already has comma; otherwise if space-only text, return string
+    if (typeof val === 'string') {
+      const parts = val.split(',').map((s) => s.trim()).filter(Boolean);
+      return parts.length > 1 ? parts : parts[0];
+    }
+    return val;
+  };
+
+  const buildPayload = () => {
+    const payload = {
+      nama_anime: form.nama_anime,
+      gambar_anime: form.gambar_anime,
+      rating_anime: form.rating_anime,
+      status_anime: form.status_anime,
+      sinopsis_anime: form.sinopsis_anime,
+      label_anime: form.label_anime,
+    };
+    const optional = {
+      tags_anime: parseMaybeArray(form.tags_anime),
+      genre_anime: parseMaybeArray(form.genre_anime),
+      studio_anime: parseMaybeArray(form.studio_anime),
+      fakta_menarik: parseMaybeArray(form.fakta_menarik),
+      tanggal_rilis_anime: form.tanggal_rilis_anime || undefined,
+    };
+    Object.keys(optional).forEach((k) => optional[k] === undefined || optional[k] === '' ? delete optional[k] : null);
+    return { ...payload, ...optional };
+  };
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.nama_anime || !form.gambar_anime || !form.rating_anime || !form.status_anime || !form.sinopsis_anime || !form.label_anime) {
+      return toast.error('Field wajib belum lengkap');
+    }
+    const token = getSession()?.token;
+    try {
+      if (mode === 'add') {
+        const res = await createAnime({ token, payload: buildPayload() });
+        toast.success(res?.message || 'Anime dibuat');
+        resetForm();
+        setPage(1);
+        await loadList({ page: 1 });
+      } else {
+        const res = await updateAnime({ token, id: form.id, payload: buildPayload() });
+        toast.success(res?.message || 'Anime diperbarui');
+        setMode('add');
+        resetForm();
+        await loadList();
+      }
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menyimpan anime');
+    }
+  };
+
+  const onEdit = (it) => {
+    setMode('edit');
+    setForm({
+      id: it.id,
+      nama_anime: it.nama_anime || '',
+      gambar_anime: it.gambar_anime || '',
+      rating_anime: it.rating_anime || '',
+      status_anime: it.status_anime || '',
+      sinopsis_anime: it.sinopsis_anime || '',
+      label_anime: it.label_anime || '',
+      tags_anime: Array.isArray(it.tags_anime) ? it.tags_anime.join(', ') : (it.tags_anime || ''),
+      genre_anime: Array.isArray(it.genre_anime) ? it.genre_anime.join(', ') : (it.genre_anime || ''),
+      studio_anime: Array.isArray(it.studio_anime) ? it.studio_anime.join(', ') : (it.studio_anime || ''),
+      fakta_menarik: Array.isArray(it.fakta_menarik) ? it.fakta_menarik.join(', ') : (it.fakta_menarik || ''),
+      tanggal_rilis_anime: it.tanggal_rilis_anime ? new Date(it.tanggal_rilis_anime).toISOString().slice(0, 10) : '', // yyyy-mm-dd
+    });
+  };
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState(null);
+  const onRequestDelete = (target) => { setConfirmTarget(target); setConfirmOpen(true); };
+  const onCancelDelete = () => { setConfirmOpen(false); setConfirmTarget(null); };
+  const onConfirmDelete = async () => {
+    if (!confirmTarget) return;
+    const token = getSession()?.token;
+    try {
+      const res = await deleteAnime({ token, id: confirmTarget.id });
+      toast.success(res?.message || 'Anime dihapus');
+      if (mode === 'edit' && form.id === confirmTarget.id) { setMode('add'); resetForm(); }
+      await loadList();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menghapus anime');
+    } finally {
+      setConfirmOpen(false);
+      setConfirmTarget(null);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {loading || !user ? null : !canAccess ? (
+        <div className="text-sm font-semibold">
+          Halaman ini khusus superadmin/uploader. Anda login sebagai{' '}
+          <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">{user.role}</span>.
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-extrabold flex items-center gap-2"><List className="size-5" /> Daftar Konten</h2>
+          </div>
+
+          {/* Search */}
+          <form onSubmit={onSearch} className="grid sm:grid-cols-[1fr_140px] gap-3">
+            <input
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Cari (nama/genre/tag)"
+              className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold"
+              style={{ boxShadow: '4px 4px 0 #000' }}
+            />
+            <button type="submit" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>Cari</button>
+          </form>
+
+          {/* Tabs: Tambah Anime | Tambah Episode */}
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setActiveTab('anime')} className={`px-3 py-2 border-4 border-black rounded-lg font-extrabold ${activeTab === 'anime' ? 'bg-[#FFD803]' : 'bg-white'}`} style={{ boxShadow: '4px 4px 0 #000' }}>Tambah Anime</button>
+            <button type="button" onClick={() => setActiveTab('episode')} className={`px-3 py-2 border-4 border-black rounded-lg font-extrabold ${activeTab === 'episode' ? 'bg-[#FFD803]' : 'bg-white'}`} style={{ boxShadow: '4px 4px 0 #000' }}>Tambah Episode</button>
+          </div>
+
+          {/* Form Tambah / Edit Anime */}
+          {activeTab === 'anime' && (
+          <form onSubmit={onSubmit} className="grid gap-3">
+            <div className="grid sm:grid-cols-2 gap-3">
+              <input type="text" value={form.nama_anime} onChange={(e) => setForm((f) => ({ ...f, nama_anime: e.target.value }))} placeholder="Nama anime (wajib)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
+              <input type="url" value={form.gambar_anime} onChange={(e) => setForm((f) => ({ ...f, gambar_anime: e.target.value }))} placeholder="URL gambar (wajib)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
+              <input type="text" value={form.rating_anime} onChange={(e) => setForm((f) => ({ ...f, rating_anime: e.target.value }))} placeholder="Rating (wajib)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
+              <input type="text" value={form.status_anime} onChange={(e) => setForm((f) => ({ ...f, status_anime: e.target.value }))} placeholder="Status (ongoing/completed) (wajib)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
+              <input type="text" value={form.label_anime} onChange={(e) => setForm((f) => ({ ...f, label_anime: e.target.value }))} placeholder="Label (TV/Movie/OVA...) (wajib)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
+              <input type="date" value={form.tanggal_rilis_anime} onChange={(e) => setForm((f) => ({ ...f, tanggal_rilis_anime: e.target.value }))} placeholder="Tanggal rilis (opsional)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
+            </div>
+            <textarea value={form.sinopsis_anime} onChange={(e) => setForm((f) => ({ ...f, sinopsis_anime: e.target.value }))} placeholder="Sinopsis (wajib)" rows={3} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
+            <div className="grid sm:grid-cols-2 gap-3">
+              <input type="text" value={form.tags_anime} onChange={(e) => setForm((f) => ({ ...f, tags_anime: e.target.value }))} placeholder="Tags (pisahkan dengan koma)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
+              <input type="text" value={form.genre_anime} onChange={(e) => setForm((f) => ({ ...f, genre_anime: e.target.value }))} placeholder="Genre (pisahkan dengan koma)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
+              <input type="text" value={form.studio_anime} onChange={(e) => setForm((f) => ({ ...f, studio_anime: e.target.value }))} placeholder="Studio (pisahkan dengan koma)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
+              <input type="text" value={form.fakta_menarik} onChange={(e) => setForm((f) => ({ ...f, fakta_menarik: e.target.value }))} placeholder="Fakta menarik (pisahkan dengan koma)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
+            </div>
+            <div className="grid sm:grid-cols-[160px]">
+              <button type="submit" className={`flex items-center justify-center gap-2 border-4 border-black rounded-lg font-extrabold ${mode === 'add' ? 'bg-[#C6F6D5] hover:brightness-95' : 'bg-[#FFD803] hover:brightness-95'}`} style={{ boxShadow: '4px 4px 0 #000' }}>
+                {mode === 'add' ? (<><Plus className="size-4" /> Tambah</>) : (<><Pencil className="size-4" /> Simpan</>)}
+              </button>
+            </div>
+          </form>
+          )}
+
+          {/* Form Tambah Episode (Global) */}
+          {activeTab === 'episode' && (
+            <form onSubmit={(e) => { e.preventDefault(); onSubmitCreateEpisodeFromTab(); }} className="grid gap-3 p-3 border-4 border-black rounded-lg bg-[#E6FFFA]" style={{ boxShadow: '4px 4px 0 #000' }}>
+              <div className="font-extrabold">Tambah Episode</div>
+              <div className="grid sm:grid-cols-2 gap-2">
+                <select value={tabEpisode?.animeId || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, animeId: Number(e.target.value) || '' }))} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold">
+                  <option value="">Pilih Anime</option>
+                  {items.map((it) => (
+                    <option key={it.id} value={it.id}>{it.nama_anime}</option>
+                  ))}
+                </select>
+                <input type="text" value={tabEpisode?.judul_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                <input type="number" value={tabEpisode?.nomor_episode || 1} onChange={(e) => setTabEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                <input type="url" value={tabEpisode?.thumbnail_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                <input type="number" value={tabEpisode?.durasi_episode || 0} onChange={(e) => setTabEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                <input type="datetime-local" value={tabEpisode?.tanggal_rilis_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+              </div>
+              <div className="pt-1">
+                <div className="font-extrabold mb-2">Qualities</div>
+                <div className="space-y-2">
+                  {(tabEpisode?.qualities || []).map((q, idx) => (
+                    <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto] gap-2">
+                      <input type="text" value={q.nama_quality} onChange={(e) => updateTabQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                      <input type="url" value={q.source_quality} onChange={(e) => updateTabQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                      <button type="button" onClick={() => removeTabQuality(idx)} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>Hapus</button>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2">
+                  <button type="button" onClick={() => addTabQuality()} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>+ Tambah Quality</button>
+                </div>
+              </div>
+              <textarea rows={3} value={tabEpisode?.deskripsi_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+              <div className="grid sm:grid-cols-[160px]">
+                <button type="submit" className="flex items-center justify-center gap-2 border-4 border-black rounded-lg font-extrabold bg-[#C6F6D5]" style={{ boxShadow: '4px 4px 0 #000' }}>
+                  <Plus className="size-4" /> Tambah Episode
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Table */}
+          <div className="overflow-auto">
+            <table className="min-w-full border-4 border-black rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000' }}>
+              <thead className="bg-[#E2E8F0]">
+                <tr>
+                  <th className="text-left px-3 py-2 border-b-4 border-black">&nbsp;</th>
+                  <th className="text-left px-3 py-2 border-b-4 border-black">Nama</th>
+                  <th className="text-left px-3 py-2 border-b-4 border-black">Rating</th>
+                  <th className="text-left px-3 py-2 border-b-4 border-black">Status</th>
+                  <th className="text-left px-3 py-2 border-b-4 border-black">Label</th>
+                  <th className="text-left px-3 py-2 border-b-4 border-black">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((it, idx) => (
+                  <>
+                    <tr key={`${it.id}-row`} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#F7F7F0]'}>
+                      <td className="px-2 py-2 border-b-4 border-black align-top">
+                        <button onClick={() => toggleExpand(it.id)} className="px-2 py-1 border-4 border-black rounded bg-white font-extrabold" style={{ boxShadow: '2px 2px 0 #000' }} aria-label="Toggle episodes">
+                          {expanded.has(it.id) ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                        </button>
+                      </td>
+                      <td className="px-3 py-2 border-b-4 border-black font-semibold">{it.nama_anime}</td>
+                      <td className="px-3 py-2 border-b-4 border-black font-semibold">{it.rating_anime}</td>
+                      <td className="px-3 py-2 border-b-4 border-black font-semibold">{it.status_anime}</td>
+                      <td className="px-3 py-2 border-b-4 border-black font-semibold">{it.label_anime}</td>
+                      <td className="px-3 py-2 border-b-4 border-black">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => onEdit(it)} className="px-2 py-1 border-4 border-black rounded bg-[#FFD803] font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>
+                            <Pencil className="size-4" />
+                          </button>
+                          <button onClick={() => onRequestDelete(it)} className="px-2 py-1 border-4 border-black rounded bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {expanded.has(it.id) && (
+                      <tr key={`${it.id}-episodes`} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#F7F7F0]'}>
+                        <td className="px-3 py-2 border-b-4 border-black" colSpan={6}>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-2 font-extrabold">
+                              <div className="flex items-center gap-2"><Film className="size-4" /> Episodes</div>
+                              <button type="button" onClick={() => startCreateEpisode(it.id)} className="px-2 py-1 border-4 border-black rounded bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>+ Tambah Episode</button>
+                            </div>
+                            {creatingForAnime === it.id && newEpisode && (
+                              <form onSubmit={onSubmitCreateEpisode} className="p-3 border-4 border-black rounded-lg bg-[#E6FFFA] space-y-2" style={{ boxShadow: '4px 4px 0 #000' }}>
+                                <div className="font-extrabold">Tambah Episode</div>
+                                <div className="grid sm:grid-cols-2 gap-2">
+                                  <input type="text" value={newEpisode.judul_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                  <input type="number" value={newEpisode.nomor_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                  <input type="url" value={newEpisode.thumbnail_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                  <input type="number" value={newEpisode.durasi_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                  <input type="datetime-local" value={newEpisode.tanggal_rilis_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                </div>
+                                <div className="pt-1">
+                                  <div className="font-extrabold mb-2">Qualities</div>
+                                  <div className="space-y-2">
+                                    {(newEpisode.qualities || []).map((q, idx) => (
+                                      <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto] gap-2">
+                                        <input type="text" value={q.nama_quality} onChange={(e) => updateNewQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                        <input type="url" value={q.source_quality} onChange={(e) => updateNewQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                        <button type="button" onClick={() => removeNewQuality(idx)} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>Hapus</button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="mt-2">
+                                    <button type="button" onClick={addNewQuality} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>+ Tambah Quality</button>
+                                  </div>
+                                </div>
+                                <textarea rows={3} value={newEpisode.deskripsi_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                <div className="flex items-center gap-2">
+                                  <button type="button" onClick={cancelCreateEpisode} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>Batal</button>
+                                  <button type="submit" className="px-3 py-2 border-4 border-black rounded-lg bg-[#C6F6D5] font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>Simpan</button>
+                                </div>
+                              </form>
+                            )}
+                            {editingEpisode && editingEpisode.animeId === it.id && (
+                              <form onSubmit={onSubmitEpisode} className="p-3 border-4 border-black rounded-lg bg-[#FFFBEA] space-y-2" style={{ boxShadow: '4px 4px 0 #000' }}>
+                                <div className="font-extrabold">Edit Episode (Mockup)</div>
+                                <div className="grid sm:grid-cols-2 gap-2">
+                                  <input type="text" value={editingEpisode.judul_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                  <input type="number" value={editingEpisode.nomor_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                  <input type="url" value={editingEpisode.thumbnail_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                  <input type="number" value={editingEpisode.durasi_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                  <input type="datetime-local" value={editingEpisode.tanggal_rilis_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                </div>
+                                <div className="pt-1">
+                                  <div className="font-extrabold mb-2">Qualities</div>
+                                  <div className="space-y-2">
+                                    {(editingEpisode.qualities || []).map((q, idx) => (
+                                      <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto] gap-2">
+                                        <input type="text" value={q.nama_quality} onChange={(e) => updateQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                        <input type="url" value={q.source_quality} onChange={(e) => updateQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                        <button type="button" onClick={() => removeQuality(idx)} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>Hapus</button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="mt-2">
+                                    <button type="button" onClick={addQuality} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>+ Tambah Quality</button>
+                                  </div>
+                                </div>
+                                <textarea rows={3} value={editingEpisode.deskripsi_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                <div className="flex items-center gap-2">
+                                  <button type="button" onClick={onCancelEditEpisode} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>Batal</button>
+                                  <button type="submit" className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>Simpan </button>
+                                </div>
+                              </form>
+                            )}
+                            {(it.episodes && it.episodes.length > 0) ? (
+                              <div className="space-y-2">
+                                {it.episodes.map((ep) => (
+                                  <div key={ep.id} className="p-3 border-4 border-black rounded-lg bg-white" style={{ boxShadow: '4px 4px 0 #000' }}>
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="font-extrabold">Ep {ep.nomor_episode}: {ep.judul_episode}</div>
+                                      <div className="flex items-center gap-2">
+                                        <button onClick={() => onEditEpisode(it.id, ep)} className="px-2 py-1 border-4 border-black rounded bg-[#FFD803] font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>
+                                          <Pencil className="size-4" />
+                                        </button>
+                                        <button onClick={() => onRequestDeleteEpisode(ep)} className="px-2 py-1 border-4 border-black rounded bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>
+                                          <Trash2 className="size-4" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div className="text-xs opacity-80">Durasi: {ep.durasi_episode} detik • Rilis: {ep.tanggal_rilis_episode ? new Date(ep.tanggal_rilis_episode).toLocaleString() : '-'}</div>
+                                    {Array.isArray(ep.qualities) && ep.qualities.length > 0 && (
+                                      <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                                        {ep.qualities.map((q) => (
+                                          <span key={q.id} className="px-2 py-0.5 border-2 border-black rounded bg-[#F2F2F2] font-extrabold">{q.nama_quality}</span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-sm opacity-70">Belum ada episode.</div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                ))}
+                {items.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-3 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Belum ada konten.'}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center gap-2">
+            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 border-black rounded-lg bg-white disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>Prev</button>
+            <div className="text-sm font-extrabold">Page {page} / {Math.max(1, Math.ceil(total / limit))}</div>
+            <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 border-black rounded-lg bg-white disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>Next</button>
+          </div>
+
+          {/* Confirm Delete Modal */}
+          {confirmOpen && (
+            <div className="fixed inset-0 z-50 grid place-items-center">
+              <div className="absolute inset-0 bg-black/40" onClick={onCancelDelete} />
+              <div className="relative z-10 w-[92%] max-w-md bg-white border-4 border-black rounded-xl p-4 sm:p-6" style={{ boxShadow: '8px 8px 0 #000' }}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 border-black rounded-md" style={{ boxShadow: '4px 4px 0 #000' }}>
+                    <Trash2 className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-extrabold">Hapus Konten?</h3>
+                    <p className="text-sm opacity-80 break-words">{confirmTarget?.nama_anime}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-2">
+                  <button onClick={onCancelDelete} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
+                    Batal
+                  </button>
+                  <button onClick={onConfirmDelete} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
+                    Ya, Hapus
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Confirm Delete Episode (Mock) */}
+          {confirmEpOpen && (
+            <div className="fixed inset-0 z-50 grid place-items-center">
+              <div className="absolute inset-0 bg-black/40" onClick={onCancelDeleteEpisode} />
+              <div className="relative z-10 w-[92%] max-w-md bg-white border-4 border-black rounded-xl p-4 sm:p-6" style={{ boxShadow: '8px 8px 0 #000' }}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 border-black rounded-md" style={{ boxShadow: '4px 4px 0 #000' }}>
+                    <Trash2 className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-extrabold">Hapus Episode?</h3>
+                    <p className="text-sm opacity-80 break-words">{confirmEpTarget ? `Ep ${confirmEpTarget.nomor_episode}: ${confirmEpTarget.judul_episode}` : ''}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-2">
+                  <button onClick={onCancelDeleteEpisode} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
+                    Batal
+                  </button>
+                  <button onClick={onConfirmDeleteEpisode} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
+                    Ya, Hapus
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
