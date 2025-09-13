@@ -18,6 +18,7 @@ export default function PengaturanPage() {
 
   const allowed = useMemo(() => ['superadmin'], []);
   const [loadingSettings, setLoadingSettings] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
     maintenanceMode: false,
     maintenanceMessage: '',
@@ -71,6 +72,7 @@ export default function PengaturanPage() {
 
   const saveAll = async () => {
     try {
+      setSaving(true);
       const token = getSession()?.token;
       const qualities = (settings.paidQuality || '')
         .split(',')
@@ -100,6 +102,8 @@ export default function PengaturanPage() {
       toast.success('Pengaturan disimpan');
     } catch (err) {
       toast.error(err?.message || 'Gagal menyimpan pengaturan');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -107,8 +111,8 @@ export default function PengaturanPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-extrabold flex items-center gap-2"><Settings className="size-5" /> Pengaturan</h2>
-        <button onClick={saveAll} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
-          Simpan Perubahan
+        <button onClick={saveAll} disabled={saving || loadingSettings} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+          {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
         </button>
       </div>
 

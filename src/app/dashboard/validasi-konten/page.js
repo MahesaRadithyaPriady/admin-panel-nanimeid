@@ -61,10 +61,12 @@ export default function ValidasiKontenPage() {
 
   // UI states
   const [expanded, setExpanded] = useState({}); // showId -> bool
+  const [approvingId, setApprovingId] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [targetEp, setTargetEp] = useState(null); // { showId, epId }
   const [rejectMsg, setRejectMsg] = useState('');
+  const [savingReject, setSavingReject] = useState(false);
 
   // Early returns after all hooks
   if (loading || !user) return null;
@@ -80,6 +82,7 @@ export default function ValidasiKontenPage() {
 
   const onApprove = async (showId, epId) => {
     try {
+      setApprovingId(epId);
       const token = getSession()?.token;
       await updateUploadStatus({ token, id: epId, status: 'APPROVED' });
       toast.success('Upload di-approve');
@@ -87,6 +90,8 @@ export default function ValidasiKontenPage() {
       setShows((prev) => prev.map((s) => s.id !== showId ? s : ({ ...s, episodes: s.episodes.filter((ep) => ep.id !== epId) })).filter((s) => s.episodes.length > 0));
     } catch (err) {
       toast.error(err?.message || 'Gagal approve upload');
+    } finally {
+      setApprovingId(null);
     }
   };
 
@@ -100,6 +105,7 @@ export default function ValidasiKontenPage() {
     if (!targetEp) return;
     if (!rejectMsg.trim()) return toast.error('Masukkan alasan reject');
     try {
+      setSavingReject(true);
       const token = getSession()?.token;
       await updateUploadStatus({ token, id: targetEp.epId, status: 'REJECTED' });
       // Note: API update status tidak menerima alasan; simpan lokal saja untuk tampilan bila diperlukan
@@ -111,6 +117,7 @@ export default function ValidasiKontenPage() {
       setRejectOpen(false);
       setTargetEp(null);
       setRejectMsg('');
+      setSavingReject(false);
     }
   };
 
@@ -158,10 +165,11 @@ export default function ValidasiKontenPage() {
               setLoadingList(false);
             }
           }}
-          className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold"
+          disabled={loadingList}
+          className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-60"
           style={{ boxShadow: '4px 4px 0 #000' }}
         >
-          Refresh
+          {loadingList ? 'Memuat...' : 'Refresh'}
         </button>
       </div>
 
@@ -223,12 +231,12 @@ export default function ValidasiKontenPage() {
                                     <td className="px-3 py-2 border-b-4 border-black">
                                       <div className="flex items-center gap-2">
                                         <button
-                                          disabled={ep.status === 'approved'}
+                                          disabled={ep.status === 'approved' || approvingId === ep.id}
                                           onClick={() => onApprove(show.id, ep.id)}
                                           className="px-2 py-1 border-4 border-black rounded bg-[#C6F6D5] font-extrabold disabled:opacity-50"
                                           style={{ boxShadow: '3px 3px 0 #000' }}
                                         >
-                                          Approve
+                                          {approvingId === ep.id ? 'Approving...' : 'Approve'}
                                         </button>
                                         <button
                                           onClick={() => onRequestReject(show.id, ep.id)}
@@ -272,11 +280,11 @@ export default function ValidasiKontenPage() {
               style={{ boxShadow: '4px 4px 0 #000' }}
             />
             <div className="flex items-center justify-end gap-2">
-              <button onClick={onCancelReject} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
+              <button onClick={onCancelReject} disabled={savingReject} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
                 Batal
               </button>
-              <button onClick={onConfirmReject} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
-                Simpan
+              <button onClick={onConfirmReject} disabled={savingReject} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+                {savingReject ? 'Menyimpan...' : 'Simpan'}
               </button>
             </div>
           </div>

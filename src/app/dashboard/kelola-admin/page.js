@@ -24,6 +24,8 @@ export default function KelolaAdminPage() {
   const [mode, setMode] = useState('add'); // add | edit
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const resetForm = () => setForm({ id: null, email: '', username: '', password: '', role: 'UPLOADER' });
 
   useEffect(() => {
@@ -61,9 +63,11 @@ export default function KelolaAdminPage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     const token = getSession()?.token;
     if (mode === 'add') {
       if (!form.email || !form.username || !form.password) {
+        setSubmitting(false);
         return toast.error('Email, username, dan password wajib diisi');
       }
       try {
@@ -74,9 +78,12 @@ export default function KelolaAdminPage() {
         await loadAdmins({ page: 1 });
       } catch (err) {
         toast.error(err?.message || 'Gagal membuat admin');
+      } finally {
+        setSubmitting(false);
       }
     } else {
       if (!form.email || !form.username) {
+        setSubmitting(false);
         return toast.error('Email dan username wajib diisi');
       }
       try {
@@ -87,6 +94,8 @@ export default function KelolaAdminPage() {
         await loadAdmins();
       } catch (err) {
         toast.error(err?.message || 'Gagal memperbarui admin');
+      } finally {
+        setSubmitting(false);
       }
     }
   };
@@ -105,6 +114,7 @@ export default function KelolaAdminPage() {
     if (!confirmTarget) return;
     const token = getSession()?.token;
     try {
+      setDeleting(true);
       await deleteAdmin({ token, id: confirmTarget.id });
       toast.success('Admin dihapus');
       if (mode === 'edit' && form.id === confirmTarget.id) {
@@ -116,6 +126,8 @@ export default function KelolaAdminPage() {
       await loadAdmins();
     } catch (err) {
       toast.error(err?.message || 'Gagal menghapus admin');
+    } finally {
+      setDeleting(false);
     }
   };
 

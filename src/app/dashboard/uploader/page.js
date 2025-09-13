@@ -26,6 +26,7 @@ export default function UploaderOverviewPage() {
   // Anime list (from API) and episode form state
   const [animeItems, setAnimeItems] = useState([]);
   const [loadingAnime, setLoadingAnime] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [formEpisode, setFormEpisode] = useState({
     animeId: '',
     number: '',
@@ -160,6 +161,7 @@ export default function UploaderOverviewPage() {
       return;
     }
     try {
+      setUploading(true);
       const token = getSession()?.token;
       const payload = {
         judul_episode: title,
@@ -172,6 +174,8 @@ export default function UploaderOverviewPage() {
       setFormEpisode({ animeId: '', number: '', title: '', thumbnail: '', sources: [{ quality: '720p', url: '' }] });
     } catch (err) {
       toast.error(err?.message || 'Gagal mengupload episode');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -363,8 +367,8 @@ export default function UploaderOverviewPage() {
         </div>
       </div>
 
-      <button onClick={onAddEpisode} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFE4A1] font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>
-        <Upload className="inline size-4" /> Upload Episode
+      <button onClick={onAddEpisode} disabled={uploading} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFE4A1] font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000' }}>
+        {uploading ? 'Mengupload...' : (<><Upload className="inline size-4" /> Upload Episode</>)}
       </button>
       <div className="text-xs opacity-70">Episode akan masuk status pending untuk validasi.</div>
     </div>

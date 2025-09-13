@@ -30,7 +30,9 @@ export default function DashboardPage() {
     { id: 3, title: 'OVA Pack - Season 2', status: 'rejected', ts: Date.now() - 3600_000 * 32 },
   ]);
 
+  const [refreshing, setRefreshing] = useState(false);
   const refresh = () => {
+    setRefreshing(true);
     setStats((s) => ({
       ...s,
       totalUploads: s.totalUploads + Math.floor(Math.random() * 10),
@@ -52,6 +54,7 @@ export default function DashboardPage() {
     ].slice(0, 10));
 
     toast.success('Overview uploader diperbarui');
+    setTimeout(() => setRefreshing(false), 300);
   };
 
   if (loading || !user) return null;
@@ -64,8 +67,8 @@ export default function DashboardPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-xl font-extrabold flex items-center gap-2"><Upload className="size-5" /> Upload Konten</h2>
-          <button onClick={refresh} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
-            <RefreshCw className="inline size-4" /> Refresh
+          <button onClick={refresh} disabled={refreshing} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+            {refreshing ? 'Menyegarkan...' : (<><RefreshCw className="inline size-4" /> Refresh</>)}
           </button>
         </div>
 

@@ -96,8 +96,8 @@ export default function StatusKontenPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-extrabold flex items-center gap-2"><BadgeCheck className="size-5" /> Status Konten</h2>
-        <button onClick={refresh} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
-          <RefreshCw className="inline size-4" /> Refresh
+        <button onClick={refresh} disabled={loadingData} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+          {loadingData ? 'Memuat...' : (<><RefreshCw className="inline size-4" /> Refresh</>)}
         </button>
       </div>
 

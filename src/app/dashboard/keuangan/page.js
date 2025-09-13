@@ -44,7 +44,9 @@ export default function KeuanganPage() {
     );
   }
 
+  const [refreshing, setRefreshing] = useState(false);
   const refreshAll = () => {
+    setRefreshing(true);
     const deltaIn = Math.floor(Math.random() * 5_000_000);
     const deltaOut = Math.floor(Math.random() * 4_000_000);
     const newIn = finance.pemasukan + deltaIn;
@@ -63,14 +65,15 @@ export default function KeuanganPage() {
     setTransactions((t) => [add, ...t].slice(0, 20));
 
     toast.success('Data keuangan diperbarui');
+    setTimeout(() => setRefreshing(false), 300); // simulate brief processing time
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-extrabold">Keuangan</h2>
-        <button onClick={refreshAll} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
-          <RefreshCw className="inline size-4" /> Refresh
+        <button onClick={refreshAll} disabled={refreshing} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+          {refreshing ? 'Menyegarkan...' : (<><RefreshCw className="inline size-4" /> Refresh</>)}
         </button>
       </div>
 

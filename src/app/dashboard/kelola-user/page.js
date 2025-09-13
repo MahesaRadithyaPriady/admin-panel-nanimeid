@@ -25,6 +25,8 @@ export default function KelolaUserPage() {
   const [mode, setMode] = useState('add'); // add | edit
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const resetForm = () => setForm({ id: null, email: '', username: '', password: '' });
 
   useEffect(() => {
@@ -62,8 +64,10 @@ export default function KelolaUserPage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     if (mode === 'add') {
       if (!form.email || !form.username || !form.password) {
+        setSubmitting(false);
         return toast.error('Email, username, dan password wajib diisi');
       }
       try {
@@ -75,9 +79,12 @@ export default function KelolaUserPage() {
         await loadUsers({ page: 1 });
       } catch (err) {
         toast.error(err?.message || 'Gagal menambah user');
+      } finally {
+        setSubmitting(false);
       }
     } else {
       if (!form.email && !form.username) {
+        setSubmitting(false);
         return toast.error('Isi username atau email untuk update');
       }
       try {
@@ -89,6 +96,8 @@ export default function KelolaUserPage() {
         await loadUsers();
       } catch (err) {
         toast.error(err?.message || 'Gagal memperbarui user');
+      } finally {
+        setSubmitting(false);
       }
     }
   };
@@ -105,6 +114,7 @@ export default function KelolaUserPage() {
 
   const onConfirmDelete = async () => {
     if (!confirmTarget) return;
+    setDeleting(true);
     try {
       const token = getSession()?.token;
       await deleteAdminUser({ token, id: confirmTarget.id });
@@ -119,6 +129,7 @@ export default function KelolaUserPage() {
     } finally {
       setConfirmOpen(false);
       setConfirmTarget(null);
+      setDeleting(false);
     }
   };
 
@@ -150,8 +161,8 @@ export default function KelolaUserPage() {
           className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold"
           style={{ boxShadow: '4px 4px 0 #000' }}
         />
-        <button type="submit" className="border-4 border-black rounded-lg bg-[#C0E8FF] font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
-          Cari
+        <button type="submit" disabled={loadingList} className="border-4 border-black rounded-lg bg-[#C0E8FF] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+          {loadingList ? 'Memuat...' : 'Cari'}
         </button>
       </form>
 
@@ -189,10 +200,13 @@ export default function KelolaUserPage() {
         )}
         <button
           type="submit"
-          className={`flex items-center justify-center gap-2 border-4 border-black rounded-lg font-extrabold ${mode === 'add' ? 'bg-[#C6F6D5] hover:brightness-95' : 'bg-[#FFD803] hover:brightness-95'}`}
+          disabled={submitting}
+          className={`flex items-center justify-center gap-2 border-4 border-black rounded-lg font-extrabold disabled:opacity-60 ${mode === 'add' ? 'bg-[#C6F6D5]' : 'bg-[#FFD803]'}`}
           style={{ boxShadow: '4px 4px 0 #000' }}
         >
-          {mode === 'add' ? (<><Plus className="size-4" /> Tambah</>) : (<><Pencil className="size-4" /> Simpan</>)}
+          {submitting
+            ? (mode === 'add' ? 'Menambah...' : 'Menyimpan...')
+            : (mode === 'add' ? (<><Plus className="size-4" /> Tambah</>) : (<><Pencil className="size-4" /> Simpan</>))}
         </button>
       </form>
 
@@ -227,10 +241,10 @@ export default function KelolaUserPage() {
                 </td>
                 <td className="px-3 py-2 border-b-4 border-black">
                   <div className="flex items-center gap-2">
-                    <button onClick={() => onEdit(u)} className="px-2 py-1 border-4 border-black rounded bg-[#FFD803] font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>
+                    <button onClick={() => onEdit(u)} disabled={deleting} className="px-2 py-1 border-4 border-black rounded bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000' }}>
                       <Pencil className="size-4" />
                     </button>
-                    <button onClick={() => onRequestDelete(u)} className="px-2 py-1 border-4 border-black rounded bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>
+                    <button onClick={() => onRequestDelete(u)} disabled={deleting} className="px-2 py-1 border-4 border-black rounded bg-white font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000' }}>
                       <Trash2 className="size-4" />
                     </button>
                   </div>
@@ -273,11 +287,11 @@ export default function KelolaUserPage() {
               </div>
             </div>
             <div className="flex items-center justify-end gap-2">
-              <button onClick={onCancelDelete} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
+              <button onClick={onCancelDelete} disabled={deleting} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
                 Batal
               </button>
-              <button onClick={onConfirmDelete} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
-                Ya, Hapus
+              <button onClick={onConfirmDelete} disabled={deleting} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+                {deleting ? 'Menghapus...' : 'Ya, Hapus'}
               </button>
             </div>
           </div>
