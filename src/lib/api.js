@@ -98,7 +98,7 @@ export async function createAdminUser({ token, email, username, password }) {
   return data;
 }
 
-export async function updateAdminUser({ token, id, username, email }) {
+export async function updateAdminUser({ token, id, username, email, account_status, account_status_reason }) {
   if (!token) throw new Error('Token tidak tersedia');
   const API_BASE = getApiBase();
   const res = await fetch(`${API_BASE}/admin/users/${id}`, {
@@ -107,7 +107,11 @@ export async function updateAdminUser({ token, id, username, email }) {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ username, email }),
+    body: JSON.stringify(
+      Object.fromEntries(
+        Object.entries({ username, email, account_status, account_status_reason }).filter(([_, v]) => v !== undefined && v !== '')
+      )
+    ),
   });
   const data = await handleJson(res, 'Gagal memperbarui user');
   return data?.item ?? data;
@@ -387,4 +391,361 @@ export async function getHttpLogs({ token, level }) {
     level: (it.level || 'info').toLowerCase(),
     msg: it.line || `${it.method || ''} ${it.url || ''} ${it.status || ''}`.trim(),
   }));
+}
+
+// ===== Admin Topup Moderation (SUPERADMIN only) =====
+const topupBase = () => `${getApiBase()}/admin/topup`;
+
+// List topup manual requests
+export async function listTopupRequests({ token, userId = '', status = '', page = 1, limit = 20 }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (userId) params.set('userId', String(userId));
+  if (status) params.set('status', status);
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  const url = `${topupBase()}/requests?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar topup');
+  const pg = data?.pagination || {};
+  return {
+    page: pg.page ?? page,
+    limit: pg.limit ?? limit,
+    total: pg.total ?? 0,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+// Get single topup request detail
+export async function getTopupRequest({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${topupBase()}/requests/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil detail topup');
+}
+
+// Update topup request status: PENDING|APPROVED|REJECTED|PAID|CANCELED
+export async function setTopupStatus({ token, id, status }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${topupBase()}/requests/${id}/status`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  return await handleJson(res, 'Gagal memperbarui status topup');
+}
+
+// ===== Admin Avatar Borders (SUPERADMIN only) =====
+const avatarBordersBase = () => `${getApiBase()}/admin/avatar-borders`;
+
+export async function createAvatarBorder({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(avatarBordersBase(), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat avatar border');
+}
+
+// List avatar borders (admin)
+export async function listAvatarBorders({ token, page = 1, limit = 20, q = '', active = '' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  if (q) params.set('q', q);
+  if (active !== '' && active !== null && active !== undefined) params.set('active', String(active));
+  const url = `${avatarBordersBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil avatar borders');
+  const pg = data?.pagination || {};
+  return {
+    page: pg.page ?? page,
+    limit: pg.limit ?? limit,
+    total: pg.total ?? 0,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+// Get detail
+export async function getAvatarBorder({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${avatarBordersBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil detail avatar border');
+}
+
+// Update (partial)
+export async function updateAvatarBorder({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${avatarBordersBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui avatar border');
+}
+
+// Delete
+export async function deleteAvatarBorder({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${avatarBordersBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus avatar border');
+}
+
+// ===== Avatar Border Owners (SUPERADMIN only) =====
+// List owners for a border
+export async function listBorderOwners({ token, borderId, page = 1, limit = 20, userId = '' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!borderId && borderId !== 0) throw new Error('borderId tidak valid');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  if (userId) params.set('userId', String(userId));
+  const url = `${avatarBordersBase()}/${borderId}/owners?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil owners');
+  const pg = data?.pagination || {};
+  return {
+    page: pg.page ?? page,
+    limit: pg.limit ?? limit,
+    total: pg.total ?? 0,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+// Add/Upsert owner for a border
+export async function addOrUpdateBorderOwner({ token, borderId, user_id, is_active = false }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${avatarBordersBase()}/${borderId}/owners`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id, is_active }),
+  });
+  return await handleJson(res, 'Gagal menambahkan ownership');
+}
+
+// Update owner active flag
+export async function updateBorderOwner({ token, borderId, userId, is_active }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${avatarBordersBase()}/${borderId}/owners/${userId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_active }),
+  });
+  return await handleJson(res, 'Gagal memperbarui ownership');
+}
+
+// Delete owner
+export async function deleteBorderOwner({ token, borderId, userId }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${avatarBordersBase()}/${borderId}/owners/${userId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus ownership');
+}
+
+// ===== Waifu Vote (PUBLIC + ADMIN) =====
+const waifuBase = () => `${getApiBase()}/waifu`;
+
+// Public/Admin: List waifu with pagination and optional q
+export async function listWaifu({ token = '', page = 1, limit = 20, q = '' }) {
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  if (q) params.set('q', q);
+  const url = `${waifuBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
+  const data = await handleJson(res, 'Gagal mengambil daftar waifu');
+  const pg = data?.pagination || {};
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    pagination: {
+      page: pg.page ?? page,
+      limit: pg.limit ?? limit,
+      total: pg.total ?? data?.total ?? 0,
+      totalPages: pg.totalPages ?? (pg.total && pg.limit ? Math.ceil(pg.total / pg.limit) : undefined),
+    },
+  };
+}
+
+// Public/Admin: Get waifu by id
+export async function getWaifu({ id }) {
+  const res = await fetch(`${waifuBase()}/${id}`);
+  return await handleJson(res, 'Gagal mengambil detail waifu');
+}
+
+// Admin: Create waifu
+export async function createWaifu({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${waifuBase()}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat waifu');
+}
+
+// Admin: Update waifu
+export async function updateWaifu({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${waifuBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui waifu');
+}
+
+// Admin: Delete waifu
+export async function deleteWaifu({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${waifuBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus waifu');
+}
+
+// Admin: Reset all votes
+export async function resetWaifuVotes({ token }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${waifuBase()}/reset`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mereset vote');
+}
+
+// ===== Admin VIP Management (SUPERADMIN) =====
+const vipBase = () => `${getApiBase()}/admin/vip`;
+
+export async function getUserVipStatus({ token, userId }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipBase()}/users/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil status VIP');
+}
+
+export async function getUserVipHistory({ token, userId, page = 1, pageSize = 20 }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (pageSize) params.set('pageSize', String(pageSize));
+  const res = await fetch(`${vipBase()}/users/${userId}/history?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil riwayat VIP');
+}
+
+export async function activateUserVip({ token, userId, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipBase()}/users/${userId}/activate`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal mengaktifkan VIP');
+}
+
+export async function renewUserVip({ token, userId, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipBase()}/users/${userId}/renew`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperpanjang VIP');
+}
+
+export async function cancelUserVip({ token, userId, payload = {} }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipBase()}/users/${userId}/cancel`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membatalkan VIP');
+}
+
+export async function setUserVipAutoRenew({ token, userId, auto_renew }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipBase()}/users/${userId}/auto-renew`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ auto_renew }),
+  });
+  return await handleJson(res, 'Gagal mengatur auto-renew VIP');
+}
+
+// ===== Admin Wallet (SUPERADMIN) =====
+const walletBase = () => `${getApiBase()}/admin/wallet`;
+
+// Global credit (body includes userId)
+export async function adminWalletCredit({ token, userId, amount, note = '' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${walletBase()}/credit`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, amount, note }),
+  });
+  return await handleJson(res, 'Gagal kredit koin');
+}
+
+// Global debit (body includes userId)
+export async function adminWalletDebit({ token, userId, amount, note = '' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${walletBase()}/debit`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, amount, note }),
+  });
+  return await handleJson(res, 'Gagal debit koin');
+}
+
+// User-level wallet summary with user info
+export async function getUserWallet({ token, userId }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${walletBase()}/users/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil wallet user');
+}
+
+// User-level transactions with pagination
+export async function getUserWalletTransactions({ token, userId, page = 1, limit = 20 }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  const res = await fetch(`${walletBase()}/users/${userId}/transactions?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil transaksi wallet');
+}
+
+// User-level credit
+export async function creditUserWallet({ token, userId, amount, note = '' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${walletBase()}/users/${userId}/credit`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount, note }),
+  });
+  return await handleJson(res, 'Gagal kredit koin user');
+}
+
+// User-level debit
+export async function debitUserWallet({ token, userId, amount, note = '' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${walletBase()}/users/${userId}/debit`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount, note }),
+  });
+  return await handleJson(res, 'Gagal debit koin user');
 }

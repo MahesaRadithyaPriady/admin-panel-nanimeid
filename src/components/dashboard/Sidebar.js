@@ -5,8 +5,8 @@ import Link from 'next/link';
 export default function Sidebar({ menus, currentPath }) {
   return (
     <aside
-      className="bg-white border-4 border-black rounded-xl p-3 md:p-4"
-      style={{ boxShadow: '8px 8px 0 #000' }}
+      className="border-4 rounded-xl p-3 md:p-4"
+      style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}
     >
       <nav className="space-y-2">
         {menus.map((m) => {
@@ -15,8 +15,8 @@ export default function Sidebar({ menus, currentPath }) {
             <Link
               key={m.key}
               href={m.href}
-              className={`w-full flex items-center gap-2 px-3 py-2 border-4 border-black rounded-lg font-extrabold ${active ? 'bg-[#FFD803]' : 'bg-[#E2E8F0] hover:bg-[#CBD5E1]'}`}
-              style={{ boxShadow: '4px 4px 0 #000' }}
+              className={`w-full flex items-center gap-2 px-3 py-2 border-4 rounded-lg font-extrabold hover:brightness-95`}
+              style={{ boxShadow: '4px 4px 0 #000', background: active ? '#FFD803' : 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             >
               <m.icon className="size-4" /> {m.label}
             </Link>

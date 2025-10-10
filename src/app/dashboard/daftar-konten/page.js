@@ -709,7 +709,7 @@ export default function DaftarKontenPage() {
       {loading || !user ? null : !canAccess ? (
         <div className="text-sm font-semibold">
           Halaman ini khusus superadmin/uploader. Anda login sebagai{' '}
-          <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">{user.role}</span>.
+          <span className="px-2 py-1 border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--foreground)' }}>{user.role}</span>.
         </div>
       ) : (
         <>
@@ -724,34 +724,36 @@ export default function DaftarKontenPage() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Cari (nama/genre/tag)"
-              className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000' }}
+              className="px-3 py-2 border-4 rounded-lg font-semibold"
+              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             />
-            <button type="submit" disabled={loadingList} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>{loadingList ? 'Memuat...' : 'Cari'}</button>
+            <button type="submit" disabled={loadingList} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
+              {loadingList ? 'Memuat...' : 'Cari'}
+            </button>
           </form>
 
           {/* Tabs: Tambah Anime | Sync to All | Tambah Episode */}
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setActiveTab('anime')} className={`px-3 py-2 border-4 border-black rounded-lg font-extrabold ${activeTab === 'anime' ? 'bg-[#FFD803]' : 'bg-white'}`} style={{ boxShadow: '4px 4px 0 #000' }}>Tambah Anime</button>
-            <button type="button" onClick={() => setActiveTab('bulk')} className={`px-3 py-2 border-4 border-black rounded-lg font-extrabold ${activeTab === 'bulk' ? 'bg-[#FFD803]' : 'bg-white'}`} style={{ boxShadow: '4px 4px 0 #000' }}>Sync ke Semua</button>
-            <button type="button" onClick={() => setActiveTab('episode')} className={`px-3 py-2 border-4 border-black rounded-lg font-extrabold ${activeTab === 'episode' ? 'bg-[#FFD803]' : 'bg-white'}`} style={{ boxShadow: '4px 4px 0 #000' }}>Tambah Episode</button>
+            <button type="button" onClick={() => setActiveTab('anime')} className={`px-3 py-2 border-4 rounded-lg font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'anime' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: activeTab === 'anime' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Tambah Anime</button>
+            <button type="button" onClick={() => setActiveTab('bulk')} className={`px-3 py-2 border-4 rounded-lg font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'bulk' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: activeTab === 'bulk' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Sync ke Semua</button>
+            <button type="button" onClick={() => setActiveTab('episode')} className={`px-3 py-2 border-4 rounded-lg font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'episode' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: activeTab === 'episode' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Tambah Episode</button>
           </div>
 
           {/* Form Tambah / Edit Anime */}
           {activeTab === 'anime' && (
           <form onSubmit={onSubmit} className="grid gap-3">
             <div className="grid sm:grid-cols-2 gap-3">
-              <input type="text" value={form.nama_anime} onChange={(e) => setForm((f) => ({ ...f, nama_anime: e.target.value }))} placeholder="Nama anime (wajib)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
-              <input type="url" value={form.gambar_anime} onChange={(e) => setForm((f) => ({ ...f, gambar_anime: e.target.value }))} placeholder="URL gambar (wajib)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
-              <input type="text" value={form.rating_anime} onChange={(e) => setForm((f) => ({ ...f, rating_anime: e.target.value }))} placeholder="Rating (wajib)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
-              <select value={form.status_anime} onChange={(e) => setForm((f) => ({ ...f, status_anime: e.target.value }))} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }}>
+              <input type="text" value={form.nama_anime} onChange={(e) => setForm((f) => ({ ...f, nama_anime: e.target.value }))} placeholder="Nama anime (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              <input type="url" value={form.gambar_anime} onChange={(e) => setForm((f) => ({ ...f, gambar_anime: e.target.value }))} placeholder="URL gambar (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              <input type="text" value={form.rating_anime} onChange={(e) => setForm((f) => ({ ...f, rating_anime: e.target.value }))} placeholder="Rating (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              <select value={form.status_anime} onChange={(e) => setForm((f) => ({ ...f, status_anime: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                 <option value="" disabled>Pilih Status (wajib)</option>
                 <option value="Ongoing">Ongoing</option>
                 <option value="Completed">Completed</option>
                 <option value="Hiatus">Hiatus</option>
                 <option value="Upcoming">Upcoming</option>
               </select>
-              <select value={form.label_anime} onChange={(e) => setForm((f) => ({ ...f, label_anime: e.target.value }))} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }}>
+              <select value={form.label_anime} onChange={(e) => setForm((f) => ({ ...f, label_anime: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                 <option value="" disabled>Pilih Label (wajib)</option>
                 <option value="TV">TV</option>
                 <option value="Movie">Movie</option>
@@ -759,17 +761,17 @@ export default function DaftarKontenPage() {
                 <option value="ONA">ONA</option>
                 <option value="Special">Special</option>
               </select>
-              <input type="date" value={form.tanggal_rilis_anime} onChange={(e) => setForm((f) => ({ ...f, tanggal_rilis_anime: e.target.value }))} placeholder="Tanggal rilis (opsional)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
+              <input type="date" value={form.tanggal_rilis_anime} onChange={(e) => setForm((f) => ({ ...f, tanggal_rilis_anime: e.target.value }))} placeholder="Tanggal rilis (opsional)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
             </div>
-            <textarea value={form.sinopsis_anime} onChange={(e) => setForm((f) => ({ ...f, sinopsis_anime: e.target.value }))} placeholder="Sinopsis (wajib)" rows={3} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
+            <textarea value={form.sinopsis_anime} onChange={(e) => setForm((f) => ({ ...f, sinopsis_anime: e.target.value }))} placeholder="Sinopsis (wajib)" rows={3} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
             <div className="grid sm:grid-cols-2 gap-3">
-              <input type="text" value={form.tags_anime} onChange={(e) => setForm((f) => ({ ...f, tags_anime: e.target.value }))} placeholder="Tags (pisahkan dengan koma)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
-              <input type="text" value={form.genre_anime} onChange={(e) => setForm((f) => ({ ...f, genre_anime: e.target.value }))} placeholder="Genre (pisahkan dengan koma)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
-              <input type="text" value={form.studio_anime} onChange={(e) => setForm((f) => ({ ...f, studio_anime: e.target.value }))} placeholder="Studio (pisahkan dengan koma)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
-              <input type="text" value={form.fakta_menarik} onChange={(e) => setForm((f) => ({ ...f, fakta_menarik: e.target.value }))} placeholder="Fakta menarik (pisahkan dengan koma)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" style={{ boxShadow: '4px 4px 0 #000' }} />
+              <input type="text" value={form.tags_anime} onChange={(e) => setForm((f) => ({ ...f, tags_anime: e.target.value }))} placeholder="Tags (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              <input type="text" value={form.genre_anime} onChange={(e) => setForm((f) => ({ ...f, genre_anime: e.target.value }))} placeholder="Genre (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              <input type="text" value={form.studio_anime} onChange={(e) => setForm((f) => ({ ...f, studio_anime: e.target.value }))} placeholder="Studio (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              <input type="text" value={form.fakta_menarik} onChange={(e) => setForm((f) => ({ ...f, fakta_menarik: e.target.value }))} placeholder="Fakta menarik (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
             </div>
             <div className="grid sm:grid-cols-[160px]">
-              <button type="submit" disabled={submittingAnime} className={`flex items-center justify-center gap-2 border-4 border-black rounded-lg font-extrabold disabled:opacity-60 ${mode === 'add' ? 'bg-[#C6F6D5]' : 'bg-[#FFD803]'}`} style={{ boxShadow: '4px 4px 0 #000' }}>
+              <button type="submit" disabled={submittingAnime} className={`flex items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60`} style={{ boxShadow: '4px 4px 0 #000', background: mode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', color: mode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
                 {submittingAnime ? (mode === 'add' ? 'Menambah...' : 'Menyimpan...') : (mode === 'add' ? (<><Plus className="size-4" /> Tambah</>) : (<><Pencil className="size-4" /> Simpan</>))}
               </button>
             </div>
@@ -778,49 +780,49 @@ export default function DaftarKontenPage() {
 
           {/* Form Sync to All (Bulk) */}
           {activeTab === 'bulk' && (
-            <form onSubmit={onSubmitBulkSync} className="grid gap-3 p-3 border-4 border-black rounded-lg bg-[#FFFBEA]" style={{ boxShadow: '4px 4px 0 #000' }}>
+            <form onSubmit={onSubmitBulkSync} className="grid gap-3 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
               <div className="font-extrabold">Sync ke Semua Episode (Bulk)</div>
               <div className="grid sm:grid-cols-2 gap-2">
-                <select value={bulkSync?.animeId || ''} onChange={(e) => setBulkSync((s) => ({ ...s, animeId: Number(e.target.value) || '' }))} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold">
+                <select value={bulkSync?.animeId || ''} onChange={(e) => setBulkSync((s) => ({ ...s, animeId: Number(e.target.value) || '' }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                   <option value="">Pilih Anime</option>
                   {items.map((it) => (
                     <option key={it.id} value={it.id}>{it.nama_anime}</option>
                   ))}
                 </select>
                 <div className="grid grid-cols-2 gap-2">
-                  <input type="number" value={bulkSync?.start_ep || 1} onChange={(e) => setBulkSync((s) => ({ ...s, start_ep: Number(e.target.value) }))} placeholder="Mulai (contoh: 1)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                  <input type="number" value={bulkSync?.end_ep || 12} onChange={(e) => setBulkSync((s) => ({ ...s, end_ep: Number(e.target.value) }))} placeholder="Sampai (contoh: 12)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                  <input type="number" value={bulkSync?.start_ep || 1} onChange={(e) => setBulkSync((s) => ({ ...s, start_ep: Number(e.target.value) }))} placeholder="Mulai (contoh: 1)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  <input type="number" value={bulkSync?.end_ep || 12} onChange={(e) => setBulkSync((s) => ({ ...s, end_ep: Number(e.target.value) }))} placeholder="Sampai (contoh: 12)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                 </div>
-                <input type="text" value={bulkSync?.judul_template || ''} onChange={(e) => setBulkSync((s) => ({ ...s, judul_template: e.target.value }))} placeholder="Judul template (gunakan {n} untuk nomor)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                <input type="url" value={bulkSync?.thumbnail_episode || ''} onChange={(e) => setBulkSync((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail (boleh pakai {n})" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                <input type="number" value={bulkSync?.durasi_episode || 0} onChange={(e) => setBulkSync((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                <input type="datetime-local" value={bulkSync?.tanggal_rilis_episode || ''} onChange={(e) => setBulkSync((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                <input type="text" value={bulkSync?.judul_template || ''} onChange={(e) => setBulkSync((s) => ({ ...s, judul_template: e.target.value }))} placeholder="Judul template (gunakan {n} untuk nomor)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input type="url" value={bulkSync?.thumbnail_episode || ''} onChange={(e) => setBulkSync((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail (boleh pakai {n})" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input type="number" value={bulkSync?.durasi_episode || 0} onChange={(e) => setBulkSync((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input type="datetime-local" value={bulkSync?.tanggal_rilis_episode || ''} onChange={(e) => setBulkSync((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               </div>
               <div className="pt-1">
                 <div className="font-extrabold mb-2">Qualities</div>
                 <div className="space-y-2">
                   {(bulkSync?.qualities || []).map((q, idx) => (
                     <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto_auto_auto] gap-2">
-                      <input type="text" value={q.nama_quality} onChange={(e) => updateBulkQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                      <input type="url" value={q.source_quality} onChange={(e) => updateBulkQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL (boleh pakai {n})" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                      <button type="button" onClick={() => moveBulkQuality(idx, -1)} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-50" disabled={idx === 0} aria-label="Naikkan urutan" style={{ boxShadow: '3px 3px 0 #000' }}>
+                      <input type="text" value={q.nama_quality} onChange={(e) => updateBulkQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                      <input type="url" value={q.source_quality} onChange={(e) => updateBulkQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL (boleh pakai {n})" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                      <button type="button" onClick={() => moveBulkQuality(idx, -1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === 0} aria-label="Naikkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                         <ChevronUp className="size-4" />
                       </button>
-                      <button type="button" onClick={() => moveBulkQuality(idx, 1)} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-50" disabled={idx === (bulkSync?.qualities?.length || 0) - 1} aria-label="Turunkan urutan" style={{ boxShadow: '3px 3px 0 #000' }}>
+                      <button type="button" onClick={() => moveBulkQuality(idx, 1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === (bulkSync?.qualities?.length || 0) - 1} aria-label="Turunkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                         <ChevronDown className="size-4" />
                       </button>
-                      <button type="button" onClick={() => removeBulkQuality(idx)} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>Hapus</button>
+                      <button type="button" onClick={() => removeBulkQuality(idx)} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Hapus</button>
                     </div>
                   ))}
                 </div>
                 <div className="mt-2 flex items-center gap-2 flex-wrap">
-                  <button type="button" onClick={syncBulkEpisodeQualities} disabled={!canSyncBulk} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-50" style={{ boxShadow: '3px 3px 0 #000' }}>Sync</button>
-                  <button type="button" onClick={addBulkQuality} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>+ Tambah Quality</button>
+                  <button type="button" onClick={syncBulkEpisodeQualities} disabled={!canSyncBulk} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>Sync</button>
+                  <button type="button" onClick={addBulkQuality} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>+ Tambah Quality</button>
                 </div>
               </div>
-              <textarea rows={3} value={bulkSync?.deskripsi_episode || ''} onChange={(e) => setBulkSync((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+              <textarea rows={3} value={bulkSync?.deskripsi_episode || ''} onChange={(e) => setBulkSync((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               <div className="grid sm:grid-cols-[160px]">
-                <button type="submit" disabled={submittingBulk} className="flex items-center justify-center gap-2 border-4 border-black rounded-lg font-extrabold bg-[#C6F6D5] disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+                <button type="submit" disabled={submittingBulk} className="flex items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>
                   {submittingBulk ? 'Memproses...' : 'Proses'}
                 </button>
               </div>
@@ -830,46 +832,46 @@ export default function DaftarKontenPage() {
 
           {/* Form Tambah Episode (Global) */}
           {activeTab === 'episode' && (
-            <form onSubmit={(e) => { e.preventDefault(); onSubmitCreateEpisodeFromTab(); }} className="grid gap-3 p-3 border-4 border-black rounded-lg bg-[#E6FFFA]" style={{ boxShadow: '4px 4px 0 #000' }}>
+            <form onSubmit={(e) => { e.preventDefault(); onSubmitCreateEpisodeFromTab(); }} className="grid gap-3 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
               <div className="font-extrabold">Tambah Episode</div>
               <div className="grid sm:grid-cols-2 gap-2">
-                <select value={tabEpisode?.animeId || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, animeId: Number(e.target.value) || '' }))} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold">
+                <select value={tabEpisode?.animeId || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, animeId: Number(e.target.value) || '' }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                   <option value="">Pilih Anime</option>
                   {items.map((it) => (
                     <option key={it.id} value={it.id}>{it.nama_anime}</option>
                   ))}
                 </select>
-                <input type="text" value={tabEpisode?.judul_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                <input type="number" value={tabEpisode?.nomor_episode || 1} onChange={(e) => setTabEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                <input type="url" value={tabEpisode?.thumbnail_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                <input type="number" value={tabEpisode?.durasi_episode || 0} onChange={(e) => setTabEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                <input type="datetime-local" value={tabEpisode?.tanggal_rilis_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                <input type="text" value={tabEpisode?.judul_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input type="number" value={tabEpisode?.nomor_episode || 1} onChange={(e) => setTabEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input type="url" value={tabEpisode?.thumbnail_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input type="number" value={tabEpisode?.durasi_episode || 0} onChange={(e) => setTabEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input type="datetime-local" value={tabEpisode?.tanggal_rilis_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               </div>
               <div className="pt-1">
                 <div className="font-extrabold mb-2">Qualities</div>
                 <div className="space-y-2">
                   {(tabEpisode?.qualities || []).map((q, idx) => (
                     <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto_auto_auto] gap-2">
-                      <input type="text" value={q.nama_quality} onChange={(e) => updateTabQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                      <input type="url" value={q.source_quality} onChange={(e) => updateTabQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                      <button type="button" onClick={() => moveTabQuality(idx, -1)} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-50" disabled={idx === 0} aria-label="Naikkan urutan" style={{ boxShadow: '3px 3px 0 #000' }}>
+                      <input type="text" value={q.nama_quality} onChange={(e) => updateTabQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                      <input type="url" value={q.source_quality} onChange={(e) => updateTabQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                      <button type="button" onClick={() => moveTabQuality(idx, -1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === 0} aria-label="Naikkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                         <ChevronUp className="size-4" />
                       </button>
-                      <button type="button" onClick={() => moveTabQuality(idx, 1)} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-50" disabled={idx === (tabEpisode?.qualities?.length || 0) - 1} aria-label="Turunkan urutan" style={{ boxShadow: '3px 3px 0 #000' }}>
+                      <button type="button" onClick={() => moveTabQuality(idx, 1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === (tabEpisode?.qualities?.length || 0) - 1} aria-label="Turunkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                         <ChevronDown className="size-4" />
                       </button>
-                      <button type="button" onClick={() => removeTabQuality(idx)} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>Hapus</button>
+                      <button type="button" onClick={() => removeTabQuality(idx)} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Hapus</button>
                     </div>
                   ))}
                 </div>
                 <div className="mt-2 flex items-center gap-2 flex-wrap">
-                  <button type="button" onClick={syncTabEpisodeQualities} disabled={!canSyncTab} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-50" style={{ boxShadow: '3px 3px 0 #000' }}>Sync</button>
-                  <button type="button" onClick={() => addTabQuality()} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>+ Tambah Quality</button>
+                  <button type="button" onClick={syncTabEpisodeQualities} disabled={!canSyncTab} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>Sync</button>
+                  <button type="button" onClick={() => addTabQuality()} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>+ Tambah Quality</button>
                 </div>
               </div>
-              <textarea rows={3} value={tabEpisode?.deskripsi_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+              <textarea rows={3} value={tabEpisode?.deskripsi_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               <div className="grid sm:grid-cols-[160px]">
-                <button type="submit" disabled={submittingTabEpisode} className="flex items-center justify-center gap-2 border-4 border-black rounded-lg font-extrabold bg-[#C6F6D5] disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+                <button type="submit" disabled={submittingTabEpisode} className="flex items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>
                   {submittingTabEpisode ? 'Menambah...' : (<><Plus className="size-4" /> Tambah Episode</>)}
                 </button>
               </div>
@@ -878,131 +880,131 @@ export default function DaftarKontenPage() {
 
           {/* Table */}
           <div className="overflow-auto">
-            <table className="min-w-full border-4 border-black rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000' }}>
-              <thead className="bg-[#E2E8F0]">
+            <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <thead style={{ background: 'var(--panel-bg)' }}>
                 <tr>
-                  <th className="text-left px-3 py-2 border-b-4 border-black">&nbsp;</th>
-                  <th className="text-left px-3 py-2 border-b-4 border-black">Nama</th>
-                  <th className="text-left px-3 py-2 border-b-4 border-black">Rating</th>
-                  <th className="text-left px-3 py-2 border-b-4 border-black">Status</th>
-                  <th className="text-left px-3 py-2 border-b-4 border-black">Label</th>
-                  <th className="text-left px-3 py-2 border-b-4 border-black">Aksi</th>
+                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>&nbsp;</th>
+                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Nama</th>
+                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Rating</th>
+                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Status</th>
+                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Label</th>
+                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((it, idx) => (
                   <>
-                    <tr key={`${it.id}-row`} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#F7F7F0]'}>
-                      <td className="px-2 py-2 border-b-4 border-black align-top">
-                        <button onClick={() => toggleExpand(it.id)} className="px-2 py-1 border-4 border-black rounded bg-white font-extrabold" style={{ boxShadow: '2px 2px 0 #000' }} aria-label="Toggle episodes">
+                    <tr key={`${it.id}-row`}>
+                      <td className="px-2 py-2 border-b-4 align-top" style={{ borderColor: 'var(--panel-border)' }}>
+                        <button onClick={() => toggleExpand(it.id)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '2px 2px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }} aria-label="Toggle episodes">
                           {expanded.has(it.id) ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                         </button>
                       </td>
-                      <td className="px-3 py-2 border-b-4 border-black font-semibold">{it.nama_anime}</td>
-                      <td className="px-3 py-2 border-b-4 border-black font-semibold">{it.rating_anime}</td>
-                      <td className="px-3 py-2 border-b-4 border-black font-semibold">{it.status_anime}</td>
-                      <td className="px-3 py-2 border-b-4 border-black font-semibold">{it.label_anime}</td>
-                      <td className="px-3 py-2 border-b-4 border-black">
+                      <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.nama_anime}</td>
+                      <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.rating_anime}</td>
+                      <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.status_anime}</td>
+                      <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.label_anime}</td>
+                      <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => onEdit(it)} className="px-2 py-1 border-4 border-black rounded bg-[#FFD803] font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>
+                          <button onClick={() => onEdit(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
                             <Pencil className="size-4" />
                           </button>
-                          <button onClick={() => onRequestDelete(it)} className="px-2 py-1 border-4 border-black rounded bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>
+                          <button onClick={() => onRequestDelete(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>
                             <Trash2 className="size-4" />
                           </button>
                         </div>
                       </td>
                     </tr>
                     {expanded.has(it.id) && (
-                      <tr key={`${it.id}-episodes`} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#F7F7F0]'}>
-                        <td className="px-3 py-2 border-b-4 border-black" colSpan={6}>
+                      <tr key={`${it.id}-episodes`}>
+                        <td className="px-3 py-2 border-b-4" colSpan={6} style={{ borderColor: 'var(--panel-border)' }}>
                           <div className="space-y-2">
                             <div className="flex items-center justify-between gap-2 font-extrabold">
                               <div className="flex items-center gap-2"><Film className="size-4" /> Episodes</div>
-                              <button type="button" onClick={() => startCreateEpisode(it.id)} className="px-2 py-1 border-4 border-black rounded bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>+ Tambah Episode</button>
+                              <button type="button" onClick={() => startCreateEpisode(it.id)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>+ Tambah Episode</button>
                             </div>
                             {creatingForAnime === it.id && newEpisode && (
-                              <form onSubmit={onSubmitCreateEpisode} className="p-3 border-4 border-black rounded-lg bg-[#E6FFFA] space-y-2" style={{ boxShadow: '4px 4px 0 #000' }}>
+                              <form onSubmit={onSubmitCreateEpisode} className="p-3 border-4 rounded-lg space-y-2" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                                 <div className="font-extrabold">Tambah Episode</div>
                                 <div className="grid sm:grid-cols-2 gap-2">
-                                  <input type="text" value={newEpisode.judul_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                                  <input type="number" value={newEpisode.nomor_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                                  <input type="url" value={newEpisode.thumbnail_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                                  <input type="number" value={newEpisode.durasi_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                                  <input type="datetime-local" value={newEpisode.tanggal_rilis_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                  <input type="text" value={newEpisode.judul_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                  <input type="number" value={newEpisode.nomor_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                  <input type="url" value={newEpisode.thumbnail_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                  <input type="number" value={newEpisode.durasi_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                  <input type="datetime-local" value={newEpisode.tanggal_rilis_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                 </div>
                                 <div className="pt-1">
                                   <div className="font-extrabold mb-2">Qualities</div>
                                   <div className="space-y-2">
                                     {(newEpisode.qualities || []).map((q, idx) => (
                                       <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto_auto_auto] gap-2">
-                                        <input type="text" value={q.nama_quality} onChange={(e) => updateNewQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                                        <input type="url" value={q.source_quality} onChange={(e) => updateNewQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                                        <button type="button" onClick={() => moveNewQuality(idx, -1)} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-50" disabled={idx === 0} aria-label="Naikkan urutan" style={{ boxShadow: '3px 3px 0 #000' }}>
+                                        <input type="text" value={q.nama_quality} onChange={(e) => updateNewQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        <input type="url" value={q.source_quality} onChange={(e) => updateNewQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        <button type="button" onClick={() => moveNewQuality(idx, -1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === 0} aria-label="Naikkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                                           <ChevronUp className="size-4" />
                                         </button>
-                                        <button type="button" onClick={() => moveNewQuality(idx, 1)} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-50" disabled={idx === (newEpisode?.qualities?.length || 0) - 1} aria-label="Turunkan urutan" style={{ boxShadow: '3px 3px 0 #000' }}>
+                                        <button type="button" onClick={() => moveNewQuality(idx, 1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === (newEpisode?.qualities?.length || 0) - 1} aria-label="Turunkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                                           <ChevronDown className="size-4" />
                                         </button>
-                                        <button type="button" onClick={() => removeNewQuality(idx)} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>Hapus</button>
+                                        <button type="button" onClick={() => removeNewQuality(idx)} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Hapus</button>
                                       </div>
                                     ))}
                                   </div>
                                   <div className="mt-2 flex items-center gap-2 flex-wrap">
-                                    <button type="button" onClick={syncNewEpisodeQualities} disabled={!canSyncNew} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-50" style={{ boxShadow: '3px 3px 0 #000' }}>Sync</button>
-                                    <button type="button" onClick={addNewQuality} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>+ Tambah Quality</button>
+                                    <button type="button" onClick={syncNewEpisodeQualities} disabled={!canSyncNew} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>Sync</button>
+                                    <button type="button" onClick={addNewQuality} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>+ Tambah Quality</button>
                                   </div>
                                 </div>
-                                <textarea rows={3} value={newEpisode.deskripsi_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                <textarea rows={3} value={newEpisode.deskripsi_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                 <div className="flex items-center gap-2">
-                                  <button type="button" disabled={submittingNewEpisode} onClick={cancelCreateEpisode} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>Batal</button>
-                                  <button type="submit" disabled={submittingNewEpisode} className="px-3 py-2 border-4 border-black rounded-lg bg-[#C6F6D5] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>{submittingNewEpisode ? 'Menyimpan...' : 'Simpan'}</button>
+                                  <button type="button" disabled={submittingNewEpisode} onClick={cancelCreateEpisode} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Batal</button>
+                                  <button type="submit" disabled={submittingNewEpisode} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>{submittingNewEpisode ? 'Menyimpan...' : 'Simpan'}</button>
                                 </div>
                               </form>
                             )}
                             {editingEpisode && editingEpisode.animeId === it.id && (
-                              <form onSubmit={onSubmitEpisode} className="p-3 border-4 border-black rounded-lg bg-[#FFFBEA] space-y-2" style={{ boxShadow: '4px 4px 0 #000' }}>
+                              <form onSubmit={onSubmitEpisode} className="p-3 border-4 rounded-lg space-y-2" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                                 <div className="font-extrabold">Edit Episode (Mockup)</div>
                                 <div className="grid sm:grid-cols-2 gap-2">
-                                  <input type="text" value={editingEpisode.judul_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                                  <input type="number" value={editingEpisode.nomor_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                                  <input type="url" value={editingEpisode.thumbnail_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                                  <input type="number" value={editingEpisode.durasi_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                                  <input type="datetime-local" value={editingEpisode.tanggal_rilis_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                  <input type="text" value={editingEpisode.judul_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                  <input type="number" value={editingEpisode.nomor_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                  <input type="url" value={editingEpisode.thumbnail_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                  <input type="number" value={editingEpisode.durasi_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                  <input type="datetime-local" value={editingEpisode.tanggal_rilis_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                 </div>
                                 <div className="pt-1">
                                   <div className="font-extrabold mb-2">Qualities</div>
                                   <div className="space-y-2">
                                     {(editingEpisode.qualities || []).map((q, idx) => (
                                       <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto] gap-2">
-                                        <input type="text" value={q.nama_quality} onChange={(e) => updateQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                                        <input type="url" value={q.source_quality} onChange={(e) => updateQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
-                                        <button type="button" onClick={() => removeQuality(idx)} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>Hapus</button>
+                                        <input type="text" value={q.nama_quality} onChange={(e) => updateQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        <input type="url" value={q.source_quality} onChange={(e) => updateQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        <button type="button" onClick={() => removeQuality(idx)} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Hapus</button>
                                       </div>
                                     ))}
                                   </div>
                                   <div className="mt-2">
-                                    <button type="button" onClick={addQuality} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>+ Tambah Quality</button>
+                                    <button type="button" onClick={addQuality} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>+ Tambah Quality</button>
                                   </div>
                                 </div>
-                                <textarea rows={3} value={editingEpisode.deskripsi_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold" />
+                                <textarea rows={3} value={editingEpisode.deskripsi_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                 <div className="flex items-center gap-2">
-                                  <button type="button" disabled={submittingEditEpisode} onClick={onCancelEditEpisode} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>Batal</button>
-                                  <button type="submit" disabled={submittingEditEpisode} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>{submittingEditEpisode ? 'Menyimpan...' : 'Simpan'}</button>
+                                  <button type="button" disabled={submittingEditEpisode} onClick={onCancelEditEpisode} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Batal</button>
+                                  <button type="submit" disabled={submittingEditEpisode} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>{submittingEditEpisode ? 'Menyimpan...' : 'Simpan'}</button>
                                 </div>
                               </form>
                             )}
                             {(it.episodes && it.episodes.length > 0) ? (
                               <div className="space-y-2">
                                 {it.episodes.map((ep) => (
-                                  <div key={ep.id} className="p-3 border-4 border-black rounded-lg bg-white" style={{ boxShadow: '4px 4px 0 #000' }}>
+                                  <div key={ep.id} className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                                     <div className="flex items-start justify-between gap-3">
                                       <div className="font-extrabold">Ep {ep.nomor_episode}: {ep.judul_episode}</div>
                                       <div className="flex items-center gap-2">
-                                        <button onClick={() => onEditEpisode(it.id, ep)} className="px-2 py-1 border-4 border-black rounded bg-[#FFD803] font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>
+                                        <button onClick={() => onEditEpisode(it.id, ep)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>
                                           <Pencil className="size-4" />
                                         </button>
-                                        <button onClick={() => onRequestDeleteEpisode(ep)} className="px-2 py-1 border-4 border-black rounded bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>
+                                        <button onClick={() => onRequestDeleteEpisode(ep)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                                           <Trash2 className="size-4" />
                                         </button>
                                       </div>
@@ -1011,7 +1013,7 @@ export default function DaftarKontenPage() {
                                     {Array.isArray(ep.qualities) && ep.qualities.length > 0 && (
                                       <div className="mt-1 flex flex-wrap gap-2 text-xs">
                                         {ep.qualities.map((q) => (
-                                          <span key={q.id} className="px-2 py-0.5 border-2 border-black rounded bg-[#F2F2F2] font-extrabold">{q.nama_quality}</span>
+                                          <span key={q.id} className="px-2 py-0.5 border-2 rounded font-extrabold" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--foreground)' }}>{q.nama_quality}</span>
                                         ))}
                                       </div>
                                     )}
@@ -1038,18 +1040,18 @@ export default function DaftarKontenPage() {
 
           {/* Pagination */}
           <div className="flex items-center gap-2">
-            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 border-black rounded-lg bg-white disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>Prev</button>
+            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Prev</button>
             <div className="text-sm font-extrabold">Page {page} / {Math.max(1, Math.ceil(total / limit))}</div>
-            <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 border-black rounded-lg bg-white disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>Next</button>
+            <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Next</button>
           </div>
 
           {/* Confirm Delete Modal */}
           {confirmOpen && (
             <div className="fixed inset-0 z-50 grid place-items-center">
               <div className="absolute inset-0 bg-black/40" onClick={onCancelDelete} />
-              <div className="relative z-10 w-[92%] max-w-md bg-white border-4 border-black rounded-xl p-4 sm:p-6" style={{ boxShadow: '8px 8px 0 #000' }}>
+              <div className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 border-black rounded-md" style={{ boxShadow: '4px 4px 0 #000' }}>
+                  <div className="grid place-items-center size-10 border-4 rounded-md" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
                     <Trash2 className="size-5" />
                   </div>
                   <div>
@@ -1058,10 +1060,10 @@ export default function DaftarKontenPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-end gap-2">
-                  <button onClick={onCancelDelete} disabled={deletingAnime} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+                  <button onClick={onCancelDelete} disabled={deletingAnime} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>
                     Batal
                   </button>
-                  <button onClick={onConfirmDelete} disabled={deletingAnime} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+                  <button onClick={onConfirmDelete} disabled={deletingAnime} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
                     {deletingAnime ? 'Menghapus...' : 'Ya, Hapus'}
                   </button>
                 </div>
@@ -1073,9 +1075,9 @@ export default function DaftarKontenPage() {
           {confirmEpOpen && (
             <div className="fixed inset-0 z-50 grid place-items-center">
               <div className="absolute inset-0 bg-black/40" onClick={onCancelDeleteEpisode} />
-              <div className="relative z-10 w-[92%] max-w-md bg-white border-4 border-black rounded-xl p-4 sm:p-6" style={{ boxShadow: '8px 8px 0 #000' }}>
+              <div className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 border-black rounded-md" style={{ boxShadow: '4px 4px 0 #000' }}>
+                  <div className="grid place-items-center size-10 border-4 rounded-md" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
                     <Trash2 className="size-5" />
                   </div>
                   <div>
@@ -1084,10 +1086,10 @@ export default function DaftarKontenPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-end gap-2">
-                  <button onClick={onCancelDeleteEpisode} disabled={deletingEpisode} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+                  <button onClick={onCancelDeleteEpisode} disabled={deletingEpisode} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>
                     Batal
                   </button>
-                  <button onClick={onConfirmDeleteEpisode} disabled={deletingEpisode} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+                  <button onClick={onConfirmDeleteEpisode} disabled={deletingEpisode} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
                     {deletingEpisode ? 'Menghapus...' : 'Ya, Hapus'}
                   </button>
                 </div>

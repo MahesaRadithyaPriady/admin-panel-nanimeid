@@ -21,13 +21,13 @@ export default function KelolaUserPage() {
   const [q, setQ] = useState('');
   const [loadingList, setLoadingList] = useState(false);
 
-  const [form, setForm] = useState({ id: null, email: '', username: '', password: '' });
+  const [form, setForm] = useState({ id: null, email: '', username: '', password: '', account_status: '', account_status_reason: '' });
   const [mode, setMode] = useState('add'); // add | edit
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const resetForm = () => setForm({ id: null, email: '', username: '', password: '' });
+  const resetForm = () => setForm({ id: null, email: '', username: '', password: '', account_status: '', account_status_reason: '' });
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -83,13 +83,13 @@ export default function KelolaUserPage() {
         setSubmitting(false);
       }
     } else {
-      if (!form.email && !form.username) {
+      if (!form.email && !form.username && !form.account_status && !form.account_status_reason) {
         setSubmitting(false);
-        return toast.error('Isi username atau email untuk update');
+        return toast.error('Isi salah satu: username, email, status akun, atau alasan status');
       }
       try {
         const token = getSession()?.token;
-        await updateAdminUser({ token, id: form.id, username: form.username, email: form.email });
+        await updateAdminUser({ token, id: form.id, username: form.username, email: form.email, account_status: form.account_status, account_status_reason: form.account_status_reason });
         toast.success('User diperbarui');
         setMode('add');
         resetForm();
@@ -104,7 +104,7 @@ export default function KelolaUserPage() {
 
   const onEdit = (u) => {
     setMode('edit');
-    setForm({ id: u.id, email: u.email, username: u.username, password: '' });
+    setForm({ id: u.id, email: u.email, username: u.username, password: '', account_status: u.account_status || '', account_status_reason: u.account_status_reason || '' });
   };
 
   const onRequestDelete = (target) => {
@@ -158,31 +158,31 @@ export default function KelolaUserPage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Cari (username/email)"
-          className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold"
-          style={{ boxShadow: '4px 4px 0 #000' }}
+          className="px-3 py-2 border-4 rounded-lg font-semibold"
+          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
         />
-        <button type="submit" disabled={loadingList} className="border-4 border-black rounded-lg bg-[#C0E8FF] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+        <button type="submit" disabled={loadingList} className="border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)', background: 'var(--accent-primary)', color: 'var(--accent-primary-foreground)' }}>
           {loadingList ? 'Memuat...' : 'Cari'}
         </button>
       </form>
 
       {/* Form */}
-      <form onSubmit={onSubmit} className="grid sm:grid-cols-[1fr_180px_180px_120px] gap-3">
+      <form onSubmit={onSubmit} className="grid sm:grid-cols-[1fr_180px_180px_180px_1fr_120px] gap-3">
         <input
           type="email"
           value={form.email}
           onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
           placeholder="Email user"
-          className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold"
-          style={{ boxShadow: '4px 4px 0 #000' }}
+          className="px-3 py-2 border-4 rounded-lg font-semibold"
+          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
         />
         <input
           type="text"
           value={form.username}
           onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
           placeholder="Username"
-          className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold"
-          style={{ boxShadow: '4px 4px 0 #000' }}
+          className="px-3 py-2 border-4 rounded-lg font-semibold"
+          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
         />
         {mode === 'add' ? (
           <input
@@ -190,19 +190,46 @@ export default function KelolaUserPage() {
             value={form.password}
             onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
             placeholder="Password"
-            className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold"
-            style={{ boxShadow: '4px 4px 0 #000' }}
+            className="px-3 py-2 border-4 rounded-lg font-semibold"
+            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           />
         ) : (
-          <div className="px-3 py-2 border-4 border-black rounded-lg bg-[#F7F7F0] font-semibold text-sm grid place-items-center">
+          <div className="px-3 py-2 border-4 rounded-lg font-semibold text-sm grid place-items-center" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             Edit mode (password tidak bisa diubah di sini)
           </div>
         )}
+        {/* Account Status (edit opsional) */}
+        <select
+          value={form.account_status}
+          onChange={(e) => setForm((f) => ({ ...f, account_status: e.target.value }))}
+          className="px-3 py-2 border-4 rounded-lg font-semibold"
+          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+        >
+          <option value="">Status akun (kosongkan jika tidak diubah)</option>
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="SUSPENDED">SUSPENDED</option>
+          <option value="WARNED">WARNED</option>
+          <option value="BANNED">BANNED</option>
+        </select>
+        <input
+          type="text"
+          value={form.account_status_reason}
+          onChange={(e) => setForm((f) => ({ ...f, account_status_reason: e.target.value }))}
+          maxLength={500}
+          placeholder="Alasan status (opsional, maks 500 karakter)"
+          className="px-3 py-2 border-4 rounded-lg font-semibold sm:col-span-5"
+          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+        />
         <button
           type="submit"
           disabled={submitting}
-          className={`flex items-center justify-center gap-2 border-4 border-black rounded-lg font-extrabold disabled:opacity-60 ${mode === 'add' ? 'bg-[#C6F6D5]' : 'bg-[#FFD803]'}`}
-          style={{ boxShadow: '4px 4px 0 #000' }}
+          className={`flex items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60`}
+          style={{
+            boxShadow: '4px 4px 0 #000',
+            borderColor: 'var(--panel-border)',
+            background: mode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)',
+            color: mode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)'
+          }}
         >
           {submitting
             ? (mode === 'add' ? 'Menambah...' : 'Menyimpan...')
@@ -212,39 +239,44 @@ export default function KelolaUserPage() {
 
       {/* Table */}
       <div className="overflow-auto">
-        <table className="min-w-full border-4 border-black rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000' }}>
-          <thead className="bg-[#E2E8F0]">
+        <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <thead style={{ background: 'var(--panel-bg)' }}>
             <tr>
-              <th className="text-left px-3 py-2 border-b-4 border-black">Email</th>
-              <th className="text-left px-3 py-2 border-b-4 border-black">Username</th>
-              <th className="text-left px-3 py-2 border-b-4 border-black">Created</th>
-              <th className="text-left px-3 py-2 border-b-4 border-black">Full Name</th>
-              <th className="text-left px-3 py-2 border-b-4 border-black">VIP</th>
-              <th className="text-left px-3 py-2 border-b-4 border-black">Aksi</th>
+              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Email</th>
+              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Username</th>
+              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Status Akun</th>
+              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Created</th>
+              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Full Name</th>
+              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
             </tr>
           </thead>
           <tbody>
             {users.map((u) => (
-              <tr key={u.id} className="odd:bg-white even:bg-[#F7F7F0]">
-                <td className="px-3 py-2 border-b-4 border-black font-semibold">{u.email}</td>
-                <td className="px-3 py-2 border-b-4 border-black font-semibold">{u.username}</td>
-                <td className="px-3 py-2 border-b-4 border-black font-semibold">{u.createdAt ? new Date(u.createdAt).toLocaleString() : '-'}</td>
-                <td className="px-3 py-2 border-b-4 border-black font-semibold">{u.profile?.full_name || '-'}</td>
-                <td className="px-3 py-2 border-b-4 border-black font-semibold">
-                  {u.vip ? (
-                    <span className="px-2 py-0.5 border-2 border-black rounded bg-[#C6F6D5] text-xs font-extrabold">
-                      L{u.vip.vip_level || 1} {u.vip.status ? 'ACTIVE' : 'INACTIVE'}
-                    </span>
+              <tr key={u.id}>
+                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{u.email}</td>
+                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{u.username}</td>
+                <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
+                  {u.account_status ? (
+                    <div className="space-y-1">
+                      <span className="px-2 py-0.5 border-2 rounded text-xs font-extrabold" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--foreground)' }}>
+                        {u.account_status}
+                      </span>
+                      {u.account_status_reason ? (
+                        <div className="text-[11px] opacity-80 break-words whitespace-pre-wrap max-w-full">{u.account_status_reason}</div>
+                      ) : null}
+                    </div>
                   ) : (
                     <span className="text-xs opacity-70">-</span>
                   )}
                 </td>
-                <td className="px-3 py-2 border-b-4 border-black">
+                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{u.createdAt ? new Date(u.createdAt).toLocaleString() : '-'}</td>
+                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{u.profile?.full_name || '-'}</td>
+                <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => onEdit(u)} disabled={deleting} className="px-2 py-1 border-4 border-black rounded bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000' }}>
+                    <button onClick={() => onEdit(u)} disabled={deleting} className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000', borderColor: 'var(--panel-border)', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)' }}>
                       <Pencil className="size-4" />
                     </button>
-                    <button onClick={() => onRequestDelete(u)} disabled={deleting} className="px-2 py-1 border-4 border-black rounded bg-white font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000' }}>
+                    <button onClick={() => onRequestDelete(u)} disabled={deleting} className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                       <Trash2 className="size-4" />
                     </button>
                   </div>
@@ -262,9 +294,9 @@ export default function KelolaUserPage() {
 
       {/* Pagination */}
       <div className="flex items-center gap-2">
-        <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 border-black rounded-lg bg-white disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>Prev</button>
-        <div className="text-sm font-extrabold">Page {page} / {Math.max(1, Math.ceil(total / limit))}</div>
-        <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 border-black rounded-lg bg-white disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>Next</button>
+        <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Sebelumnya</button>
+        <div className="text-sm font-extrabold">Halaman {page} / {Math.max(1, Math.ceil(total / limit))}</div>
+        <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Berikutnya</button>
       </div>
 
       {/* <div className="text-xs opacity-70">Managed via Admin Users API</div> */}
@@ -274,11 +306,11 @@ export default function KelolaUserPage() {
         <div className="fixed inset-0 z-50 grid place-items-center">
           <div className="absolute inset-0 bg-black/40" onClick={onCancelDelete} />
           <div
-            className="relative z-10 w-[92%] max-w-md bg-white border-4 border-black rounded-xl p-4 sm:p-6"
-            style={{ boxShadow: '8px 8px 0 #000' }}
+            className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6"
+            style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 border-black rounded-md" style={{ boxShadow: '4px 4px 0 #000' }}>
+              <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 rounded-md" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}>
                 <Trash2 className="size-5" />
               </div>
               <div>
@@ -287,10 +319,10 @@ export default function KelolaUserPage() {
               </div>
             </div>
             <div className="flex items-center justify-end gap-2">
-              <button onClick={onCancelDelete} disabled={deleting} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+              <button onClick={onCancelDelete} disabled={deleting} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                 Batal
               </button>
-              <button onClick={onConfirmDelete} disabled={deleting} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+              <button onClick={onConfirmDelete} disabled={deleting} className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}>
                 {deleting ? 'Menghapus...' : 'Ya, Hapus'}
               </button>
             </div>

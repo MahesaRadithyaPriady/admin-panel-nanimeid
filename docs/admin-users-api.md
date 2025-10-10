@@ -24,6 +24,8 @@ Kelola data users oleh admin. Semua endpoint di bawah path `\u002Fadmin` dan dil
       "userID": "USR-00010",
       "username": "john",
       "email": "john@example.com",
+      "account_status": "ACTIVE",
+      "account_status_reason": null,
       "createdAt": "2025-08-31T11:00:00.000Z",
       "profile": { "full_name": "John Doe", "avatar_url": "https://..." },
       "vip": { "status": true, "vip_level": 2, "end_at": "2025-12-31T00:00:00.000Z" }
@@ -40,9 +42,11 @@ curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 ## Edit User (Update)
 - Method: PUT
 - Path: `/users/:id`
-- Body JSON (salah satu atau keduanya):
+- Body JSON (salah satu atau beberapa):
   - `username` (string)
   - `email` (string)
+  - `account_status` (string; salah satu dari: `ACTIVE`, `SUSPENDED`, `WARNED`, `BANNED`)
+  - `account_status_reason` (string; opsional, alasan moderasi. Maks 500 karakter)
 - Response 200:
 ```json
 {
@@ -52,12 +56,15 @@ curl -H "Authorization: Bearer $ADMIN_TOKEN" \
     "userID": "USR-00010",
     "username": "johnny",
     "email": "johnny@example.com",
+    "account_status": "SUSPENDED",
+    "account_status_reason": "Spam content posting",
     "updatedAt": "2025-08-31T12:00:00.000Z"
   }
 }
 ```
 - Error:
   - 400 `BAD_REQUEST` jika `id` tidak valid atau tidak ada field untuk diupdate
+  - 400 `BAD_REQUEST` jika `account_status` bukan salah satu dari `ACTIVE|SUSPENDED|WARNED|BANNED`
   - 404 `NOT_FOUND` jika user tidak ditemukan
 - Contoh curl:
 ```bash
@@ -89,3 +96,13 @@ curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 ## Lokasi Kode Terkait
 - Controller: `src/controllers/adminUsers.controller.js` (`listUsersAdmin`, `updateUserAdmin`, `deleteUserAdmin`)
 - Routes: `src/routes/admin.routes.js` (`/admin/users`, `/admin/users/:id`)
+
+## Status Akun (Account Status)
+- Nilai yang didukung:
+  - `ACTIVE`: akun aktif normal.
+  - `SUSPENDED`: akun ditangguhkan sementara (akses tertentu bisa dibatasi di FE/BE bila diimplementasikan).
+  - `WARNED`: akun diberi peringatan keras (untuk keperluan moderasi).
+  - `BANNED`: akun diblokir permanen (kebijakan implementasi bergantung layanan lain di BE/FE).
+- Field skema:
+  - `User.account_status` (enum), default `ACTIVE`.
+  - `User.account_status_reason` (String?, opsional) untuk menyimpan alasan singkat; disarankan maksimal 500 karakter.

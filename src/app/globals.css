@@ -3,6 +3,14 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --panel-bg: #ffffff;
+  --panel-border: #000000;
+  --accent-edit: #FFD803;
+  --accent-edit-foreground: #000000;
+  --accent-primary: #C0E8FF; /* search/apply */
+  --accent-primary-foreground: #000000;
+  --accent-add: #C6F6D5; /* add/create */
+  --accent-add-foreground: #000000;
 }
 
 @theme inline {
@@ -16,7 +24,41 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --panel-bg: #1e1f22;
+    --panel-border: #ffffff;
+    --accent-edit: #000000;
+    --accent-edit-foreground: #ffffff;
+    --accent-primary: #1e1f22;
+    --accent-primary-foreground: #ffffff;
+    --accent-add: #1e1f22;
+    --accent-add-foreground: #ffffff;
   }
+}
+
+/* Override via class (used by Header theme toggle) */
+:root.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --panel-bg: #1e1f22;
+  --panel-border: #ffffff;
+  --accent-edit: #000000;
+  --accent-edit-foreground: #ffffff;
+  --accent-primary: #1e1f22;
+  --accent-primary-foreground: #ffffff;
+  --accent-add: #1e1f22;
+  --accent-add-foreground: #ffffff;
+}
+:root.light {
+  --background: #ffffff;
+  --foreground: #171717;
+  --panel-bg: #ffffff;
+  --panel-border: #000000;
+  --accent-edit: #FFD803;
+  --accent-edit-foreground: #000000;
+  --accent-primary: #C0E8FF;
+  --accent-primary-foreground: #000000;
+  --accent-add: #C6F6D5;
+  --accent-add-foreground: #000000;
 }
 
 body {

@@ -96,7 +96,7 @@ export default function StatusKontenPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-extrabold flex items-center gap-2"><BadgeCheck className="size-5" /> Status Konten</h2>
-        <button onClick={refresh} disabled={loadingData} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+        <button onClick={refresh} disabled={loadingData} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
           {loadingData ? 'Memuat...' : (<><RefreshCw className="inline size-4" /> Refresh</>)}
         </button>
       </div>
@@ -105,15 +105,15 @@ export default function StatusKontenPage() {
       <div className="flex items-center gap-2">
         <button
           onClick={() => setFilter('approved')}
-          className={`px-3 py-1 border-4 border-black rounded-lg text-sm font-extrabold ${filter==='approved' ? 'bg-[#C6F6D5]' : 'bg-white'}`}
-          style={{ boxShadow: '3px 3px 0 #000' }}
+          className={`px-3 py-1 border-4 rounded-lg text-sm font-extrabold`}
+          style={{ boxShadow: '3px 3px 0 #000', background: filter==='approved' ? 'var(--accent-add)' : 'var(--panel-bg)', color: filter==='approved' ? 'var(--accent-add-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}
         >
           <span className="inline-flex items-center gap-1"><CheckCircle2 className="size-4" /> Approved</span>
         </button>
         <button
           onClick={() => setFilter('rejected')}
-          className={`px-3 py-1 border-4 border-black rounded-lg text-sm font-extrabold ${filter==='rejected' ? 'bg-[#FED7D7]' : 'bg-white'}`}
-          style={{ boxShadow: '3px 3px 0 #000' }}
+          className={`px-3 py-1 border-4 rounded-lg text-sm font-extrabold`}
+          style={{ boxShadow: '3px 3px 0 #000', background: filter==='rejected' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: filter==='rejected' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}
         >
           <span className="inline-flex items-center gap-1"><XCircle className="size-4" /> Rejected</span>
         </button>
@@ -121,11 +121,11 @@ export default function StatusKontenPage() {
 
       {/* Grouped table: Anime rows expandable to episodes */}
       <div className="overflow-auto">
-        <table className="min-w-full border-4 border-black rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000' }}>
-          <thead className="bg-[#E2E8F0]">
+        <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <thead style={{ background: 'var(--panel-bg)' }}>
             <tr>
-              <th className="text-left px-3 py-2 border-b-4 border-black">Anime</th>
-              <th className="text-left px-3 py-2 border-b-4 border-black">Ringkasan</th>
+              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Anime</th>
+              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Ringkasan</th>
             </tr>
           </thead>
           <tbody>
@@ -134,43 +134,43 @@ export default function StatusKontenPage() {
               const filtered = show.episodes.filter((e) => e.status === filter);
               return (
                 <>
-                  <tr key={show.id} className="bg-white">
-                    <td className="px-3 py-2 border-b-4 border-black font-extrabold">
+                  <tr key={show.id}>
+                    <td className="px-3 py-2 border-b-4 font-extrabold" style={{ borderColor: 'var(--panel-border)' }}>
                       <button onClick={() => toggleExpand(show.id)} className="inline-flex items-center gap-1">
                         {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                         {show.title}
                       </button>
                     </td>
-                    <td className="px-3 py-2 border-b-4 border-black text-sm opacity-80">
+                    <td className="px-3 py-2 border-b-4 text-sm opacity-80" style={{ borderColor: 'var(--panel-border)' }}>
                       {filtered.length} {filter}
                     </td>
                   </tr>
                   {isOpen && (
                     <tr>
-                      <td colSpan={2} className="px-0 py-0 border-b-4 border-black">
-                        <div className="p-3 bg-[#F7F7F0]">
+                      <td colSpan={2} className="px-0 py-0 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
+                        <div className="p-3" style={{ background: 'var(--panel-bg)' }}>
                           <div className="overflow-auto">
-                            <table className="min-w-full border-4 border-black rounded-lg overflow-hidden" style={{ boxShadow: '4px 4px 0 #000' }}>
-                              <thead className="bg-white">
+                            <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                              <thead style={{ background: 'var(--panel-bg)' }}>
                                 <tr>
-                                  <th className="text-left px-3 py-2 border-b-4 border-black">Waktu</th>
-                                  <th className="text-left px-3 py-2 border-b-4 border-black">Episode</th>
+                                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Waktu</th>
+                                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Episode</th>
                                   {filter === 'rejected' && (
-                                    <th className="text-left px-3 py-2 border-b-4 border-black">Alasan Reject</th>
+                                    <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Alasan Reject</th>
                                   )}
-                                  <th className="text-left px-3 py-2 border-b-4 border-black">Status</th>
+                                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Status</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {filtered.map((ep) => (
-                                  <tr key={ep.id} className="odd:bg-white even:bg-[#F7F7F0]">
-                                    <td className="px-3 py-2 border-b-4 border-black text-sm opacity-80">{new Date(ep.ts).toLocaleString('id-ID')}</td>
-                                    <td className="px-3 py-2 border-b-4 border-black font-semibold">{ep.title}</td>
+                                  <tr key={ep.id}>
+                                    <td className="px-3 py-2 border-b-4 text-sm opacity-80" style={{ borderColor: 'var(--panel-border)' }}>{new Date(ep.ts).toLocaleString('id-ID')}</td>
+                                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{ep.title}</td>
                                     {filter === 'rejected' && (
-                                      <td className="px-3 py-2 border-b-4 border-black text-sm opacity-80">{ep.reason || '-'}</td>
+                                      <td className="px-3 py-2 border-b-4 text-sm opacity-80" style={{ borderColor: 'var(--panel-border)' }}>{ep.reason || '-'}</td>
                                     )}
-                                    <td className="px-3 py-2 border-b-4 border-black">
-                                      <span className={`px-2 py-1 border-2 border-black rounded text-xs font-extrabold ${ep.status==='approved' ? 'bg-[#C6F6D5]' : 'bg-[#FED7D7]'}`}>
+                                    <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
+                                      <span className={`px-2 py-1 border-2 rounded text-xs font-extrabold`} style={{ borderColor: 'var(--panel-border)', background: ep.status==='approved' ? 'var(--accent-add)' : 'var(--panel-bg)', color: ep.status==='approved' ? 'var(--accent-add-foreground)' : 'var(--foreground)' }}>
                                         {ep.status.toUpperCase()}
                                       </span>
                                     </td>

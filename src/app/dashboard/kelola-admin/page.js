@@ -156,10 +156,10 @@ export default function KelolaAdminPage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Cari (username/email)"
-          className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold"
-          style={{ boxShadow: '4px 4px 0 #000' }}
+          className="px-3 py-2 border-4 rounded-lg font-semibold"
+          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
         />
-        <button type="submit" className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>Cari</button>
+        <button type="submit" className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>Cari</button>
       </form>
 
       {/* Form Tambah / Edit */}
@@ -169,30 +169,30 @@ export default function KelolaAdminPage() {
           value={form.email}
           onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
           placeholder="Email admin"
-          className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold"
-          style={{ boxShadow: '4px 4px 0 #000' }}
+          className="px-3 py-2 border-4 rounded-lg font-semibold"
+          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
         />
         <input
           type="text"
           value={form.username}
           onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
           placeholder="Username"
-          className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold"
-          style={{ boxShadow: '4px 4px 0 #000' }}
+          className="px-3 py-2 border-4 rounded-lg font-semibold"
+          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
         />
         <input
           type="password"
           value={form.password}
           onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
           placeholder={mode === 'add' ? 'Password' : 'Password (opsional)'}
-          className="px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold"
-          style={{ boxShadow: '4px 4px 0 #000' }}
+          className="px-3 py-2 border-4 rounded-lg font-semibold"
+          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
         />
         <select
           value={form.role}
           onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-          className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold"
-          style={{ boxShadow: '4px 4px 0 #000' }}
+          className="px-3 py-2 border-4 rounded-lg font-extrabold"
+          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
         >
           <option value="UPLOADER">UPLOADER</option>
           <option value="KEUANGAN">KEUANAGAN</option>
@@ -200,58 +200,83 @@ export default function KelolaAdminPage() {
         </select>
         <button
           type="submit"
-          className={`flex items-center justify-center gap-2 border-4 border-black rounded-lg font-extrabold ${mode === 'add' ? 'bg-[#C6F6D5] hover:brightness-95' : 'bg-[#FFD803] hover:brightness-95'}`}
-          style={{ boxShadow: '4px 4px 0 #000' }}
+          className={`flex items-center justify-center gap-2 border-4 rounded-lg font-extrabold hover:brightness-95`}
+          style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)', background: mode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', color: mode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)' }}
         >
           {mode === 'add' ? (<><Plus className="size-4" /> Tambah</>) : (<><Pencil className="size-4" /> Simpan</>)}
         </button>
       </form>
 
       {/* Table */}
-      <div className="overflow-auto">
-        <table className="min-w-full border-4 border-black rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000' }}>
-          <thead className="bg-[#E2E8F0]">
-            <tr>
-              <th className="text-left px-3 py-2 border-b-4 border-black">Email</th>
-              <th className="text-left px-3 py-2 border-b-4 border-black">Username</th>
-              <th className="text-left px-3 py-2 border-b-4 border-black">Role</th>
-              <th className="text-left px-3 py-2 border-b-4 border-black">Dibuat</th>
-              <th className="text-left px-3 py-2 border-b-4 border-black">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {admins.map((u) => (
-              <tr key={u.id} className="odd:bg-white even:bg-[#F7F7F0]">
-                <td className="px-3 py-2 border-b-4 border-black font-semibold">{u.email}</td>
-                <td className="px-3 py-2 border-b-4 border-black font-semibold">{u.username}</td>
-                <td className="px-3 py-2 border-b-4 border-black font-semibold">{u.role}</td>
-                <td className="px-3 py-2 border-b-4 border-black font-semibold">{u.createdAt ? new Date(u.createdAt).toLocaleString() : '-'}</td>
-                <td className="px-3 py-2 border-b-4 border-black">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => onEdit(u)} className="px-2 py-1 border-4 border-black rounded bg-[#FFD803] font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>
-                      <Pencil className="size-4" />
-                    </button>
-                    <button onClick={() => onRequestDelete(u)} className="px-2 py-1 border-4 border-black rounded bg-white font-extrabold" style={{ boxShadow: '3px 3px 0 #000' }}>
-                      <Trash2 className="size-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {admins.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Belum ada admin.'}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+<div className="overflow-auto">
+  <table
+    className="min-w-full border-4 rounded-lg overflow-hidden"
+    style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+  >
+    <thead style={{ background: 'var(--panel-bg)' }}>
+      <tr>
+        <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Email</th>
+        <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Username</th>
+        <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Role</th>
+        <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Dibuat</th>
+        <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      {admins.map((u) => (
+        <tr key={u.id}>
+          <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{u.email}</td>
+          <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{u.username}</td>
+          <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{u.role}</td>
+          <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>
+            {u.createdAt ? new Date(u.createdAt).toLocaleString() : '-'}
+          </td>
+          <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onEdit(u)}
+                className="px-2 py-1 border-4 rounded font-extrabold"
+                style={{
+                  boxShadow: '3px 3px 0 #000',
+                  background: 'var(--accent-edit)',
+                  color: 'var(--accent-edit-foreground)',
+                  borderColor: 'var(--panel-border)',
+                }}
+              >
+                <Pencil className="size-4" />
+              </button>
+              <button
+                onClick={() => onRequestDelete(u)}
+                className="px-2 py-1 border-4 rounded font-extrabold"
+                style={{
+                  boxShadow: '3px 3px 0 #000',
+                  background: 'var(--panel-bg)',
+                  color: 'var(--foreground)',
+                  borderColor: 'var(--panel-border)',
+                }}
+              >
+                <Trash2 className="size-4" />
+              </button>
+            </div>
+          </td>
+        </tr>
+      ))}
+      {admins.length === 0 && (
+        <tr>
+          <td colSpan={5} className="px-3 py-6 text-center text-sm opacity-70">
+            {loadingList ? 'Memuat...' : 'Belum ada admin.'}
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
 
       {/* Pagination */}
       <div className="flex items-center gap-2">
-        <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 border-black rounded-lg bg-white disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>Prev</button>
-        <div className="text-sm font-extrabold">Page {page} / {Math.max(1, Math.ceil(total / limit))}</div>
-        <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 border-black rounded-lg bg-white disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>Next</button>
+        <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Sebelumnya</button>
+        <div className="text-sm font-extrabold">Halaman {page} / {Math.max(1, Math.ceil(total / limit))}</div>
+        <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Berikutnya</button>
       </div>
 
       {/* Confirm Delete Modal */}
@@ -259,11 +284,11 @@ export default function KelolaAdminPage() {
         <div className="fixed inset-0 z-50 grid place-items-center">
           <div className="absolute inset-0 bg-black/40" onClick={onCancelDelete} />
           <div
-            className="relative z-10 w-[92%] max-w-md bg-white border-4 border-black rounded-xl p-4 sm:p-6"
-            style={{ boxShadow: '8px 8px 0 #000' }}
+            className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6"
+            style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 border-black rounded-md" style={{ boxShadow: '4px 4px 0 #000' }}>
+              <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 rounded-md" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}>
                 <Trash2 className="size-5" />
               </div>
               <div>
@@ -272,10 +297,10 @@ export default function KelolaAdminPage() {
               </div>
             </div>
             <div className="flex items-center justify-end gap-2">
-              <button onClick={onCancelDelete} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
+              <button onClick={onCancelDelete} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                 Batal
               </button>
-              <button onClick={onConfirmDelete} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
+              <button onClick={onConfirmDelete} className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}>
                 Ya, Hapus
               </button>
             </div>

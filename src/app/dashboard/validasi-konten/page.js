@@ -166,19 +166,19 @@ export default function ValidasiKontenPage() {
             }
           }}
           disabled={loadingList}
-          className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-60"
-          style={{ boxShadow: '4px 4px 0 #000' }}
+          className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
+          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
         >
           {loadingList ? 'Memuat...' : 'Refresh'}
         </button>
       </div>
 
       <div className="overflow-auto">
-        <table className="min-w-full border-4 border-black rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000' }}>
-          <thead className="bg-[#E2E8F0]">
+        <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <thead style={{ background: 'var(--panel-bg)' }}>
             <tr>
-              <th className="text-left px-3 py-2 border-b-4 border-black">Anime</th>
-              <th className="text-left px-3 py-2 border-b-4 border-black">Episode</th>
+              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Anime</th>
+              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Episode</th>
             </tr>
           </thead>
           <tbody>
@@ -187,61 +187,61 @@ export default function ValidasiKontenPage() {
               const pendingCount = show.episodes.filter((e) => e.status === 'pending').length;
               return (
                 <>
-                  <tr key={show.id} className="bg-white">
-                    <td className="px-3 py-2 border-b-4 border-black font-extrabold">
+                  <tr key={show.id}>
+                    <td className="px-3 py-2 border-b-4 font-extrabold" style={{ borderColor: 'var(--panel-border)' }}>
                       <button onClick={() => toggleExpand(show.id)} className="inline-flex items-center gap-1">
                         {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                         {show.title}
                       </button>
                     </td>
-                    <td className="px-3 py-2 border-b-4 border-black text-sm opacity-80">
+                    <td className="px-3 py-2 border-b-4 text-sm opacity-80" style={{ borderColor: 'var(--panel-border)' }}>
                       {loadingList ? 'Memuat...' : `${pendingCount} pending`}
                     </td>
                   </tr>
                   {isOpen && (
                     <tr>
-                      <td colSpan={2} className="px-0 py-0 border-b-4 border-black">
-                        <div className="p-3 bg-[#F7F7F0]">
+                      <td colSpan={2} className="px-0 py-0 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
+                        <div className="p-3" style={{ background: 'var(--panel-bg)' }}>
                           <div className="overflow-auto">
-                            <table className="min-w-full border-4 border-black rounded-lg overflow-hidden" style={{ boxShadow: '4px 4px 0 #000' }}>
-                              <thead className="bg-white">
+                            <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                              <thead style={{ background: 'var(--panel-bg)' }}>
                                 <tr>
-                                  <th className="text-left px-3 py-2 border-b-4 border-black">Episode</th>
-                                  <th className="text-left px-3 py-2 border-b-4 border-black">Status</th>
-                                  <th className="text-left px-3 py-2 border-b-4 border-black">Alasan Reject</th>
-                                  <th className="text-left px-3 py-2 border-b-4 border-black">Aksi</th>
+                                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Episode</th>
+                                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Status</th>
+                                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Alasan Reject</th>
+                                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {show.episodes.map((ep) => (
-                                  <tr key={ep.id} className="odd:bg-white even:bg-[#F7F7F0]">
-                                    <td className="px-3 py-2 border-b-4 border-black font-semibold">{ep.title}</td>
-                                    <td className="px-3 py-2 border-b-4 border-black">
+                                  <tr key={ep.id}>
+                                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{ep.title}</td>
+                                    <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
                                       {ep.status === 'approved' && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-1 border-2 border-black rounded text-xs font-extrabold bg-[#C6F6D5]"><CheckCircle2 className="size-3" /> APPROVED</span>
+                                        <span className="inline-flex items-center gap-1 px-2 py-1 border-2 rounded text-xs font-extrabold" style={{ borderColor: 'var(--panel-border)', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)' }}><CheckCircle2 className="size-3" /> APPROVED</span>
                                       )}
                                       {ep.status === 'rejected' && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-1 border-2 border-black rounded text-xs font-extrabold bg-[#FED7D7]"><XCircle className="size-3" /> REJECTED</span>
+                                        <span className="inline-flex items-center gap-1 px-2 py-1 border-2 rounded text-xs font-extrabold" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--foreground)' }}><XCircle className="size-3" /> REJECTED</span>
                                       )}
                                       {ep.status === 'pending' && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-1 border-2 border-black rounded text-xs font-extrabold bg-[#FFE4A1]">PENDING</span>
+                                        <span className="inline-flex items-center gap-1 px-2 py-1 border-2 rounded text-xs font-extrabold" style={{ borderColor: 'var(--panel-border)', background: 'var(--accent-primary)', color: 'var(--accent-primary-foreground)' }}>PENDING</span>
                                       )}
                                     </td>
-                                    <td className="px-3 py-2 border-b-4 border-black text-sm opacity-80">{ep.rejectReason || '-'}</td>
-                                    <td className="px-3 py-2 border-b-4 border-black">
+                                    <td className="px-3 py-2 border-b-4 text-sm opacity-80" style={{ borderColor: 'var(--panel-border)' }}>{ep.rejectReason || '-'}</td>
+                                    <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
                                       <div className="flex items-center gap-2">
                                         <button
                                           disabled={ep.status === 'approved' || approvingId === ep.id}
                                           onClick={() => onApprove(show.id, ep.id)}
-                                          className="px-2 py-1 border-4 border-black rounded bg-[#C6F6D5] font-extrabold disabled:opacity-50"
-                                          style={{ boxShadow: '3px 3px 0 #000' }}
+                                          className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-50"
+                                          style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}
                                         >
                                           {approvingId === ep.id ? 'Approving...' : 'Approve'}
                                         </button>
                                         <button
                                           onClick={() => onRequestReject(show.id, ep.id)}
-                                          className="px-2 py-1 border-4 border-black rounded bg-white font-extrabold"
-                                          style={{ boxShadow: '3px 3px 0 #000' }}
+                                          className="px-2 py-1 border-4 rounded font-extrabold"
+                                          style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
                                         >
                                           Reject
                                         </button>
@@ -268,22 +268,22 @@ export default function ValidasiKontenPage() {
         <div className="fixed inset-0 z-50 grid place-items-center">
           <div className="absolute inset-0 bg-black/40" onClick={onCancelReject} />
           <div
-            className="relative z-10 w-[92%] max-w-md bg-white border-4 border-black rounded-xl p-4 sm:p-6"
-            style={{ boxShadow: '8px 8px 0 #000' }}
+            className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6"
+            style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           >
             <h3 className="text-lg font-extrabold mb-2 flex items-center gap-2"><XCircle className="size-5" /> Alasan Reject</h3>
             <textarea
               value={rejectMsg}
               onChange={(e) => setRejectMsg(e.target.value)}
               placeholder="Tulis alasan kenapa episode direject..."
-              className="w-full h-28 px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold mb-3"
-              style={{ boxShadow: '4px 4px 0 #000' }}
+              className="w-full h-28 px-3 py-2 border-4 rounded-lg font-semibold mb-3"
+              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             />
             <div className="flex items-center justify-end gap-2">
-              <button onClick={onCancelReject} disabled={savingReject} className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+              <button onClick={onCancelReject} disabled={savingReject} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                 Batal
               </button>
-              <button onClick={onConfirmReject} disabled={savingReject} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+              <button onClick={onConfirmReject} disabled={savingReject} className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}>
                 {savingReject ? 'Menyimpan...' : 'Simpan'}
               </button>
             </div>

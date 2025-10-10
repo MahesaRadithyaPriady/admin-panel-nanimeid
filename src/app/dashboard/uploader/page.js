@@ -184,7 +184,7 @@ export default function UploaderOverviewPage() {
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-extrabold flex items-center gap-2"><Upload className="size-5" /> Upload Konten</h2>
         {user.role !== 'uploader' && (
-          <button onClick={refresh} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold" style={{ boxShadow: '4px 4px 0 #000' }}>
+          <button onClick={refresh} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
             <RefreshCw className="inline size-4" /> Refresh
           </button>
         )}
@@ -193,23 +193,23 @@ export default function UploaderOverviewPage() {
       {/* Overview cards (hidden for uploader) */}
       {user.role !== 'uploader' && (
         <div className="grid sm:grid-cols-5 gap-4">
-          <div className="p-4 border-4 border-black rounded-lg bg-white" style={{ boxShadow: '4px 4px 0 #000' }}>
+          <div className="p-4 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <div className="flex items-center gap-2 text-xs font-bold mb-1"><Upload className="size-4" /> Total Upload</div>
             <div className="text-2xl font-extrabold">{formatShort(stats.totalUploads)}</div>
           </div>
-          <div className="p-4 border-4 border-black rounded-lg bg-[#FFE4A1]" style={{ boxShadow: '4px 4px 0 #000' }}>
+          <div className="p-4 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <div className="flex items-center gap-2 text-xs font-bold mb-1"><Clock className="size-4" /> Pending</div>
             <div className="text-2xl font-extrabold">{formatShort(stats.pending)}</div>
           </div>
-          <div className="p-4 border-4 border-black rounded-lg bg-[#C6F6D5]" style={{ boxShadow: '4px 4px 0 #000' }}>
+          <div className="p-4 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <div className="flex items-center gap-2 text-xs font-bold mb-1"><CheckCircle2 className="size-4" /> Approved</div>
             <div className="text-2xl font-extrabold">{formatShort(stats.approved)}</div>
           </div>
-          <div className="p-4 border-4 border-black rounded-lg bg-[#FED7D7]" style={{ boxShadow: '4px 4px 0 #000' }}>
+          <div className="p-4 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <div className="flex items-center gap-2 text-xs font-bold mb-1"><XCircle className="size-4" /> Rejected</div>
             <div className="text-2xl font-extrabold">{formatShort(stats.rejected)}</div>
           </div>
-          <div className="p-4 border-4 border-black rounded-lg bg-[#E2E8F0]" style={{ boxShadow: '4px 4px 0 #000' }}>
+          <div className="p-4 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <div className="flex items-center gap-2 text-xs font-bold mb-1"><HardDrive className="size-4" /> Storage</div>
             <div className="text-2xl font-extrabold">{stats.storageGB} GB</div>
           </div>
@@ -221,21 +221,21 @@ export default function UploaderOverviewPage() {
         <div>
           <h3 className="text-lg font-extrabold mb-3">Unggahan Terbaru</h3>
           <div className="overflow-auto">
-            <table className="min-w-full border-4 border-black rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000' }}>
-              <thead className="bg-[#E2E8F0]">
+            <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <thead style={{ background: 'var(--panel-bg)' }}>
                 <tr>
-                  <th className="text-left px-3 py-2 border-b-4 border-black">Waktu</th>
-                  <th className="text-left px-3 py-2 border-b-4 border-black">Judul</th>
-                  <th className="text-left px-3 py-2 border-b-4 border-black">Status</th>
+                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Waktu</th>
+                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Judul</th>
+                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {latest.map((it) => (
-                  <tr key={it.id} className="odd:bg-white even:bg-[#F7F7F0]">
-                    <td className="px-3 py-2 border-b-4 border-black text-sm opacity-80">{new Date(it.ts).toLocaleString('id-ID')}</td>
-                    <td className="px-3 py-2 border-b-4 border-black">{it.title}</td>
-                    <td className="px-3 py-2 border-b-4 border-black">
-                      <span className={`px-2 py-1 border-2 border-black rounded text-xs font-extrabold ${it.status==='approved' ? 'bg-[#C6F6D5]' : it.status==='pending' ? 'bg-[#FFE4A1]' : 'bg-[#FED7D7]'}`}>
+                  <tr key={it.id}>
+                    <td className="px-3 py-2 border-b-4 text-sm opacity-80" style={{ borderColor: 'var(--panel-border)' }}>{new Date(it.ts).toLocaleString('id-ID')}</td>
+                    <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>{it.title}</td>
+                    <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
+                      <span className="px-2 py-1 border-2 rounded text-xs font-extrabold" style={{ borderColor: 'var(--panel-border)', background: it.status==='approved' ? 'var(--accent-add)' : it.status==='pending' ? 'var(--accent-primary)' : 'var(--panel-bg)', color: it.status==='approved' ? 'var(--accent-add-foreground)' : it.status==='pending' ? 'var(--accent-primary-foreground)' : 'var(--foreground)' }}>
                         {it.status.toUpperCase()}
                       </span>
                     </td>
@@ -253,14 +253,15 @@ export default function UploaderOverviewPage() {
       )}
 
       {/* Form Data Episode (Full Width) */}
-      <div className="p-4 border-4 border-black rounded-lg bg-white space-y-3" style={{ boxShadow: '4px 4px 0 #000' }}>
+      <div className="p-4 border-4 rounded-lg space-y-3" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
           <div className="flex items-center gap-2 text-lg font-extrabold"><ListPlus className="size-5" /> Data Episode</div>
           <div>
             <label className="text-xs font-bold">Pilih Anime</label>
             <select
               value={formEpisode.animeId}
               onChange={(e) => setFormEpisode((f) => ({ ...f, animeId: e.target.value }))}
-              className="w-full mt-1 px-3 py-2 border-4 border-black rounded-lg bg-white"
+              className="w-full mt-1 px-3 py-2 border-4 rounded-lg"
+              style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             >
               <option value="">-- Pilih --</option>
               {animeItems.map((a) => (
@@ -279,7 +280,8 @@ export default function UploaderOverviewPage() {
                 min="1"
                 value={formEpisode.number}
                 onChange={(e) => setFormEpisode((f) => ({ ...f, number: e.target.value }))}
-                className="w-full mt-1 px-3 py-2 border-4 border-black rounded-lg"
+                className="w-full mt-1 px-3 py-2 border-4 rounded-lg"
+                style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 placeholder="1"
               />
             </div>
@@ -289,7 +291,8 @@ export default function UploaderOverviewPage() {
                 type="text"
                 value={formEpisode.title}
                 onChange={(e) => setFormEpisode((f) => ({ ...f, title: e.target.value }))}
-                className="w-full mt-1 px-3 py-2 border-4 border-black rounded-lg"
+                className="w-full mt-1 px-3 py-2 border-4 rounded-lg"
+                style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 placeholder="Episode 1 - Awal Petualangan"
               />
             </div>
@@ -300,14 +303,15 @@ export default function UploaderOverviewPage() {
               type="url"
               value={formEpisode.thumbnail}
               onChange={(e) => setFormEpisode((f) => ({ ...f, thumbnail: e.target.value }))}
-              className="w-full mt-1 px-3 py-2 border-4 border-black rounded-lg"
+              className="w-full mt-1 px-3 py-2 border-4 rounded-lg"
+              style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               placeholder="https://..."
             />
           </div>
       </div>
 
       {/* Quality & Source Card below the two columns (full width) */}
-      <div className="p-4 border-4 border-black rounded-lg bg-[#F0F9FF] space-y-3" style={{ boxShadow: '4px 4px 0 #000' }}>
+      <div className="p-4 border-4 rounded-lg space-y-3" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
         <div className="flex items-center gap-2 text-lg font-extrabold"><Plus className="size-5" /> Kualitas & Sumber</div>
         <div className="space-y-2">
           {formEpisode.sources.map((row, idx) => (
@@ -321,7 +325,8 @@ export default function UploaderOverviewPage() {
                     next[idx] = { ...next[idx], quality: e.target.value };
                     return { ...f, sources: next };
                   })}
-                  className="w-full mt-1 px-3 py-2 border-4 border-black rounded-lg bg-white"
+                  className="w-full mt-1 px-3 py-2 border-4 rounded-lg"
+                  style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 >
                   {['360p','480p','720p','1080p','1440p','2160p'].map((q) => (
                     <option key={q} value={q}>{q}</option>
@@ -338,7 +343,8 @@ export default function UploaderOverviewPage() {
                     next[idx] = { ...next[idx], url: e.target.value };
                     return { ...f, sources: next };
                   })}
-                  className="w-full mt-1 px-3 py-2 border-4 border-black rounded-lg"
+                  className="w-full mt-1 px-3 py-2 border-4 rounded-lg"
+                  style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                   placeholder="https://..."
                 />
               </div>
@@ -346,7 +352,8 @@ export default function UploaderOverviewPage() {
                 <button
                   type="button"
                   onClick={() => setFormEpisode((f) => ({ ...f, sources: [...f.sources.slice(0, idx), ...f.sources.slice(idx + 1)] }))}
-                  className="px-2 py-2 border-4 border-black rounded-lg bg-[#FED7D7]"
+                  className="px-2 py-2 border-4 rounded-lg"
+                  style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                   title="Hapus baris"
                   disabled={formEpisode.sources.length === 1}
                 >
@@ -358,8 +365,8 @@ export default function UploaderOverviewPage() {
           <button
             type="button"
             onClick={() => setFormEpisode((f) => ({ ...f, sources: [...f.sources, { quality: '720p', url: '' }] }))}
-            className="px-3 py-2 border-4 border-black rounded-lg bg-white font-extrabold"
-            style={{ boxShadow: '3px 3px 0 #000' }}
+            className="px-3 py-2 border-4 rounded-lg font-extrabold"
+            style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}
           >
             <Plus className="inline size-4" /> Tambah Kualitas
           </button>
@@ -367,7 +374,7 @@ export default function UploaderOverviewPage() {
         </div>
       </div>
 
-      <button onClick={onAddEpisode} disabled={uploading} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFE4A1] font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000' }}>
+      <button onClick={onAddEpisode} disabled={uploading} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>
         {uploading ? 'Mengupload...' : (<><Upload className="inline size-4" /> Upload Episode</>)}
       </button>
       <div className="text-xs opacity-70">Episode akan masuk status pending untuk validasi.</div>

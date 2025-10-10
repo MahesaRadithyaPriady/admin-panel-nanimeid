@@ -111,13 +111,13 @@ export default function PengaturanPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-extrabold flex items-center gap-2"><Settings className="size-5" /> Pengaturan</h2>
-        <button onClick={saveAll} disabled={saving || loadingSettings} className="px-3 py-2 border-4 border-black rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000' }}>
+        <button onClick={saveAll} disabled={saving || loadingSettings} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>
           {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
         </button>
       </div>
 
       {/* Maintenance Mode */}
-      <section className="p-4 border-4 border-black rounded-lg bg-white space-y-3" style={{ boxShadow: '6px 6px 0 #000' }}>
+      <section className="p-4 border-4 rounded-lg space-y-3" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
         <div className="flex items-center gap-2 text-sm font-extrabold"><AlertTriangle className="size-4" /> Mode Pemeliharaan</div>
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -126,8 +126,8 @@ export default function PengaturanPage() {
           </div>
           <button
             onClick={() => toggle('maintenanceMode')}
-            className={`px-3 py-2 border-4 border-black rounded-lg font-extrabold ${settings.maintenanceMode ? 'bg-[#C6F6D5]' : 'bg-white'}`}
-            style={{ boxShadow: '4px 4px 0 #000' }}
+            className={`px-3 py-2 border-4 rounded-lg font-extrabold`}
+            style={{ boxShadow: '4px 4px 0 #000', background: settings.maintenanceMode ? 'var(--accent-add)' : 'var(--panel-bg)', color: settings.maintenanceMode ? 'var(--accent-add-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}
             disabled={loadingSettings}
           >
             {settings.maintenanceMode ? 'AKTIF' : 'NONAKTIF'}
@@ -138,15 +138,15 @@ export default function PengaturanPage() {
           <textarea
             value={settings.maintenanceMessage}
             onChange={(e) => setSettings((s) => ({ ...s, maintenanceMessage: e.target.value }))}
-            className="w-full h-24 mt-1 px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold"
-            style={{ boxShadow: '4px 4px 0 #000' }}
+            className="w-full h-24 mt-1 px-3 py-2 border-4 rounded-lg font-semibold"
+            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             disabled={loadingSettings}
           />
         </div>
       </section>
 
       {/* Download Mode */}
-      <section className="p-4 border-4 border-black rounded-lg bg-white space-y-3" style={{ boxShadow: '6px 6px 0 #000' }}>
+      <section className="p-4 border-4 rounded-lg space-y-3" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
         <div className="flex items-center gap-2 text-sm font-extrabold"><Download className="size-4" /> Pengunduhan</div>
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -155,8 +155,8 @@ export default function PengaturanPage() {
           </div>
           <button
             onClick={() => toggle('disableDownload')}
-            className={`px-3 py-2 border-4 border-black rounded-lg font-extrabold ${settings.disableDownload ? 'bg-[#C6F6D5]' : 'bg-white'}`}
-            style={{ boxShadow: '4px 4px 0 #000' }}
+            className={`px-3 py-2 border-4 rounded-lg font-extrabold`}
+            style={{ boxShadow: '4px 4px 0 #000', background: settings.disableDownload ? 'var(--accent-add)' : 'var(--panel-bg)', color: settings.disableDownload ? 'var(--accent-add-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}
             disabled={loadingSettings}
           >
             {settings.disableDownload ? 'AKTIF' : 'NONAKTIF'}
@@ -165,7 +165,7 @@ export default function PengaturanPage() {
       </section>
 
       {/* Paid Quality */}
-      <section className="p-4 border-4 border-black rounded-lg bg-white space-y-3" style={{ boxShadow: '6px 6px 0 #000' }}>
+      <section className="p-4 border-4 rounded-lg space-y-3" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
         <div className="flex items-center gap-2 text-sm font-extrabold"><BadgeDollarSign className="size-4" /> Kualitas Berbayar</div>
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -174,8 +174,8 @@ export default function PengaturanPage() {
           </div>
           <button
             onClick={() => toggle('paidQualityEnabled')}
-            className={`px-3 py-2 border-4 border-black rounded-lg font-extrabold ${settings.paidQualityEnabled ? 'bg-[#C6F6D5]' : 'bg-white'}`}
-            style={{ boxShadow: '4px 4px 0 #000' }}
+            className={`px-3 py-2 border-4 rounded-lg font-extrabold`}
+            style={{ boxShadow: '4px 4px 0 #000', background: settings.paidQualityEnabled ? 'var(--accent-add)' : 'var(--panel-bg)', color: settings.paidQualityEnabled ? 'var(--accent-add-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}
             disabled={loadingSettings}
           >
             {settings.paidQualityEnabled ? 'AKTIF' : 'NONAKTIF'}
@@ -189,8 +189,8 @@ export default function PengaturanPage() {
               value={settings.paidQuality}
               onChange={(e) => setSettings((s) => ({ ...s, paidQuality: e.target.value }))}
               placeholder="cth: 1080p, 4K"
-              className="w-full mt-1 px-3 py-2 border-4 border-black rounded-lg bg-white font-semibold"
-              style={{ boxShadow: '3px 3px 0 #000' }}
+              className="w-full mt-1 px-3 py-2 border-4 rounded-lg font-semibold"
+              style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               disabled={loadingSettings}
             />
             <div className="text-xs opacity-70 mt-1">Pisahkan dengan koma. Contoh: 720p, 1080p, 4K. Pengguna non-premium tidak dapat mengakses kualitas ini.</div>
