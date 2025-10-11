@@ -447,6 +447,31 @@ export async function createAvatarBorder({ token, payload }) {
   return await handleJson(res, 'Gagal membuat avatar border');
 }
 
+// Create avatar border with file (multipart/form-data)
+export async function createAvatarBorderWithFile({ token, form }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const fd = new FormData();
+  if (form?.code) fd.set('code', form.code);
+  if (form?.title) fd.set('title', form.title);
+  if (form?.coin_price !== undefined && form.coin_price !== null && form.coin_price !== '') fd.set('coin_price', String(form.coin_price));
+  if (form?.is_active !== undefined) fd.set('is_active', String(!!form.is_active));
+  if (form?.starts_at) fd.set('starts_at', form.starts_at);
+  if (form?.ends_at) fd.set('ends_at', form.ends_at);
+  if (form?.is_limited !== undefined) fd.set('is_limited', String(!!form.is_limited));
+  if (form?.total_supply !== undefined && form.total_supply !== null && form.total_supply !== '') fd.set('total_supply', String(form.total_supply));
+  if (form?.per_user_limit !== undefined && form.per_user_limit !== null && form.per_user_limit !== '') fd.set('per_user_limit', String(form.per_user_limit));
+  if (form?.file instanceof File) {
+    fd.set('image', form.file);
+  }
+
+  const res = await fetch(avatarBordersBase(), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  return await handleJson(res, 'Gagal membuat avatar border');
+}
+
 // List avatar borders (admin)
 export async function listAvatarBorders({ token, page = 1, limit = 20, q = '', active = '' }) {
   if (!token) throw new Error('Token tidak tersedia');
@@ -596,6 +621,38 @@ export async function updateWaifu({ token, id, payload }) {
     method: 'PUT',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui waifu');
+}
+
+// Create waifu with file (multipart/form-data)
+export async function createWaifuWithFile({ token, form }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const fd = new FormData();
+  if (form?.name) fd.set('name', form.name);
+  if (form?.anime_title) fd.set('anime_title', form.anime_title);
+  if (form?.description) fd.set('description', form.description);
+  if (form?.file instanceof File) fd.set('image', form.file);
+  const res = await fetch(`${waifuBase()}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  return await handleJson(res, 'Gagal membuat waifu');
+}
+
+// Update waifu with file (multipart/form-data)
+export async function updateWaifuWithFile({ token, id, form }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const fd = new FormData();
+  if (form?.name !== undefined) fd.set('name', form.name);
+  if (form?.anime_title !== undefined) fd.set('anime_title', form.anime_title);
+  if (form?.description !== undefined) fd.set('description', form.description);
+  if (form?.file instanceof File) fd.set('image', form.file);
+  const res = await fetch(`${waifuBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
   });
   return await handleJson(res, 'Gagal memperbarui waifu');
 }

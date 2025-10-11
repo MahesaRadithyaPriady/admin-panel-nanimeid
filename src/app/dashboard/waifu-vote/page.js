@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { List, Plus, Pencil, Trash2, RefreshCcw, Search, RotateCcw } from "lucide-react";
-import { listWaifu, createWaifu, updateWaifu, deleteWaifu, resetWaifuVotes } from "@/lib/api";
+import { listWaifu, createWaifu, updateWaifu, deleteWaifu, resetWaifuVotes, createWaifuWithFile, updateWaifuWithFile } from "@/lib/api";
 
 export default function WaifuVotePage() {
   // list state
@@ -16,7 +16,7 @@ export default function WaifuVotePage() {
   // form state
   const [mode, setMode] = useState("add"); // add | edit
   const [formOpen, setFormOpen] = useState(false);
-  const [form, setForm] = useState({ id: null, name: "", anime_title: "", image_url: "", description: "" });
+  const [form, setForm] = useState({ id: null, name: "", anime_title: "", image_url: "", description: "", file: null, preview_url: "" });
   const [submitting, setSubmitting] = useState(false);
 
   // delete
@@ -70,13 +70,13 @@ export default function WaifuVotePage() {
 
   function openAdd() {
     setMode("add");
-    setForm({ id: null, name: "", anime_title: "", image_url: "", description: "" });
+    setForm({ id: null, name: "", anime_title: "", image_url: "", description: "", file: null, preview_url: "" });
     setFormOpen(true);
   }
 
   function openEdit(it) {
     setMode("edit");
-    setForm({ id: it.id, name: it.name || "", anime_title: it.anime_title || "", image_url: it.image_url || "", description: it.description || "" });
+    setForm({ id: it.id, name: it.name || "", anime_title: it.anime_title || "", image_url: it.image_url || "", description: it.description || "", file: null, preview_url: it.image_url || "" });
     setFormOpen(true);
   }
 
@@ -91,9 +91,21 @@ export default function WaifuVotePage() {
         setSubmitting(false);
         return;
       }
-      const payload = { name: form.name, anime_title: form.anime_title, image_url: form.image_url, description: form.description };
-      if (mode === "add") await createWaifu({ token, payload });
-      else await updateWaifu({ token, id: form.id, payload });
+      if (mode === "add") {
+        if (form.file) {
+          await createWaifuWithFile({ token, form: { name: form.name, anime_title: form.anime_title, description: form.description, file: form.file } });
+        } else {
+          const payload = { name: form.name, anime_title: form.anime_title, image_url: form.image_url, description: form.description };
+          await createWaifu({ token, payload });
+        }
+      } else {
+        if (form.file) {
+          await updateWaifuWithFile({ token, id: form.id, form: { name: form.name, anime_title: form.anime_title, description: form.description, file: form.file } });
+        } else {
+          const payload = { name: form.name, anime_title: form.anime_title, image_url: form.image_url, description: form.description };
+          await updateWaifu({ token, id: form.id, payload });
+        }
+      }
       setFormOpen(false);
       await loadList();
     } catch (e) {
@@ -150,18 +162,15 @@ export default function WaifuVotePage() {
     }
   }
 
-  // handle file upload -> convert to Data URI for BE (per docs)
+  // handle file upload (multipart) per docs
   function onSelectImageFile(e) {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
-      if (typeof dataUrl === 'string') {
-        setForm((f) => ({ ...f, image_url: dataUrl }));
-      }
-    };
-    reader.readAsDataURL(file);
+    if (!file) {
+      setForm((f) => ({ ...f, file: null, preview_url: '' }));
+      return;
+    }
+    const preview = URL.createObjectURL(file);
+    setForm((f) => ({ ...f, file, preview_url: preview }));
   }
 
   function onSearch(e) {
@@ -256,14 +265,14 @@ export default function WaifuVotePage() {
             <div className="text-lg font-extrabold mb-1">{mode === 'add' ? 'Tambah Waifu' : 'Edit Waifu'}</div>
             <input type="text" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Nama waifu (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
             <input type="text" value={form.anime_title} onChange={(e) => setForm((f) => ({ ...f, anime_title: e.target.value }))} placeholder="Judul anime (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
-            <input type="text" value={form.image_url} onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))} placeholder="Image URL atau Data URI (base64)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+            <input type="text" value={form.image_url} onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))} placeholder="Image URL (opsional bila upload file)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
             <div className="grid gap-2">
-              <label className="text-xs opacity-80">Atau upload file gambar</label>
+              <label className="text-xs opacity-80">Atau upload file gambar (disarankan)</label>
               <input type="file" accept="image/*" onChange={onSelectImageFile} className="px-3 py-2 border-4 rounded-lg" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              {form.image_url ? (
+              {(form.preview_url || form.image_url) ? (
                 <div className="mt-1 flex items-center gap-3">
-                  <img src={form.image_url} alt="preview" className="w-20 h-20 object-cover border-4 rounded" style={{ borderColor: 'var(--panel-border)' }} />
-                  <div className="text-xs opacity-80 break-all">{form.image_url.startsWith('data:') ? 'Data URI (base64)' : form.image_url}</div>
+                  <img src={form.preview_url || form.image_url} alt="preview" className="w-20 h-20 object-cover border-4 rounded" style={{ borderColor: 'var(--panel-border)' }} />
+                  {form.image_url ? <div className="text-xs opacity-80 break-all">{form.image_url}</div> : null}
                 </div>
               ) : null}
             </div>

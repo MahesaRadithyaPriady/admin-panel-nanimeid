@@ -121,18 +121,38 @@ API base prefix: `/1.0.10` (mengikuti `VERSION` di env). Sesuaikan jika berbeda 
 
 ### 6.1. Buat Waifu
 - Endpoint: `POST /1.0.10/waifu`
-- Body (contoh):
+- Format request yang didukung:
+  - JSON (mengirim `image_url` sebagai tautan publik)
+  - multipart/form-data (unggah file pada field `image`)
+
+Contoh (JSON):
 ```json
 {
   "name": "Rem",
   "anime_title": "Re:Zero",
-  "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg...",
+  "image_url": "https://cdn.example.com/images/rem.png",
   "description": "..."
 }
 ```
+
+Contoh (multipart/form-data):
+```
+POST /1.0.10/waifu
+Authorization: Bearer <ADMIN_TOKEN>
+Content-Type: multipart/form-data
+
+Fields:
+- name: Rem
+- anime_title: Re:Zero
+- description: ...
+- image: <FILE UPLOAD> (PNG/JPG disarankan)
+```
+
 - Catatan penyimpanan gambar:
-  - Server akan menyimpan gambar ke folder lokal `static/waifu/` dengan nama acak, lalu mengembalikan `image_url` berupa URL statis versi API: `/<VERSION>/static/waifu/<filename>`.
-  - `image_url` yang dikirim boleh berupa Data URI (base64) atau URL HTTP/HTTPS. Keduanya akan diunduh/disimpan lokal.
+  - Database menyimpan kolom `image_url` berupa tautan (URL) saja, sama seperti border.
+  - Jika mengunggah file, server menyimpannya ke `/<VERSION>/static/waifu/<filename>` dan mengisi `image_url` dengan URL publik tersebut.
+  - Jika mengirim `image_url` yang sudah berupa tautan publik (HTTP/HTTPS), server akan menyimpannya langsung tanpa mengubah isinya.
+  - Penggunaan Data URI base64 tidak direkomendasikan. Jika tetap dikirim, server akan menyimpannya sebagai file statis lalu mengembalikan `image_url` berupa URL publik.
 - Respons (contoh):
 ```json
 {
@@ -153,8 +173,11 @@ API base prefix: `/1.0.10` (mengikuti `VERSION` di env). Sesuaikan jika berbeda 
 
 ### 6.2. Update Waifu
 - Endpoint: `PUT /1.0.10/waifu/:id`
-- Body: kolom yang ingin diperbarui (`name`, `anime_title`, `image_url`, `description`, ...)
-- Jika `image_url` diisi dengan Data URI/URL HTTP, server akan menyimpan ulang ke `static/waifu/` dan merubah `image_url` response menjadi `/<VERSION>/static/waifu/<filename>`.
+- Body (JSON) menerima kolom yang ingin diperbarui (`name`, `anime_title`, `image_url`, `description`, ...). Juga dapat menggunakan multipart/form-data dengan field `image` untuk mengganti gambar.
+- Perilaku penggantian gambar:
+  - Jika upload file (multipart), server menyimpan file ke `/<VERSION>/static/waifu/<filename>` dan mengisi `image_url` dengan URL tersebut.
+  - Jika mengirim `image_url` sebagai tautan publik, nilai tersebut disimpan langsung.
+  - Data URI base64 tidak direkomendasikan; bila dikirim akan dikonversi menjadi file statis lalu URL publiknya disimpan di `image_url`.
 - Respons (contoh):
 ```json
 {
@@ -192,13 +215,10 @@ API base prefix: `/1.0.10` (mengikuti `VERSION` di env). Sesuaikan jika berbeda 
 - Jika ingin mengubah menjadi **1 vote per waifu per 24 jam**, ubah filter menjadi `where: { user_id: uid, waifu_id: wid, createdAt: { gte: since } }`.
 
 ### Penyimpanan Gambar Waifu
-- Implementasi penyimpanan lokal ada di `src/services/waifu.service.js` (`saveImageToStatic`).
-- Folder tujuan: `static/waifu/` (sudah diserve via Express di `/<VERSION>/static`).
-- Nama file: `Date.now()-<random>.ext` (ekstensi ditentukan dari mime: jpg/png/gif/webp).
-- Input `image_url` yang didukung:
-  - Data URI base64: `data:image/png;base64,...`
-  - HTTP/HTTPS URL: akan diunduh dan disimpan lokal.
-  - Jika sudah berupa `/<VERSION>/static/waifu/...`, penyimpanan di-skip.
+- DB hanya menyimpan `image_url` (tautan) sebagai sumber gambar.
+- Jika menerima unggahan file, backend menyimpannya ke `/<VERSION>/static/waifu/<filename>` dan mengisi `image_url` dengan URL publik itu.
+- Jika menerima `image_url` berupa tautan publik, nilai tersebut disimpan apa adanya.
+- Data URI base64 tidak direkomendasikan; jika diterima, akan dikonversi menjadi file statis dan URL publiknya yang disimpan ke DB.
 
 ---
 

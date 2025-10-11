@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast';
 import { Image as ImageIcon, Pencil, Trash2, Plus, ArrowRight } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { createAvatarBorder, listAvatarBorders, updateAvatarBorder, deleteAvatarBorder } from '@/lib/api';
+import { createAvatarBorder, createAvatarBorderWithFile, listAvatarBorders, updateAvatarBorder, deleteAvatarBorder } from '@/lib/api';
 
 export default function AvatarBordersPage() {
   const router = useRouter();
@@ -29,7 +29,6 @@ export default function AvatarBordersPage() {
   const [form, setForm] = useState({
     code: '',
     title: '',
-    image_url: '',
     coin_price: '', // string to allow empty -> null
     is_active: true,
     starts_at: '',
@@ -37,6 +36,8 @@ export default function AvatarBordersPage() {
     is_limited: false,
     total_supply: '', // string to allow empty -> null
     per_user_limit: '1',
+    file: null,
+    preview_url: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -47,7 +48,6 @@ export default function AvatarBordersPage() {
     setForm({
       code: '',
       title: '',
-      image_url: '',
       coin_price: '',
       is_active: true,
       starts_at: '',
@@ -55,6 +55,8 @@ export default function AvatarBordersPage() {
       is_limited: false,
       total_supply: '',
       per_user_limit: '1',
+      file: null,
+      preview_url: '',
     });
   };
 
@@ -68,8 +70,12 @@ export default function AvatarBordersPage() {
   };
 
   const validate = () => {
-    if (!form.code.trim() || !form.title.trim() || !form.image_url.trim()) {
-      toast.error('code, title, image_url wajib');
+    if (!form.code.trim() || !form.title.trim()) {
+      toast.error('code dan title wajib');
+      return false;
+    }
+    if (mode === 'add' && !form.file) {
+      toast.error('File gambar wajib saat membuat border baru');
       return false;
     }
     if (form.is_limited && form.total_supply !== '' && Number.isNaN(Number(form.total_supply))) {
@@ -87,33 +93,54 @@ export default function AvatarBordersPage() {
     return true;
   };
 
+  const onFileChange = (e) => {
+    const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+    setForm((f) => ({
+      ...f,
+      file,
+      preview_url: file ? URL.createObjectURL(file) : (mode === 'edit' ? f.preview_url : ''),
+    }));
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-
-    const payload = {
-      code: form.code.trim(),
-      title: form.title.trim(),
-      image_url: form.image_url.trim(),
-      coin_price: form.coin_price === '' ? null : Number(form.coin_price),
-      is_active: !!form.is_active,
-      starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
-      ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
-      is_limited: !!form.is_limited,
-      total_supply: form.total_supply === '' ? null : Number(form.total_supply),
-      per_user_limit: Number(form.per_user_limit || 1),
-    };
 
     try {
       setSubmitting(true);
       const token = getSession()?.token;
       if (mode === 'add') {
-        const res = await createAvatarBorder({ token, payload });
+        const res = await createAvatarBorderWithFile({
+          token,
+          form: {
+            code: form.code.trim(),
+            title: form.title.trim(),
+            coin_price: form.coin_price === '' ? null : Number(form.coin_price),
+            is_active: !!form.is_active,
+            starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : '',
+            ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : '',
+            is_limited: !!form.is_limited,
+            total_supply: form.total_supply === '' ? '' : Number(form.total_supply),
+            per_user_limit: Number(form.per_user_limit || 1),
+            file: form.file,
+          },
+        });
         toast.success(res?.message || 'Avatar border dibuat');
         resetForm();
         setPage(1);
         await loadList({ page: 1 });
       } else {
+        const payload = {
+          code: form.code.trim(),
+          title: form.title.trim(),
+          coin_price: form.coin_price === '' ? null : Number(form.coin_price),
+          is_active: !!form.is_active,
+          starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
+          ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
+          is_limited: !!form.is_limited,
+          total_supply: form.total_supply === '' ? null : Number(form.total_supply),
+          per_user_limit: Number(form.per_user_limit || 1),
+        };
         const res = await updateAvatarBorder({ token, id: editingId, payload });
         toast.success(res?.message || 'Avatar border diupdate');
         setMode('add');
@@ -163,7 +190,6 @@ export default function AvatarBordersPage() {
     setForm({
       code: it.code || '',
       title: it.title || '',
-      image_url: it.image_url || '',
       coin_price: it.coin_price == null ? '' : String(it.coin_price),
       is_active: !!it.is_active,
       starts_at: it.starts_at ? new Date(it.starts_at).toISOString().slice(0, 16) : '',
@@ -171,6 +197,8 @@ export default function AvatarBordersPage() {
       is_limited: !!it.is_limited,
       total_supply: it.total_supply == null ? '' : String(it.total_supply),
       per_user_limit: it.per_user_limit == null ? '1' : String(it.per_user_limit),
+      file: null,
+      preview_url: it.image_url || '',
     });
   };
 
@@ -271,15 +299,19 @@ export default function AvatarBordersPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-extrabold">Image URL *</label>
+              <label className="text-sm font-extrabold">Gambar Border {mode === 'add' ? '*' : '(biarkan kosong jika tidak diubah)'}</label>
               <input
-                type="url"
-                value={form.image_url}
-                onChange={onChange('image_url')}
-                placeholder="https://host/static/borders/elaina-white.png"
+                type="file"
+                accept="image/*"
+                onChange={onFileChange}
                 className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
                 style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               />
+              {form.preview_url ? (
+                <div className="mt-2">
+                  <img src={form.preview_url} alt="Preview" className="max-h-40 border-4 rounded-lg" style={{ borderColor: 'var(--panel-border)' }} />
+                </div>
+              ) : null}
             </div>
 
             <div className="grid sm:grid-cols-3 gap-3">

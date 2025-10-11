@@ -21,7 +21,13 @@ Buat avatar border baru untuk katalog.
 
 - Method: `POST`
 - Auth: Admin token + role SUPERADMIN
-- Body JSON:
+- Format request didukung:
+  - JSON (mengirim `image_url`)
+  - multipart/form-data (mengunggah file gambar pada field `image`)
+
+Catatan: UI Admin Panel menggunakan mode upload file (multipart) secara default. Field `image_url` bersifat opsional bila file `image` diunggah.
+
+### Opsi 1: Body JSON (gunakan image_url)
 ```json
 {
   "code": "ELAINA_WHITE",
@@ -73,7 +79,7 @@ Authorization: Bearer <ADMIN_TOKEN>
   - `total_supply` (integer|null) — stok total (jika limited). `null` berarti tanpa stok tertentu.
   - `per_user_limit` (integer) — batas pembelian per user. Default `1` (satu kepemilikan).
 
-### Contoh Request
+### Contoh Request (JSON)
 ```
 POST /1.0.10/admin/avatar-borders
 Authorization: Bearer <ADMIN_TOKEN>
@@ -91,6 +97,32 @@ Content-Type: application/json
   "total_supply": null,
   "per_user_limit": 1
 }
+```
+
+### Contoh Request (multipart/form-data)
+```
+POST /1.0.10/admin/avatar-borders
+Authorization: Bearer <ADMIN_TOKEN>
+Content-Type: multipart/form-data; boundary=----
+
+Fields:
+- code: ELAINA_WHITE
+- title: Elaina White
+- coin_price: 500
+- is_active: true
+- image: <FILE UPLOAD>  (PNG/JPG disarankan, max 10 MB)
+```
+
+Contoh curl:
+```
+curl -X POST \
+  -H "Authorization: Bearer <ADMIN_TOKEN>" \
+  -F code=ELAINA_WHITE \
+  -F title="Elaina White" \
+  -F coin_price=500 \
+  -F is_active=true \
+  -F image=@"./elaina-white.png" \
+  https://<HOST>/1.0.10/admin/avatar-borders
 ```
 
 ### Contoh Response (201)
@@ -117,7 +149,7 @@ Content-Type: application/json
 ```
 
 ### Error Umum
-- 400 `code, title, image_url wajib`
+- 400 `code, title, dan image (file atau image_url) wajib`
 - 409 jika `code` duplikat (unique constraint)
 - 401/403 jika token invalid atau bukan SUPERADMIN
 
@@ -294,6 +326,31 @@ async function createAvatarBorder({ token, version = "1.0.10", payload }: {
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.message || "Gagal membuat avatar border");
+  return data;
+}
+```
+
+Contoh upload file di frontend (multipart):
+```ts
+async function createAvatarBorderWithFile({ token, version = "1.0.10", form }: {
+  token: string;
+  version?: string;
+  form: { code: string; title: string; coin_price?: number | null; is_active?: boolean; file: File };
+}) {
+  const fd = new FormData();
+  fd.set("code", form.code);
+  fd.set("title", form.title);
+  if (typeof form.coin_price !== "undefined" && form.coin_price !== null) fd.set("coin_price", String(form.coin_price));
+  if (typeof form.is_active !== "undefined") fd.set("is_active", String(!!form.is_active));
+  fd.set("image", form.file); // field name: image
+
+  const res = await fetch(`/${version}/admin/avatar-borders`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.message || "Gagal membuat avatar border");
