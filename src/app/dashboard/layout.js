@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { LayoutDashboard, Coins, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet } from 'lucide-react';
+import { LayoutDashboard, Coins, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import Header from '@/components/dashboard/Header';
 import Sidebar from '@/components/dashboard/Sidebar';
@@ -34,6 +34,10 @@ export default function DashboardLayout({ children }) {
       { key: 'waifu-vote', label: 'Waifu Vote', icon: Heart, roles: ['superadmin'], href: '/dashboard/waifu-vote' },
       { key: 'admin-vip', label: 'Admin VIP', icon: Crown, roles: ['superadmin'], href: '/dashboard/admin-vip' },
       { key: 'admin-wallet', label: 'Admin Wallet', icon: Wallet, roles: ['superadmin'], href: '/dashboard/admin-wallet' },
+      { key: 'redeem-codes', label: 'Kode Redeem', icon: Gift, roles: ['superadmin'], href: '/dashboard/redeem' },
+      { key: 'store-admin', label: 'Store Admin', icon: ShoppingBag, roles: ['superadmin'], href: '/dashboard/store-admin' },
+      { key: 'sponsor-admin', label: 'Sponsor Admin', icon: Megaphone, roles: ['superadmin'], href: '/dashboard/sponsor-admin' },
+      { key: 'manga-admin', label: 'Manga Admin', icon: BookOpen, roles: ['superadmin', 'uploader'], href: '/dashboard/manga-admin' },
       { key: 'validasi-konten', label: 'Validasi Konten', icon: ListChecks, roles: ['superadmin'], href: '/dashboard/validasi-konten' },
       { key: 'settings', label: 'Pengaturan', icon: Settings, roles: ['superadmin'], href: '/dashboard/pengaturan' },
     ],

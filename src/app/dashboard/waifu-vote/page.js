@@ -13,7 +13,7 @@ export default function WaifuVotePage() {
   const [q, setQ] = useState("");
   const [loadingList, setLoadingList] = useState(false);
 
-  // form state
+  // form states
   const [mode, setMode] = useState("add"); // add | edit
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState({ id: null, name: "", anime_title: "", image_url: "", description: "", file: null, preview_url: "" });

@@ -2,6 +2,11 @@ export function getApiBase() {
   return process.env.NEXT_PUBLIC_API_BASE_URL || '';
 }
 
+// Back-compat name used by UI: delegates to Komiku grab
+export async function grabMangaChapter({ token, mangaId, chapterNumber, url, title }) {
+  return await grabKomikuChapter({ token, url, manga_id: mangaId, chapter_number: chapterNumber, title });
+}
+
 // ===== Admin Management (SUPERADMIN only) =====
 const adminsBase = () => `${getApiBase()}/admin`;
 
@@ -675,6 +680,353 @@ export async function resetWaifuVotes({ token }) {
     headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal mereset vote');
+}
+
+// ===== Redeem Codes (SUPERADMIN) =====
+const redeemCodesBase = () => `${getApiBase()}/admin/redeem-codes`;
+
+export async function listRedeemCodes({ token, page = 1, limit = 20, q = '' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  if (q) params.set('q', q);
+  const url = `${redeemCodesBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar kode redeem');
+  const pg = data?.pagination || {};
+  return {
+    page: pg.page ?? page,
+    limit: pg.limit ?? limit,
+    total: pg.total ?? 0,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+export async function createRedeemCode({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${redeemCodesBase()}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat kode redeem');
+}
+
+export async function getRedeemCodeById({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${redeemCodesBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil detail kode redeem');
+}
+
+export async function deleteRedeemCode({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${redeemCodesBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus kode redeem');
+}
+
+// ===== Store Admin (SUPERADMIN) =====
+const storeAdminBase = () => `${getApiBase()}/store/admin/items`;
+
+export async function listStoreItems({ token, q = '', active = '', page = 1, limit = 20 }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (active !== '' && active !== null && active !== undefined) params.set('active', String(active));
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  const url = `${storeAdminBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar item store');
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    page: data?.page ?? page,
+    limit: data?.limit ?? limit,
+    total: data?.total ?? 0,
+  };
+}
+
+export async function getStoreItem({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${storeAdminBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil detail item store');
+}
+
+export async function createStoreItem({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${storeAdminBase()}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat item store');
+}
+
+export async function updateStoreItem({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${storeAdminBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui item store');
+}
+
+export async function deleteStoreItem({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${storeAdminBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus item store');
+}
+
+// ===== Sponsor Admin (SUPERADMIN) =====
+const sponsorAdminBase = () => `${getApiBase()}/sponsors/admin`;
+
+export async function listSponsors({ token }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${sponsorAdminBase()}`, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar sponsor');
+  return { items: Array.isArray(data?.items) ? data.items : [] };
+}
+
+export async function getSponsor({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${sponsorAdminBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil detail sponsor');
+}
+
+export async function createSponsor({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${sponsorAdminBase()}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat sponsor');
+}
+
+export async function updateSponsor({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${sponsorAdminBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui sponsor');
+}
+
+export async function deleteSponsor({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${sponsorAdminBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus sponsor');
+}
+
+// ===== Manga Admin (SUPERADMIN | UPLOADER) =====
+const mangaBase = () => `${getApiBase()}/admin/manga`;
+
+export async function listManga({ token, q = '', page = 1, limit = 20 }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  const res = await fetch(`${mangaBase()}?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar manga');
+  return {
+    items: Array.isArray(data?.items) ? data.items : (Array.isArray(data?.data) ? data.data : []),
+    page: data?.page ?? data?.pagination?.page ?? page,
+    limit: data?.limit ?? data?.pagination?.limit ?? limit,
+    total: data?.total ?? data?.pagination?.total ?? 0,
+  };
+}
+
+export async function createManga({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${mangaBase()}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat manga');
+}
+
+export async function uploadMangaCover({ token, id, file }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!(file instanceof File)) throw new Error('File cover tidak valid');
+  const fd = new FormData();
+  fd.append('cover', file);
+  const res = await fetch(`${mangaBase()}/${id}/cover`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  return await handleJson(res, 'Gagal upload cover manga');
+}
+
+export async function getManga({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${mangaBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil detail manga');
+}
+
+export async function updateManga({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${mangaBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui manga');
+}
+
+export async function deleteManga({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${mangaBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus manga');
+}
+
+export async function listMangaChapters({ token, mangaId }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${mangaBase()}/${mangaId}/chapters`, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil daftar chapter manga');
+}
+
+export async function createMangaChapter({ token, mangaId, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${mangaBase()}/${mangaId}/chapters`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat chapter');
+}
+
+const chaptersBase = () => `${getApiBase()}/admin/chapters`;
+
+export async function getChapter({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${chaptersBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil detail chapter');
+}
+
+export async function updateChapter({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${chaptersBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui chapter');
+}
+
+export async function deleteChapter({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${chaptersBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus chapter');
+}
+
+export async function uploadMangaChapterImages({ token, mangaId, chapterNumber, files, title }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const fd = new FormData();
+  if (files instanceof FileList) {
+    Array.from(files).forEach((f) => fd.append('images', f));
+  } else if (Array.isArray(files)) {
+    files.forEach((f) => f instanceof File && fd.append('images', f));
+  } else if (files instanceof File) {
+    fd.append('images', files);
+  }
+  if (title) fd.set('title', title);
+  const res = await fetch(`${mangaBase()}/${mangaId}/chapters/${chapterNumber}/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  return await handleJson(res, 'Gagal upload halaman chapter');
+}
+
+export async function getMangaChapterPages({ token, mangaId, chapterNumber }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${mangaBase()}/${mangaId}/chapters/${chapterNumber}/pages`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil halaman chapter');
+  const base = getApiBase();
+  if (Array.isArray(data?.pages)) {
+    data.pages = data.pages.map((p) => {
+      const url = p?.image_url || '';
+      const abs = url.startsWith('http://') || url.startsWith('https://') ? url : `${base}${url}`;
+      return { ...p, image_url: abs };
+    });
+  }
+  return data;
+}
+
+export async function getChapterPages({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${chaptersBase()}/${id}/pages`, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil halaman chapter');
+  const base = getApiBase();
+  if (Array.isArray(data?.pages)) {
+    data.pages = data.pages.map((p) => {
+      const url = p?.image_url || '';
+      const abs = url.startsWith('http://') || url.startsWith('https://') ? url : `${base}${url}`;
+      return { ...p, image_url: abs };
+    });
+  }
+  return data;
+}
+
+export async function deletePageById({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${getApiBase()}/admin/pages/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus halaman');
+}
+
+export async function deletePageByNumber({ token, mangaId, chapterNumber, pageNumber }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${mangaBase()}/${mangaId}/chapters/${chapterNumber}/pages/${pageNumber}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus halaman');
+}
+
+// ===== Komiku Grab (SUPERADMIN) =====
+export async function grabKomikuChapter({ token, url, manga_id, chapter_number, title }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${getApiBase()}/manga/komiku/grab`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ url, manga_id, chapter_number, title }),
+  });
+  return await handleJson(res, 'Gagal grab Komiku');
+}
+
+export async function grabKomikuRange({ token, mangaId, sample_url, start, end, title_prefix }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${mangaBase()}/${mangaId}/komiku/grab-range`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ sample_url, start, end, title_prefix }),
+  });
+  return await handleJson(res, 'Gagal grab Komiku range');
 }
 
 // ===== Admin VIP Management (SUPERADMIN) =====
