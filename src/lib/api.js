@@ -154,6 +154,20 @@ export async function listAnime({ token, page = 1, limit = 20, q = '' }) {
   };
 }
 
+// Search anime (admin) with q, limit, includeEpisodes
+export async function searchAnime({ token, q = '', limit = 10, includeEpisodes = false }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!q) return { items: [] };
+  const params = new URLSearchParams();
+  params.set('q', q);
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 50)));
+  if (includeEpisodes) params.set('includeEpisodes', 'true');
+  const url = `${animeBase()}/search?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mencari anime');
+  return { items: Array.isArray(data?.items) ? data.items : [] };
+}
+
 export async function getAnimeDetail({ token, id }) {
   if (!token) throw new Error('Token tidak tersedia');
   const res = await fetch(`${animeBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -465,6 +479,7 @@ export async function createAvatarBorderWithFile({ token, form }) {
   if (form?.is_limited !== undefined) fd.set('is_limited', String(!!form.is_limited));
   if (form?.total_supply !== undefined && form.total_supply !== null && form.total_supply !== '') fd.set('total_supply', String(form.total_supply));
   if (form?.per_user_limit !== undefined && form.per_user_limit !== null && form.per_user_limit !== '') fd.set('per_user_limit', String(form.per_user_limit));
+  if (form?.tier !== undefined) fd.set('tier', form.tier);
   if (form?.file instanceof File) {
     fd.set('image', form.file);
   }
@@ -511,6 +526,30 @@ export async function updateAvatarBorder({ token, id, payload }) {
     method: 'PUT',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui avatar border');
+}
+
+// Update avatar border with file (multipart/form-data)
+export async function updateAvatarBorderWithFile({ token, id, form }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const fd = new FormData();
+  if (form?.code !== undefined) fd.set('code', form.code);
+  if (form?.title !== undefined) fd.set('title', form.title);
+  if (form?.coin_price !== undefined) fd.set('coin_price', form.coin_price === null || form.coin_price === '' ? '' : String(form.coin_price));
+  if (form?.is_active !== undefined) fd.set('is_active', String(!!form.is_active));
+  if (form?.starts_at !== undefined) fd.set('starts_at', form.starts_at || '');
+  if (form?.ends_at !== undefined) fd.set('ends_at', form.ends_at || '');
+  if (form?.is_limited !== undefined) fd.set('is_limited', String(!!form.is_limited));
+  if (form?.total_supply !== undefined) fd.set('total_supply', form.total_supply === null || form.total_supply === '' ? '' : String(form.total_supply));
+  if (form?.per_user_limit !== undefined) fd.set('per_user_limit', form.per_user_limit === null || form.per_user_limit === '' ? '' : String(form.per_user_limit));
+  if (form?.tier !== undefined) fd.set('tier', form.tier);
+  if (form?.file instanceof File) fd.set('image', form.file);
+
+  const res = await fetch(`${avatarBordersBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
   });
   return await handleJson(res, 'Gagal memperbarui avatar border');
 }

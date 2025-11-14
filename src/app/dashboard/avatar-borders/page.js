@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast';
 import { Image as ImageIcon, Pencil, Trash2, Plus, ArrowRight } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { createAvatarBorder, createAvatarBorderWithFile, listAvatarBorders, updateAvatarBorder, deleteAvatarBorder } from '@/lib/api';
+import { createAvatarBorder, createAvatarBorderWithFile, listAvatarBorders, updateAvatarBorder, updateAvatarBorderWithFile, deleteAvatarBorder } from '@/lib/api';
 
 export default function AvatarBordersPage() {
   const router = useRouter();
@@ -36,6 +36,7 @@ export default function AvatarBordersPage() {
     is_limited: false,
     total_supply: '', // string to allow empty -> null
     per_user_limit: '1',
+    tier: 'C',
     file: null,
     preview_url: '',
   });
@@ -55,6 +56,7 @@ export default function AvatarBordersPage() {
       is_limited: false,
       total_supply: '',
       per_user_limit: '1',
+      tier: 'C',
       file: null,
       preview_url: '',
     });
@@ -122,6 +124,7 @@ export default function AvatarBordersPage() {
             is_limited: !!form.is_limited,
             total_supply: form.total_supply === '' ? '' : Number(form.total_supply),
             per_user_limit: Number(form.per_user_limit || 1),
+            tier: form.tier,
             file: form.file,
           },
         });
@@ -130,19 +133,41 @@ export default function AvatarBordersPage() {
         setPage(1);
         await loadList({ page: 1 });
       } else {
-        const payload = {
-          code: form.code.trim(),
-          title: form.title.trim(),
-          coin_price: form.coin_price === '' ? null : Number(form.coin_price),
-          is_active: !!form.is_active,
-          starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
-          ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
-          is_limited: !!form.is_limited,
-          total_supply: form.total_supply === '' ? null : Number(form.total_supply),
-          per_user_limit: Number(form.per_user_limit || 1),
-        };
-        const res = await updateAvatarBorder({ token, id: editingId, payload });
-        toast.success(res?.message || 'Avatar border diupdate');
+        if (form.file) {
+          const res = await updateAvatarBorderWithFile({
+            token,
+            id: editingId,
+            form: {
+              code: form.code.trim(),
+              title: form.title.trim(),
+              coin_price: form.coin_price === '' ? '' : Number(form.coin_price),
+              is_active: !!form.is_active,
+              starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : '',
+              ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : '',
+              is_limited: !!form.is_limited,
+              total_supply: form.total_supply === '' ? '' : Number(form.total_supply),
+              per_user_limit: form.per_user_limit === '' ? '' : Number(form.per_user_limit || 1),
+              tier: form.tier,
+              file: form.file,
+            },
+          });
+          toast.success(res?.message || 'Avatar border diupdate');
+        } else {
+          const payload = {
+            code: form.code.trim(),
+            title: form.title.trim(),
+            coin_price: form.coin_price === '' ? null : Number(form.coin_price),
+            is_active: !!form.is_active,
+            starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
+            ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
+            is_limited: !!form.is_limited,
+            total_supply: form.total_supply === '' ? null : Number(form.total_supply),
+            per_user_limit: Number(form.per_user_limit || 1),
+            tier: form.tier,
+          };
+          const res = await updateAvatarBorder({ token, id: editingId, payload });
+          toast.success(res?.message || 'Avatar border diupdate');
+        }
         setMode('add');
         setEditingId(null);
         resetForm();
@@ -197,6 +222,7 @@ export default function AvatarBordersPage() {
       is_limited: !!it.is_limited,
       total_supply: it.total_supply == null ? '' : String(it.total_supply),
       per_user_limit: it.per_user_limit == null ? '1' : String(it.per_user_limit),
+      tier: it.tier || 'C',
       file: null,
       preview_url: it.image_url || '',
     });
@@ -336,6 +362,23 @@ export default function AvatarBordersPage() {
                   className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
                   style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-extrabold">Tier</label>
+                <select
+                  value={form.tier}
+                  onChange={onChange('tier')}
+                  className="w-full px-3 py-2 border-4 rounded-lg font-extrabold"
+                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                >
+                  <option value="C">C</option>
+                  <option value="B">B</option>
+                  <option value="A">A</option>
+                  <option value="S">S</option>
+                  <option value="S+">S+</option>
+                  <option value="SS+">SS+</option>
+                  <option value="SSS+">SSS+</option>
+                </select>
               </div>
               <div className="flex items-end gap-2">
                 <label className="flex items-center gap-2 font-extrabold">

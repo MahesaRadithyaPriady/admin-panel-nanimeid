@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { Plus, Pencil, Trash2, List, ChevronDown, ChevronRight, ChevronUp, Film } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listAnime, createAnime, updateAnime, deleteAnime, listEpisodes, createEpisode, updateEpisode, deleteEpisode } from '@/lib/api';
+import { listAnime, createAnime, updateAnime, deleteAnime, listEpisodes, createEpisode, updateEpisode, deleteEpisode, searchAnime } from '@/lib/api';
 
 export default function DaftarKontenPage() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function DaftarKontenPage() {
 
   // Form state (add/edit)
   const [mode, setMode] = useState('add'); // add | edit
-  const [activeTab, setActiveTab] = useState('anime'); // anime | episode | bulk
+  const [activeTab, setActiveTab] = useState('anime'); // anime | episode
   const [form, setForm] = useState({
     id: null,
     nama_anime: '',
@@ -40,18 +40,7 @@ export default function DaftarKontenPage() {
     fakta_menarik: '',
     tanggal_rilis_anime: '',
   });
-  // Bulk Sync to All tab state
-  const [bulkSync, setBulkSync] = useState({
-    animeId: '',
-    start_ep: 1,
-    end_ep: 12,
-    judul_template: '', // e.g. "Episode {n}"
-    thumbnail_episode: '',
-    deskripsi_episode: '',
-    durasi_episode: 0,
-    tanggal_rilis_episode: '',
-    qualities: [],
-  });
+  // (HAPUS) Bulk Sync state dan fitur dihilangkan
   const [submittingTabEpisode, setSubmittingTabEpisode] = useState(false);
   const resetForm = () => setForm({
     id: null,
@@ -115,6 +104,10 @@ export default function DaftarKontenPage() {
     tanggal_rilis_episode: '',
     qualities: [],
   });
+  const [animeFilter, setAnimeFilter] = useState('');
+  const [animeSuggestions, setAnimeSuggestions] = useState([]);
+  const [animeSearchLoading, setAnimeSearchLoading] = useState(false);
+  const [animeInputFocused, setAnimeInputFocused] = useState(false);
   const defaultQualities = useMemo(() => ([
     { nama_quality: '1080p', source_quality: '' },
     { nama_quality: '720p', source_quality: '' },
@@ -122,92 +115,7 @@ export default function DaftarKontenPage() {
     { nama_quality: '360p', source_quality: '' },
   ]), []);
   const QUALITY_ORDER = useMemo(() => (['1080p', '720p', '480p', '360p']), []);
-  const buildSyncedUrl = (baseUrl, baseQ, targetQ) => {
-    if (!baseUrl || !baseQ || !targetQ) return baseUrl;
-    // Replace only the first occurrence of the base quality token with target quality
-    const idx = baseUrl.indexOf(baseQ);
-    if (idx === -1) return baseUrl;
-    return baseUrl.slice(0, idx) + targetQ + baseUrl.slice(idx + baseQ.length);
-  };
-  const findBaseQualityAndUrl = (qualitiesArr) => {
-    // Prefer higher to lower quality as base
-    for (const qName of QUALITY_ORDER) {
-      const found = (qualitiesArr || []).find((q) => (q?.nama_quality || '').toLowerCase() === qName.toLowerCase() && (q?.source_quality || '').trim());
-      if (found) return { baseQuality: qName, baseUrl: found.source_quality.trim() };
-    }
-    // If no exact match by name, but any with URL exists, use the first with URL and detect quality token
-    const anyWithUrl = (qualitiesArr || []).find((q) => (q?.source_quality || '').trim());
-    if (anyWithUrl) {
-      // try to detect quality from url
-      const m = anyWithUrl.source_quality.match(/(1080p|720p|480p|360p)/i);
-      const detected = m ? m[0] : null;
-      return { baseQuality: detected, baseUrl: anyWithUrl.source_quality.trim() };
-    }
-    return { baseQuality: null, baseUrl: null };
-  };
-  const canSyncTab = useMemo(() => {
-    if (!Array.isArray(tabEpisode?.qualities)) return false;
-    return tabEpisode.qualities.some((q) => QUALITY_ORDER.includes((q?.nama_quality || '').toLowerCase()) && (q?.source_quality || '').trim());
-  }, [tabEpisode, QUALITY_ORDER]);
-  const syncTabEpisodeQualities = () => {
-    setTabEpisode((s) => {
-      const arr = Array.isArray(s.qualities) ? [...s.qualities] : [];
-      const { baseQuality, baseUrl } = findBaseQualityAndUrl(arr);
-      if (!baseQuality || !baseUrl) {
-        toast.error('Isi minimal satu URL quality (1080p/720p/480p/360p)');
-        return s;
-      }
-      const next = arr.map((q) => {
-        const name = (q?.nama_quality || '').toLowerCase();
-        if (!QUALITY_ORDER.includes(name)) return q; // skip custom
-        if ((q?.source_quality || '').trim()) return q; // keep existing non-empty
-        const url = buildSyncedUrl(baseUrl, baseQuality, q.nama_quality);
-        return { ...q, source_quality: url };
-      });
-      toast.success('Quality lain disinkronkan');
-      return { ...s, qualities: next };
-    });
-  };
-  // Bulk tab helpers
-  const canSyncBulk = useMemo(() => {
-    if (!Array.isArray(bulkSync?.qualities)) return false;
-    return bulkSync.qualities.some((q) => QUALITY_ORDER.includes((q?.nama_quality || '').toLowerCase()) && (q?.source_quality || '').trim());
-  }, [bulkSync, QUALITY_ORDER]);
-  const updateBulkQualityField = (index, key, value) => {
-    setBulkSync((s) => {
-      const arr = Array.isArray(s.qualities) ? [...s.qualities] : [];
-      arr[index] = { ...arr[index], [key]: value };
-      return { ...s, qualities: arr };
-    });
-  };
-  const addBulkQuality = () => setBulkSync((s) => ({ ...s, qualities: [...(s?.qualities || []), { nama_quality: '', source_quality: '' }] }));
-  const removeBulkQuality = (i) => setBulkSync((s) => ({ ...s, qualities: (s.qualities || []).filter((_, idx) => idx !== i) }));
-  const moveBulkQuality = (index, direction) => {
-    setBulkSync((s) => {
-      const arr = Array.isArray(s.qualities) ? s.qualities : [];
-      const next = moveArrayItem(arr, index, index + direction);
-      return { ...s, qualities: next };
-    });
-  };
-  const syncBulkEpisodeQualities = () => {
-    setBulkSync((s) => {
-      const arr = Array.isArray(s.qualities) ? [...s.qualities] : [];
-      const { baseQuality, baseUrl } = findBaseQualityAndUrl(arr);
-      if (!baseQuality || !baseUrl) {
-        toast.error('Isi minimal satu URL quality (1080p/720p/480p/360p)');
-        return s;
-      }
-      const next = arr.map((q) => {
-        const name = (q?.nama_quality || '').toLowerCase();
-        if (!QUALITY_ORDER.includes(name)) return q; // skip custom
-        if ((q?.source_quality || '').trim()) return q; // keep existing non-empty
-        const url = buildSyncedUrl(baseUrl, baseQuality, q.nama_quality);
-        return { ...q, source_quality: url };
-      });
-      toast.success('Quality lain disinkronkan');
-      return { ...s, qualities: next };
-    });
-  };
+  
   const moveArrayItem = (arr, from, to) => {
     const copy = [...arr];
     if (to < 0 || to >= copy.length) return copy;
@@ -255,23 +163,36 @@ export default function DaftarKontenPage() {
       qualities: defaultQualities,
     }));
   }, [tabEpisode?.animeId, items, defaultQualities]);
-  // init qualities for bulk when anime changes (copy from last used like tabEpisode)
+  // Sinkronkan tampilan input pencarian dengan pilihan animeId
   useEffect(() => {
-    if (!bulkSync?.animeId) return;
-    const parent = items.find((a) => a.id === bulkSync.animeId);
-    const latest = Array.isArray(parent?.episodes) && parent.episodes.length
-      ? parent.episodes.reduce((acc, e) => ((Number(e.nomor_episode) || 0) > (Number(acc.nomor_episode) || 0) ? e : acc), parent.episodes[0])
-      : null;
-    setBulkSync((s) => ({
-      ...s,
-      judul_template: s.judul_template || '',
-      thumbnail_episode: latest?.thumbnail_episode || s.thumbnail_episode || '',
-      deskripsi_episode: latest?.deskripsi_episode || s.deskripsi_episode || '',
-      durasi_episode: Number(latest?.durasi_episode) || s.durasi_episode || 0,
-      tanggal_rilis_episode: '',
-      qualities: defaultQualities,
-    }));
-  }, [bulkSync?.animeId, items, defaultQualities]);
+    if (!tabEpisode?.animeId) return;
+    const it = items.find((a) => a.id === tabEpisode.animeId);
+    if (it && animeFilter !== it.nama_anime) {
+      setAnimeFilter(it.nama_anime);
+    }
+  }, [tabEpisode?.animeId, items]);
+
+  // Debounced live search for anime suggestions
+  useEffect(() => {
+    const q = (animeFilter || '').trim();
+    if (q.length < 2) { setAnimeSuggestions([]); return; }
+    let alive = true;
+    const t = setTimeout(async () => {
+      try {
+        setAnimeSearchLoading(true);
+        const token = getSession()?.token;
+        const { items: sugg } = await searchAnime({ token, q, limit: 10, includeEpisodes: false });
+        if (!alive) return;
+        setAnimeSuggestions(Array.isArray(sugg) ? sugg : []);
+      } catch (_) {
+        if (!alive) return;
+        setAnimeSuggestions([]);
+      } finally {
+        if (alive) setAnimeSearchLoading(false);
+      }
+    }, 300);
+    return () => { alive = false; clearTimeout(t); };
+  }, [animeFilter]);
   const onSubmitCreateEpisodeFromTab = async () => {
     if (!tabEpisode?.animeId) {
       toast.error('Pilih anime terlebih dahulu');
@@ -311,67 +232,53 @@ export default function DaftarKontenPage() {
     }
   };
 
-  // Bulk create episodes (Sync ke Semua)
-  const [submittingBulk, setSubmittingBulk] = useState(false);
-  const onSubmitBulkSync = async (e) => {
-    e.preventDefault();
-    if (!bulkSync?.animeId) {
-      toast.error('Pilih anime terlebih dahulu');
-      return;
-    }
-    const start = Number(bulkSync.start_ep) || 0;
-    const end = Number(bulkSync.end_ep) || 0;
-    if (start <= 0 || end <= 0 || end < start) {
-      toast.error('Range episode tidak valid');
-      return;
-    }
-    const token = getSession()?.token;
-    try {
-      setSubmittingBulk(true);
-      let success = 0;
-      for (let n = start; n <= end; n++) {
-        const payload = {
-          judul_episode: replaceEpisodeToken(bulkSync.judul_template || '', n) || '',
-          nomor_episode: n,
-          thumbnail_episode: replaceEpisodeToken(bulkSync.thumbnail_episode || '', n) || '',
-          deskripsi_episode: bulkSync.deskripsi_episode || null,
-          durasi_episode: Number(bulkSync.durasi_episode) || 0,
-          tanggal_rilis_episode: bulkSync.tanggal_rilis_episode ? new Date(bulkSync.tanggal_rilis_episode).toISOString() : undefined,
-        };
-        if (Array.isArray(bulkSync.qualities)) {
-          payload.qualities = bulkSync.qualities
-            .filter((q) => (q.nama_quality || '').trim() && (q.source_quality || '').trim())
-            .map((q) => ({
-              nama_quality: q.nama_quality,
-              source_quality: replaceEpisodeToken(q.source_quality, n),
-            }));
-        }
-        try {
-          await createEpisode({ token, animeId: bulkSync.animeId, payload });
-          success += 1;
-        } catch (err) {
-          // continue but log error
-          console.error('Failed creating episode', n, err?.message);
-        }
-      }
-      toast.success(`Berhasil membuat ${success} episode`);
-      setExpanded((prev) => { const next = new Set(prev); next.add(bulkSync.animeId); return next; });
-      await loadEpisodes(bulkSync.animeId);
-    } catch (err) {
-      toast.error(err?.message || 'Gagal melakukan bulk sync');
-    } finally {
-      setSubmittingBulk(false);
-    }
-  };
+  // (HAPUS) Handler Bulk dihapus
 
-  const loadEpisodes = async (animeId) => {
+  const loadEpisodes = async (animeId, pageEp = 1, reset = false) => {
     try {
       const token = getSession()?.token;
-      const data = await listEpisodes({ token, animeId, page: 1, limit: 200 });
-      setItems((prev) => prev.map((a) => a.id === animeId ? { ...a, episodes: data.items || [] } : a));
+      const data = await listEpisodes({ token, animeId, page: pageEp, limit: 201 });
+      setItems((prev) => prev.map((a) => {
+        if (a.id !== animeId) return a;
+        const existing = Array.isArray(a.episodes) ? a.episodes : [];
+        const nextEpisodes = reset ? (data.items || []) : [...existing, ...(data.items || [])];
+        // de-duplicate by id
+        const seen = new Set();
+        const dedup = [];
+        for (const ep of nextEpisodes) {
+          if (ep && !seen.has(ep.id)) { seen.add(ep.id); dedup.push(ep); }
+        }
+        const pagination = data?.page ? { page: data.page, limit: data.limit, total: data.total } : (data?.pagination || {});
+        return {
+          ...a,
+          episodes: dedup,
+          episodes_page: pagination.page || pageEp || 1,
+          episodes_limit: pagination.limit || 201,
+          episodes_total: pagination.total || (dedup?.length || 0),
+          episodes_loading: false,
+        };
+      }));
     } catch (err) {
       toast.error(err?.message || 'Gagal memuat episodes');
     }
+  };
+
+  const maybeLoadMoreEpisodes = (animeId) => {
+    setItems((prev) => {
+      const a = prev.find((x) => x.id === animeId);
+      if (!a) return prev;
+      const page = a.episodes_page || 1;
+      const limitEp = a.episodes_limit || 201;
+      const total = a.episodes_total || 0;
+      const currentCount = Array.isArray(a.episodes) ? a.episodes.length : 0;
+      const hasMore = currentCount < total;
+      if (!hasMore || a.episodes_loading) return prev;
+      const mapped = prev.map((x) => x.id === animeId ? { ...x, episodes_loading: true } : x);
+      // trigger async load next page
+      const nextPage = page + 1;
+      Promise.resolve().then(() => loadEpisodes(animeId, nextPage, false));
+      return mapped;
+    });
   };
 
   const toggleExpand = (id) => {
@@ -381,7 +288,7 @@ export default function DaftarKontenPage() {
       if (expanding) {
         next.add(id);
         // lazy load episodes from API to ensure terbaru
-        loadEpisodes(id);
+        loadEpisodes(id, 1, true);
       } else {
         next.delete(id);
       }
@@ -528,30 +435,7 @@ export default function DaftarKontenPage() {
       return { ...s, qualities: next };
     });
   };
-  const canSyncNew = useMemo(() => {
-    if (!newEpisode || !Array.isArray(newEpisode.qualities)) return false;
-    return newEpisode.qualities.some((q) => QUALITY_ORDER.includes((q?.nama_quality || '').toLowerCase()) && (q?.source_quality || '').trim());
-  }, [newEpisode, QUALITY_ORDER]);
-  const syncNewEpisodeQualities = () => {
-    setNewEpisode((s) => {
-      if (!s) return s;
-      const arr = Array.isArray(s.qualities) ? [...s.qualities] : [];
-      const { baseQuality, baseUrl } = findBaseQualityAndUrl(arr);
-      if (!baseQuality || !baseUrl) {
-        toast.error('Isi minimal satu URL quality (1080p/720p/480p/360p)');
-        return s;
-      }
-      const next = arr.map((q) => {
-        const name = (q?.nama_quality || '').toLowerCase();
-        if (!QUALITY_ORDER.includes(name)) return q; // skip custom
-        if ((q?.source_quality || '').trim()) return q; // keep existing non-empty
-        const url = buildSyncedUrl(baseUrl, baseQuality, q.nama_quality);
-        return { ...q, source_quality: url };
-      });
-      toast.success('Quality lain disinkronkan');
-      return { ...s, qualities: next };
-    });
-  };
+  
   const onSubmitCreateEpisode = async (e) => {
     e.preventDefault();
     if (!creatingForAnime || !newEpisode) return;
@@ -732,10 +616,9 @@ export default function DaftarKontenPage() {
             </button>
           </form>
 
-          {/* Tabs: Tambah Anime | Sync to All | Tambah Episode */}
+          {/* Tabs: Tambah Anime | Tambah Episode */}
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setActiveTab('anime')} className={`px-3 py-2 border-4 rounded-lg font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'anime' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: activeTab === 'anime' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Tambah Anime</button>
-            <button type="button" onClick={() => setActiveTab('bulk')} className={`px-3 py-2 border-4 rounded-lg font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'bulk' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: activeTab === 'bulk' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Sync ke Semua</button>
             <button type="button" onClick={() => setActiveTab('episode')} className={`px-3 py-2 border-4 rounded-lg font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'episode' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: activeTab === 'episode' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Tambah Episode</button>
           </div>
 
@@ -778,69 +661,54 @@ export default function DaftarKontenPage() {
           </form>
           )}
 
-          {/* Form Sync to All (Bulk) */}
-          {activeTab === 'bulk' && (
-            <form onSubmit={onSubmitBulkSync} className="grid gap-3 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-              <div className="font-extrabold">Sync ke Semua Episode (Bulk)</div>
-              <div className="grid sm:grid-cols-2 gap-2">
-                <select value={bulkSync?.animeId || ''} onChange={(e) => setBulkSync((s) => ({ ...s, animeId: Number(e.target.value) || '' }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                  <option value="">Pilih Anime</option>
-                  {items.map((it) => (
-                    <option key={it.id} value={it.id}>{it.nama_anime}</option>
-                  ))}
-                </select>
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="number" value={bulkSync?.start_ep || 1} onChange={(e) => setBulkSync((s) => ({ ...s, start_ep: Number(e.target.value) }))} placeholder="Mulai (contoh: 1)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                  <input type="number" value={bulkSync?.end_ep || 12} onChange={(e) => setBulkSync((s) => ({ ...s, end_ep: Number(e.target.value) }))} placeholder="Sampai (contoh: 12)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                </div>
-                <input type="text" value={bulkSync?.judul_template || ''} onChange={(e) => setBulkSync((s) => ({ ...s, judul_template: e.target.value }))} placeholder="Judul template (gunakan {n} untuk nomor)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                <input type="url" value={bulkSync?.thumbnail_episode || ''} onChange={(e) => setBulkSync((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail (boleh pakai {n})" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                <input type="number" value={bulkSync?.durasi_episode || 0} onChange={(e) => setBulkSync((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                <input type="datetime-local" value={bulkSync?.tanggal_rilis_episode || ''} onChange={(e) => setBulkSync((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              </div>
-              <div className="pt-1">
-                <div className="font-extrabold mb-2">Qualities</div>
-                <div className="space-y-2">
-                  {(bulkSync?.qualities || []).map((q, idx) => (
-                    <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto_auto_auto] gap-2">
-                      <input type="text" value={q.nama_quality} onChange={(e) => updateBulkQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                      <input type="url" value={q.source_quality} onChange={(e) => updateBulkQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL (boleh pakai {n})" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                      <button type="button" onClick={() => moveBulkQuality(idx, -1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === 0} aria-label="Naikkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                        <ChevronUp className="size-4" />
-                      </button>
-                      <button type="button" onClick={() => moveBulkQuality(idx, 1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === (bulkSync?.qualities?.length || 0) - 1} aria-label="Turunkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                        <ChevronDown className="size-4" />
-                      </button>
-                      <button type="button" onClick={() => removeBulkQuality(idx)} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Hapus</button>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-2 flex items-center gap-2 flex-wrap">
-                  <button type="button" onClick={syncBulkEpisodeQualities} disabled={!canSyncBulk} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>Sync</button>
-                  <button type="button" onClick={addBulkQuality} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>+ Tambah Quality</button>
-                </div>
-              </div>
-              <textarea rows={3} value={bulkSync?.deskripsi_episode || ''} onChange={(e) => setBulkSync((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              <div className="grid sm:grid-cols-[160px]">
-                <button type="submit" disabled={submittingBulk} className="flex items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>
-                  {submittingBulk ? 'Memproses...' : 'Proses'}
-                </button>
-              </div>
-              <div className="text-xs opacity-70">Tips: gunakan {`{n}`} atau {`{EP}`} pada Judul/URL untuk mengganti nomor episode otomatis.</div>
-            </form>
-          )}
+          {/* (HAPUS) Form Bulk dihilangkan */}
 
           {/* Form Tambah Episode (Global) */}
           {activeTab === 'episode' && (
             <form onSubmit={(e) => { e.preventDefault(); onSubmitCreateEpisodeFromTab(); }} className="grid gap-3 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
               <div className="font-extrabold">Tambah Episode</div>
               <div className="grid sm:grid-cols-2 gap-2">
-                <select value={tabEpisode?.animeId || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, animeId: Number(e.target.value) || '' }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                  <option value="">Pilih Anime</option>
-                  {items.map((it) => (
-                    <option key={it.id} value={it.id}>{it.nama_anime}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Cari Anime..."
+                    value={animeFilter}
+                    onChange={(e) => setAnimeFilter(e.target.value)}
+                    onFocus={() => setAnimeInputFocused(true)}
+                    onBlur={() => setTimeout(() => setAnimeInputFocused(false), 150)}
+                    className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
+                    style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  />
+                  {(animeInputFocused && (animeSearchLoading || (animeSuggestions && animeSuggestions.length > 0))) && (
+                    <div className="absolute z-10 mt-1 w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+                      {animeSearchLoading ? (
+                        <div className="px-3 py-2 text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Mencari...</div>
+                      ) : (
+                        <>
+                          {animeSuggestions.map((it) => (
+                            <button
+                              key={it.id}
+                              type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                setTabEpisode((s) => ({ ...s, animeId: it.id }));
+                                setAnimeFilter(it.nama_anime || '');
+                                setAnimeSuggestions([]);
+                              }}
+                              className="w-full text-left px-3 py-2 hover:opacity-90 font-semibold"
+                              style={{ color: 'var(--foreground)' }}
+                            >
+                              {it.nama_anime}
+                            </button>
+                          ))}
+                          {(!animeSuggestions || animeSuggestions.length === 0) && (
+                            <div className="px-3 py-2 text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Tidak ada hasil</div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <input type="text" value={tabEpisode?.judul_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                 <input type="number" value={tabEpisode?.nomor_episode || 1} onChange={(e) => setTabEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                 <input type="url" value={tabEpisode?.thumbnail_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
@@ -865,7 +733,6 @@ export default function DaftarKontenPage() {
                   ))}
                 </div>
                 <div className="mt-2 flex items-center gap-2 flex-wrap">
-                  <button type="button" onClick={syncTabEpisodeQualities} disabled={!canSyncTab} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>Sync</button>
                   <button type="button" onClick={() => addTabQuality()} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>+ Tambah Quality</button>
                 </div>
               </div>
@@ -951,7 +818,6 @@ export default function DaftarKontenPage() {
                                     ))}
                                   </div>
                                   <div className="mt-2 flex items-center gap-2 flex-wrap">
-                                    <button type="button" onClick={syncNewEpisodeQualities} disabled={!canSyncNew} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>Sync</button>
                                     <button type="button" onClick={addNewQuality} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>+ Tambah Quality</button>
                                   </div>
                                 </div>
@@ -995,7 +861,15 @@ export default function DaftarKontenPage() {
                               </form>
                             )}
                             {(it.episodes && it.episodes.length > 0) ? (
-                              <div className="space-y-2">
+                              <div
+                                className="space-y-2 max-h-[480px] overflow-auto no-scrollbar"
+                                onScroll={(e) => {
+                                  const el = e.currentTarget;
+                                  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) {
+                                    maybeLoadMoreEpisodes(it.id);
+                                  }
+                                }}
+                              >
                                 {it.episodes.map((ep) => (
                                   <div key={ep.id} className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                                     <div className="flex items-start justify-between gap-3">
@@ -1096,6 +970,17 @@ export default function DaftarKontenPage() {
               </div>
             </div>
           )}
+          <style jsx>{`
+            .no-scrollbar {
+              -ms-overflow-style: none; /* IE and Edge */
+              scrollbar-width: none; /* Firefox */
+            }
+            .no-scrollbar::-webkit-scrollbar {
+              display: none; /* Safari and Chrome */
+              width: 0;
+              height: 0;
+            }
+          `}</style>
         </>
       )}
     </div>

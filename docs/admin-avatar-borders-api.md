@@ -25,8 +25,6 @@ Buat avatar border baru untuk katalog.
   - JSON (mengirim `image_url`)
   - multipart/form-data (mengunggah file gambar pada field `image`)
 
-Catatan: UI Admin Panel menggunakan mode upload file (multipart) secara default. Field `image_url` bersifat opsional bila file `image` diunggah.
-
 ### Opsi 1: Body JSON (gunakan image_url)
 ```json
 {
@@ -39,7 +37,8 @@ Catatan: UI Admin Panel menggunakan mode upload file (multipart) secara default.
   "ends_at": null,
   "is_limited": false,
   "total_supply": null,
-  "per_user_limit": 1
+  "per_user_limit": 1,
+  "tier": "S+"
 }
 
 ### Tata Cara Penggunaan (Ringkas)
@@ -78,6 +77,7 @@ Authorization: Bearer <ADMIN_TOKEN>
   - `is_limited` (boolean) — jika `true`, batasi stok.
   - `total_supply` (integer|null) — stok total (jika limited). `null` berarti tanpa stok tertentu.
   - `per_user_limit` (integer) — batas pembelian per user. Default `1` (satu kepemilikan).
+  - `tier` (string enum) — salah satu dari: `C`, `B`, `A`, `S`, `S+`, `SS+`, `SSS+`. Default `C`.
 
 ### Contoh Request (JSON)
 ```
@@ -111,6 +111,7 @@ Fields:
 - coin_price: 500
 - is_active: true
 - image: <FILE UPLOAD>  (PNG/JPG disarankan, max 10 MB)
+- tier: S+
 ```
 
 Contoh curl:
@@ -142,6 +143,7 @@ curl -X POST \
     "is_limited": false,
     "total_supply": null,
     "per_user_limit": 1,
+    "tier": "S+",
     "sold_count": 0,
     "createdAt": "2025-10-08T07:30:00.000Z"
   }
@@ -184,7 +186,7 @@ Authorization: Bearer <ADMIN_TOKEN>
 {
   "status": 200,
   "message": "OK",
-  "items": [ { "id": 10, "code": "ELAINA_WHITE", "title": "Elaina White", "image_url": "https://...", "coin_price": 500, "is_active": true, "starts_at": null, "ends_at": null, "is_limited": false, "total_supply": null, "per_user_limit": 1, "sold_count": 0 } ],
+  "items": [ { "id": 10, "code": "ELAINA_WHITE", "title": "Elaina White", "image_url": "https://...", "tier": "S+", "coin_price": 500, "is_active": true, "starts_at": null, "ends_at": null, "is_limited": false, "total_supply": null, "per_user_limit": 1, "sold_count": 0 } ],
   "pagination": { "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
 }
 ```
@@ -207,7 +209,10 @@ Response 200: `{ status: 200, message: "OK", data: { ... } }`
 ## PUT /admin/avatar-borders/:id
 Update avatar border (parsial field diperbolehkan).
 
-- Body menerima subset field dari create (lihat bagian create). Field yang tidak dikirim tidak diubah.
+- Format request didukung:
+  - JSON (mengirim subset field; `image_url` opsional)
+  - multipart/form-data (unggah gambar baru pada field `image`)
+- Field yang tidak dikirim tidak diubah.
 
 ### Contoh
 ```
@@ -218,9 +223,31 @@ Content-Type: application/json
 { "title": "Elaina White (Updated)", "is_active": false }
 ```
 
+### Contoh (multipart/form-data, ganti gambar)
+```
+PUT /1.0.10/admin/avatar-borders/10
+Authorization: Bearer <ADMIN_TOKEN>
+Content-Type: multipart/form-data; boundary=----
+
+Fields:
+- title: Elaina White v2
+- image: <FILE UPLOAD>  (PNG/JPG/GIF sesuai izin, max 10 MB)
+```
+
+Contoh curl:
+```
+curl -X PUT \
+  -H "Authorization: Bearer <ADMIN_TOKEN>" \
+  -F title="Elaina White v2" \
+  -F image=@"./elaina-white-v2.png" \
+  https://<HOST>/1.0.10/admin/avatar-borders/10
+```
+
 Response 200: `{ status: 200, message: "Avatar border diupdate", data: { ... } }`
 
 Error 409 jika `code` baru bentrok (unique).
+
+Catatan: Jika mengirim gambar baru (file) atau `image_url` baru, sistem akan mengganti `image_url` dan mencoba menghapus file lama jika file lama berada di path lokal `static/uploads/borders/`. URL eksternal tidak dihapus.
 
 ---
 
@@ -317,6 +344,7 @@ async function createAvatarBorder({ token, version = "1.0.10", payload }: {
     is_limited?: boolean;
     total_supply?: number | null;
     per_user_limit?: number;
+    tier?: "C" | "B" | "A" | "S" | "S+" | "SS+" | "SSS+";
   };
 }) {
   const res = await fetch(`/${version}/admin/avatar-borders`, {
@@ -338,13 +366,14 @@ Contoh upload file di frontend (multipart):
 async function createAvatarBorderWithFile({ token, version = "1.0.10", form }: {
   token: string;
   version?: string;
-  form: { code: string; title: string; coin_price?: number | null; is_active?: boolean; file: File };
+  form: { code: string; title: string; coin_price?: number | null; is_active?: boolean; tier?: "C" | "B" | "A" | "S" | "S+" | "SS+" | "SSS+"; file: File };
 }) {
   const fd = new FormData();
   fd.set("code", form.code);
   fd.set("title", form.title);
   if (typeof form.coin_price !== "undefined" && form.coin_price !== null) fd.set("coin_price", String(form.coin_price));
   if (typeof form.is_active !== "undefined") fd.set("is_active", String(!!form.is_active));
+  if (typeof form.tier !== "undefined") fd.set("tier", form.tier);
   fd.set("image", form.file); // field name: image
 
   const res = await fetch(`/${version}/admin/avatar-borders`, {

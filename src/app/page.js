@@ -26,15 +26,15 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen grid place-items-center bg-[#F7F7F0] p-6 relative">
+    <main className="min-h-screen grid place-items-center bg-[var(--background)] text-[var(--foreground)] p-6 relative">
       <div
-        className="w-full max-w-md bg-white border-4 border-black rounded-xl p-6 sm:p-8 relative"
-        style={{ boxShadow: "10px 10px 0 #000" }}
+        className="w-full max-w-md bg-[var(--panel-bg)] border-4 border-[var(--panel-border)] rounded-xl p-6 sm:p-8 relative"
+        style={{ boxShadow: "10px 10px 0 var(--panel-border)" }}
       >
         <div className="flex items-center gap-3 mb-2">
-          <div className="grid place-items-center size-10 bg-[#FFD803] border-4 border-black rounded-md"
-               style={{ boxShadow: "4px 4px 0 #000" }}>
-            <Shield className="size-5" />
+          <div className="grid place-items-center size-10 bg-[var(--accent-edit)] border-4 border-[var(--panel-border)] rounded-md"
+               style={{ boxShadow: "4px 4px 0 var(--panel-border)" }}>
+            <Shield className="size-5 text-[var(--accent-edit-foreground)]" />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight">NanimeID Admin</h1>
         </div>
@@ -50,7 +50,7 @@ export default function LoginPage() {
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-lg px-4 py-3 border-4 border-black outline-none focus:bg-yellow-100"
+              className="w-full rounded-lg px-4 py-3 border-4 border-[var(--panel-border)] outline-none focus:bg-[var(--accent-primary)]"
               placeholder="Kasih Username Disini"
             />
           </label>
@@ -62,14 +62,14 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg px-4 py-3 border-4 border-black outline-none focus:bg-green-100"
+              className="w-full rounded-lg px-4 py-3 border-4 border-[var(--panel-border)] outline-none focus:bg-[var(--accent-add)]"
               placeholder="••••••••"
             />
           </label>
 
           <div className="flex items-center justify-between">
             <label className="inline-flex items-center gap-2 text-sm font-semibold">
-              <input type="checkbox" className="size-4 border-4 border-black rounded-sm" />
+              <input type="checkbox" className="size-4 border-4 border-[var(--panel-border)] rounded-sm" />
               Ingat saya
             </label>
             <span className="text-sm font-semibold opacity-50 select-none">Lupa password?</span>
@@ -78,8 +78,8 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#FFD803] hover:bg-[#F1C40F] active:translate-x-[2px] active:translate-y-[2px] transition-transform border-4 border-black rounded-lg px-4 py-3 font-extrabold tracking-wide flex items-center justify-center gap-2"
-            style={{ boxShadow: "6px 6px 0 #000" }}
+            className="w-full bg-[var(--accent-edit)] text-[var(--accent-edit-foreground)] hover:opacity-90 active:translate-x-[2px] active:translate-y-[2px] transition-transform border-4 border-[var(--panel-border)] rounded-lg px-4 py-3 font-extrabold tracking-wide flex items-center justify-center gap-2"
+            style={{ boxShadow: "6px 6px 0 var(--panel-border)" }}
           >
             {loading ? "Memproses..." : (
               <>
@@ -99,3 +99,4 @@ export default function LoginPage() {
     </main>
   );
 }
+
