@@ -1,9 +1,9 @@
 # Redeem API
 
-Dokumentasi untuk fitur kode redeem yang dapat memberikan hadiah berupa koin (wallet), VIP (perpanjang masa aktif), atau badge. Termasuk endpoint User dan Admin, contoh request/response, serta catatan skema Prisma dan migrasi.
+Dokumentasi untuk fitur kode redeem yang dapat memberikan hadiah berupa koin (wallet), VIP (perpanjang masa aktif), badge, voucher diskon, atau avatar border. Termasuk endpoint User dan Admin, contoh request/response, serta catatan skema Prisma dan migrasi.
 
 ## Ringkasan Fitur
-- Memberikan reward lewat kode: COIN, VIP, BADGE.
+- Memberikan reward lewat kode: COIN, VIP, BADGE, VOUCHER, BORDER (avatar border).
 - Validasi masa berlaku (start/end), status aktif, kuota global, dan limit per user.
 - Pencatatan riwayat redeem per user (`RedeemHistory`).
 - Untuk COIN, koin masuk ke `UserWallet` dan audit di `CoinTransaction`.
@@ -18,6 +18,8 @@ enum RedeemType {
   COIN
   VIP
   BADGE
+  VOUCHER
+  BORDER // Avatar border (AvatarBorder)
 }
 
 model RedeemCode {
@@ -30,6 +32,10 @@ model RedeemCode {
   badge_name    String?
   badge_icon    String?
   title_color   String?
+  border_id     Int?       // optional: AvatarBorder.id jika type = BORDER
+  voucher_discount_percent Int?
+  voucher_discount_amount  Int?
+  voucher_valid_days       Int?
   is_active     Boolean    @default(true)
   max_uses      Int?
   used_count    Int        @default(0)
@@ -51,6 +57,8 @@ model RedeemHistory {
   granted_coins      Int?
   granted_vip_days   Int?
   granted_badge_name String?
+  granted_voucher_code String?
+  granted_border_id  Int?
   createdAt          DateTime   @default(now())
 
   user  User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -106,10 +114,11 @@ Base path: `/${VERSION}/redeem` (butuh Authorization Bearer)
       "data": {
         "code": "WELCOMEVIP",
         "type": "VIP",
-        "type": "VIP",
         "coins": null,
         "vipDays": 7,
-        "badgeName": null
+        "badgeName": null,
+        "voucherCode": null,
+        "borderId": null
       }
     }
     ```
@@ -132,6 +141,8 @@ Base path: `/${VERSION}/redeem` (butuh Authorization Bearer)
           "grantedCoins": 100,
           "grantedVipDays": null,
           "grantedBadgeName": null,
+          "grantedVoucherCode": null,
+          "grantedBorderId": null,
           "createdAt": "2025-09-17T14:00:00.000Z"
         }
       ],
@@ -183,6 +194,19 @@ Base path: `/${VERSION}/admin` (SUPERADMIN)
       "is_active": true
     }
     ```
+  - Body (contoh BORDER / Avatar Border):
+    ```json
+    {
+      "code": "BORDER_XMAS_2025",
+      "type": "BORDER",
+      "border_id": 10,
+      "is_active": true,
+      "max_uses": 1000,
+      "per_user_limit": 1,
+      "starts_at": "2025-12-20T00:00:00.000Z",
+      "expires_at": "2026-01-10T00:00:00.000Z"
+    }
+    ```
 
 - GET `/redeem-codes/:id`
 - PUT `/redeem-codes/:id`
@@ -214,10 +238,12 @@ Base path: `/${VERSION}/redeem` (SUPERADMIN)
    - Tipe COIN: buat/update `UserWallet`, tambah saldo, insert `CoinTransaction`.
    - Tipe VIP: extend `UserVIP.end_at` dari `max(now, end_at)`, set `status = ACTIVE`, apply `vip_level` jika diberikan.
    - Tipe BADGE: `upsert` `UserBadge` via unique `user_id_badge_name` (tidak auto-activate).
+   - Tipe BORDER: buat atau gunakan entri `UserAvatarBorder` untuk `border_id` terkait (hadiah, tidak memotong koin, tidak auto-activate).
+   - Tipe VOUCHER: generate satu `Voucher` baru per user-redeem dengan masa berlaku `voucher_valid_days`.
    - Insert `RedeemHistory`.
 
 ## Error Umum
-- 400: `Kode tidak ditemukan`, `Kode tidak aktif`, `Kode sudah kedaluwarsa`, `Kuota kode sudah habis`, `Batas penggunaan per pengguna telah tercapai`, `Konfigurasi kode COIN/VIP/BADGE tidak valid`.
+- 400: `Kode tidak ditemukan`, `Kode tidak aktif`, `Kode sudah kedaluwarsa`, `Kuota kode sudah habis`, `Batas penggunaan per pengguna telah tercapai`, `Konfigurasi kode COIN/VIP/BADGE/BORDER/VOUCHER tidak valid`.
 - 401: `unauthorized` jika token tidak valid.
 
 ## Catatan Integrasi

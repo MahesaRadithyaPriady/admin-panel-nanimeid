@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { ShoppingBag, Plus, Trash2, ListFilter, ExternalLink } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listStoreItems, createStoreItem, deleteStoreItem } from '@/lib/api';
+import { listStoreItems, createStoreItem, deleteStoreItem, listBadges, listStickers } from '@/lib/api';
 
 export default function StoreAdminPage() {
   const router = useRouter();
@@ -38,10 +38,20 @@ export default function StoreAdminPage() {
     vip_days: '',
     badge_name: '',
     badge_icon: '',
+    badge_id: '',
+    sticker_id: '',
     title_color: '',
     is_active: true,
     sort_order: '',
   });
+
+  // Master badges untuk SUPERBADGE
+  const [badges, setBadges] = useState([]);
+  const [loadingBadges, setLoadingBadges] = useState(false);
+
+  // Master stickers untuk STICKER
+  const [stickers, setStickers] = useState([]);
+  const [loadingStickers, setLoadingStickers] = useState(false);
 
   const loadList = async (opts = {}) => {
     setLoadingList(true);
@@ -60,11 +70,55 @@ export default function StoreAdminPage() {
     }
   };
 
+  const loadStickers = async () => {
+    try {
+      setLoadingStickers(true);
+      const token = getSession()?.token;
+      if (!token) return;
+      const data = await listStickers({ token, page: 1, limit: 200, q: '' });
+      setStickers(Array.isArray(data.items) ? data.items : []);
+    } catch (err) {
+      toast.error(err?.message || 'Gagal memuat daftar stiker');
+    } finally {
+      setLoadingStickers(false);
+    }
+  };
+
+  const loadBadges = async () => {
+    try {
+      setLoadingBadges(true);
+      const token = getSession()?.token;
+      if (!token) return;
+      const data = await listBadges({ token, page: 1, limit: 200, q: '', active: 'true' });
+      setBadges(Array.isArray(data.items) ? data.items : []);
+    } catch (err) {
+      toast.error(err?.message || 'Gagal memuat daftar badge');
+    } finally {
+      setLoadingBadges(false);
+    }
+  };
+
   useEffect(() => {
     if (!isSuperAdmin) return;
     loadList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, active, isSuperAdmin]);
+
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    if (form.item_type !== 'SUPERBADGE') return;
+    if (badges.length > 0 || loadingBadges) return;
+    loadBadges();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.item_type, isSuperAdmin]);
+
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    if (form.item_type !== 'STICKER') return;
+    if (stickers.length > 0 || loadingStickers) return;
+    loadStickers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.item_type, isSuperAdmin]);
 
   const onSearch = (e) => {
     e.preventDefault();
@@ -82,7 +136,7 @@ export default function StoreAdminPage() {
       const payload = buildItemPayload(form);
       await createStoreItem({ token, payload });
       toast.success('Item store dibuat');
-      setForm({ sku: '', title: '', description: '', item_type: 'COIN', coin_price: '', coin_amount: '', vip_days: '', badge_name: '', badge_icon: '', title_color: '', is_active: true, sort_order: '' });
+      setForm({ sku: '', title: '', description: '', item_type: 'COIN', coin_price: '', coin_amount: '', vip_days: '', badge_name: '', badge_icon: '', badge_id: '', sticker_id: '', title_color: '', is_active: true, sort_order: '' });
       await loadList({ page: 1 });
       setPage(1);
     } catch (err) {
@@ -129,6 +183,8 @@ export default function StoreAdminPage() {
                   <option value="COIN">COIN</option>
                   <option value="VIP">VIP</option>
                   <option value="BADGE">BADGE</option>
+                  <option value="SUPERBADGE">SUPERBADGE</option>
+                  <option value="STICKER">STICKER</option>
                   <option value="OTHER">OTHER</option>
                 </select>
               </L>
@@ -148,6 +204,50 @@ export default function StoreAdminPage() {
                   <L label="Nama Badge"><input value={form.badge_name} onChange={(e)=>updateForm('badge_name', e.target.value)} className="inp" /></L>
                   <L label="Icon URL"><input value={form.badge_icon} onChange={(e)=>updateForm('badge_icon', e.target.value)} className="inp" /></L>
                   <L label="Title Color"><input value={form.title_color} onChange={(e)=>updateForm('title_color', e.target.value)} className="inp" /></L>
+                </>
+              )}
+
+              {form.item_type === 'SUPERBADGE' && (
+                <>
+                  <L label="Super Badge">
+                    <select
+                      value={form.badge_id}
+                      onChange={(e)=>updateForm('badge_id', e.target.value)}
+                      className="sel"
+                    >
+                      <option value="">Pilih Super Badge...</option>
+                      {badges.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name || b.code} (#{b.id})
+                        </option>
+                      ))}
+                    </select>
+                  </L>
+                  {loadingBadges && (
+                    <div className="text-xs font-semibold opacity-70">Memuat daftar badge...</div>
+                  )}
+                </>
+              )}
+
+              {form.item_type === 'STICKER' && (
+                <>
+                  <L label="Sticker">
+                    <select
+                      value={form.sticker_id}
+                      onChange={(e)=>updateForm('sticker_id', e.target.value)}
+                      className="sel"
+                    >
+                      <option value="">Pilih Sticker...</option>
+                      {stickers.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name || s.code} (#{s.id})
+                        </option>
+                      ))}
+                    </select>
+                  </L>
+                  {loadingStickers && (
+                    <div className="text-xs font-semibold opacity-70">Memuat daftar stiker...</div>
+                  )}
                 </>
               )}
 
@@ -262,6 +362,10 @@ function buildItemPayload(form) {
     if (form.badge_name) p.badge_name = form.badge_name;
     if (form.badge_icon) p.badge_icon = form.badge_icon;
     if (form.title_color) p.title_color = form.title_color;
+  } else if (form.item_type === 'SUPERBADGE') {
+    if (form.badge_id !== '') p.badge_id = Number(form.badge_id);
+  } else if (form.item_type === 'STICKER') {
+    if (form.sticker_id !== '') p.sticker_id = Number(form.sticker_id);
   }
   return p;
 }

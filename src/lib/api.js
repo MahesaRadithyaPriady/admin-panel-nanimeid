@@ -136,12 +136,15 @@ export async function deleteAdminUser({ token, id }) {
 // ===== Admin Anime (SUPERADMIN | UPLOADER) =====
 const animeBase = () => `${getApiBase()}/admin/anime`;
 
-export async function listAnime({ token, page = 1, limit = 20, q = '' }) {
+export async function listAnime({ token, page = 1, limit = 20, q = '', status = '', genre = '', includeEpisodes } = {}) {
   if (!token) throw new Error('Token tidak tersedia');
   const params = new URLSearchParams();
   if (page) params.set('page', String(page));
   if (limit) params.set('limit', String(limit));
   if (q) params.set('q', q);
+  if (status) params.set('status', status);
+  if (genre) params.set('genre', genre);
+  if (includeEpisodes !== undefined && includeEpisodes !== null) params.set('includeEpisodes', String(!!includeEpisodes));
   const url = `${animeBase()}?${params.toString()}`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   const data = await handleJson(res, 'Gagal mengambil daftar anime');
@@ -264,6 +267,64 @@ export async function deleteEpisode({ token, id }) {
     headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal menghapus episode');
+}
+
+// ===== Anime Relations (SUPERADMIN | UPLOADER) =====
+const animeRelationsBase = () => `${getApiBase()}/admin/anime/relations`;
+
+// List relations with optional filters and pagination
+export async function listAnimeRelations({ token, source_anime_id = '', related_anime_id = '', relation = '', page = 1, limit = 50, group = false }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (source_anime_id !== '' && source_anime_id !== undefined && source_anime_id !== null) params.set('source_anime_id', String(source_anime_id));
+  if (related_anime_id !== '' && related_anime_id !== undefined && related_anime_id !== null) params.set('related_anime_id', String(related_anime_id));
+  if (relation) params.set('relation', relation);
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 200)));
+  if (group) params.set('group', 'true');
+  const url = `${animeRelationsBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar relations');
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    page: data?.page ?? page,
+    limit: data?.limit ?? limit,
+    total: data?.total ?? 0,
+    totalPages: data?.totalPages ?? undefined,
+    groups: Array.isArray(data?.groups) ? data.groups : undefined,
+  };
+}
+
+// Create a relation
+export async function createAnimeRelation({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${animeRelationsBase()}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat relation');
+}
+
+// Update a relation by id
+export async function updateAnimeRelation({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${animeRelationsBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui relation');
+}
+
+// Delete a relation by id
+export async function deleteAnimeRelation({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${animeRelationsBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus relation');
 }
 
 // ===== Admin Uploads (SUPERADMIN | UPLOADER) =====
@@ -451,6 +512,258 @@ export async function setTopupStatus({ token, id, status }) {
     body: JSON.stringify({ status }),
   });
   return await handleJson(res, 'Gagal memperbarui status topup');
+}
+
+// ===== Admin Badges (SUPERADMIN only) =====
+const badgesBase = () => `${getApiBase()}/admin/badges`;
+
+export async function listBadges({ token, page = 1, limit = 50, q = '', active = '' } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 200)));
+  if (q) params.set('q', q);
+  if (active !== '' && active !== null && active !== undefined) params.set('active', String(active));
+  const url = `${badgesBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar badge');
+  const pg = data?.pagination || {};
+  return {
+    page: pg.page ?? page,
+    limit: pg.limit ?? limit,
+    total: pg.total ?? 0,
+    totalPages: pg.totalPages ?? undefined,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+export async function getBadge({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${badgesBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil data badge');
+  return data?.data ?? data;
+}
+
+export async function createBadge({ token, form }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const fd = new FormData();
+  if (form?.code) fd.set('code', form.code);
+  if (form?.name) fd.set('name', form.name);
+  if (form?.description) fd.set('description', form.description);
+  if (form?.badge_url) fd.set('badge_url', form.badge_url);
+  if (form?.is_active !== undefined) fd.set('is_active', String(!!form.is_active));
+  if (form?.sort_order !== undefined && form.sort_order !== null && form.sort_order !== '') fd.set('sort_order', String(form.sort_order));
+  if (form?.file instanceof File) fd.set('image', form.file);
+
+  const res = await fetch(badgesBase(), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  return await handleJson(res, 'Gagal membuat badge');
+}
+
+export async function updateBadge({ token, id, form }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const fd = new FormData();
+  if (form?.code !== undefined) fd.set('code', form.code);
+  if (form?.name !== undefined) fd.set('name', form.name);
+  if (form?.description !== undefined) fd.set('description', form.description ?? '');
+  if (form?.badge_url !== undefined) fd.set('badge_url', form.badge_url ?? '');
+  if (form?.is_active !== undefined) fd.set('is_active', String(!!form.is_active));
+  if (form?.sort_order !== undefined)
+    fd.set('sort_order', form.sort_order === null || form.sort_order === '' ? '' : String(form.sort_order));
+  if (form?.file instanceof File) fd.set('image', form.file);
+
+  const res = await fetch(`${badgesBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  return await handleJson(res, 'Gagal memperbarui badge');
+}
+
+export async function deleteBadge({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${badgesBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus badge');
+}
+
+// Badge Ownership (SUPERADMIN only)
+export async function listBadgeOwners({ token, badgeId, page = 1, limit = 50, q = '', active = '' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!badgeId && badgeId !== 0) throw new Error('badgeId tidak valid');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 200)));
+  if (q) params.set('q', q);
+  if (active !== '' && active !== null && active !== undefined) params.set('active', String(active));
+  const url = `${badgesBase()}/${badgeId}/owners?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil owners badge');
+  const pg = data?.pagination || {};
+  return {
+    page: pg.page ?? page,
+    limit: pg.limit ?? limit,
+    total: pg.total ?? 0,
+    totalPages: pg.totalPages ?? undefined,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+export async function addBadgeOwner({ token, badgeId, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!badgeId && badgeId !== 0) throw new Error('badgeId tidak valid');
+  const body = JSON.stringify(payload || {});
+  const res = await fetch(`${badgesBase()}/${badgeId}/owners`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body,
+  });
+  return await handleJson(res, 'Gagal menambahkan badge owner');
+}
+
+export async function updateBadgeOwner({ token, badgeId, ownerId, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!badgeId && badgeId !== 0) throw new Error('badgeId tidak valid');
+  if (!ownerId && ownerId !== 0) throw new Error('ownerId tidak valid');
+  const body = JSON.stringify(payload || {});
+  const res = await fetch(`${badgesBase()}/${badgeId}/owners/${ownerId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body,
+  });
+  return await handleJson(res, 'Gagal memperbarui badge owner');
+}
+
+export async function deleteBadgeOwner({ token, badgeId, ownerId }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!badgeId && badgeId !== 0) throw new Error('badgeId tidak valid');
+  if (!ownerId && ownerId !== 0) throw new Error('ownerId tidak valid');
+  const res = await fetch(`${badgesBase()}/${badgeId}/owners/${ownerId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus badge owner');
+}
+
+// ===== Admin Stickers (SUPERADMIN only) =====
+const stickersBase = () => `${getApiBase()}/admin/stickers`;
+
+export async function listStickers({ token, page = 1, limit = 50, q = '' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 200)));
+  if (q) params.set('q', q);
+  const url = `${stickersBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar stiker');
+  return {
+    page: data?.page ?? page,
+    limit: data?.limit ?? limit,
+    total: data?.total ?? 0,
+    totalPages: data?.totalPages ?? undefined,
+    items: Array.isArray(data?.data) ? data.data : Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+export async function getSticker({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${stickersBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil data stiker');
+  return data?.data ?? data;
+}
+
+export async function createSticker({ token, form }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const fd = new FormData();
+  if (form?.code) fd.set('code', form.code);
+  if (form?.name) fd.set('name', form.name);
+  if (form?.description) fd.set('description', form.description);
+  if (form?.is_active !== undefined) fd.set('is_active', String(!!form.is_active));
+  if (form?.sort_order !== undefined && form.sort_order !== null && form.sort_order !== '') fd.set('sort_order', String(form.sort_order));
+  if (form?.file instanceof File) fd.set('image', form.file);
+
+  const res = await fetch(stickersBase(), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  return await handleJson(res, 'Gagal membuat stiker');
+}
+
+export async function updateSticker({ token, id, form }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const fd = new FormData();
+  if (form?.code !== undefined) fd.set('code', form.code);
+  if (form?.name !== undefined) fd.set('name', form.name);
+  if (form?.description !== undefined) fd.set('description', form.description);
+  if (form?.is_active !== undefined) fd.set('is_active', String(!!form.is_active));
+  if (form?.sort_order !== undefined) fd.set('sort_order', form.sort_order === null || form.sort_order === '' ? '' : String(form.sort_order));
+  if (form?.file instanceof File) fd.set('image', form.file);
+
+  const res = await fetch(`${stickersBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  return await handleJson(res, 'Gagal memperbarui stiker');
+}
+
+export async function deleteSticker({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${stickersBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus stiker');
+}
+
+// Sticker Ownership (SUPERADMIN only)
+export async function listStickerOwners({ token, stickerId, page = 1, limit = 20, userId = '' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!stickerId && stickerId !== 0) throw new Error('stickerId tidak valid');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 100)));
+  if (userId) params.set('userId', String(userId));
+  const url = `${stickersBase()}/${stickerId}/users?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil ownership stiker');
+  const pg = data?.pagination || {};
+  return {
+    page: pg.page ?? page,
+    limit: pg.limit ?? limit,
+    total: pg.total ?? 0,
+    totalPages: pg.totalPages ?? undefined,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+export async function addStickerOwner({ token, stickerId, user_id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!stickerId && stickerId !== 0) throw new Error('stickerId tidak valid');
+  const res = await fetch(`${stickersBase()}/${stickerId}/users`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id }),
+  });
+  return await handleJson(res, 'Gagal menambahkan ownership stiker');
+}
+
+export async function deleteStickerOwner({ token, stickerId, userId }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!stickerId && stickerId !== 0) throw new Error('stickerId tidak valid');
+  if (!userId && userId !== 0) throw new Error('userId tidak valid');
+  const res = await fetch(`${stickersBase()}/${stickerId}/users/${userId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus ownership stiker');
 }
 
 // ===== Admin Avatar Borders (SUPERADMIN only) =====
@@ -821,6 +1134,169 @@ export async function deleteStoreItem({ token, id }) {
     headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal menghapus item store');
+}
+
+// ===== Prime Store Admin (SUPERADMIN) =====
+const primeStoreItemsBase = () => `${getApiBase()}/admin/prime-store/items`;
+const primeStoreDiscountsBase = () => `${getApiBase()}/admin/prime-store/daily-discounts`;
+
+// ===== VIP Plan Admin (SUPERADMIN) =====
+const vipPlansBase = () => `${getApiBase()}/admin/vip-plans`;
+
+export async function listVipPlans({ token, page = 1, pageSize = 20, includeInactive = false } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (pageSize) params.set('pageSize', String(Math.min(Math.max(1, pageSize), 100)));
+  if (includeInactive) params.set('includeInactive', 'true');
+  const url = `${vipPlansBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar VIP plan');
+  const items = Array.isArray(data?.data?.items) ? data.data.items : Array.isArray(data?.items) ? data.items : [];
+  const pg = data?.data?.pagination || data?.pagination || {};
+  return {
+    items,
+    page: pg.page ?? page,
+    pageSize: pg.pageSize ?? pageSize,
+    total: pg.total ?? 0,
+    totalPages: pg.totalPages ?? (pg.total && pg.pageSize ? Math.ceil(pg.total / pg.pageSize) : undefined),
+  };
+}
+
+export async function getVipPlan({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipPlansBase()}/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil detail VIP plan');
+}
+
+export async function createVipPlan({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipPlansBase()}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat VIP plan');
+}
+
+export async function updateVipPlan({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipPlansBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui VIP plan');
+}
+
+export async function toggleVipPlanStatus({ token, id, is_active }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipPlansBase()}/${id}/toggle`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_active }),
+  });
+  return await handleJson(res, 'Gagal mengubah status VIP plan');
+}
+
+export async function deleteVipPlan({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipPlansBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus VIP plan');
+}
+
+export async function listPrimeStoreItems({ token, q = '', active = '', page = 1, limit = 20 }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (active !== '' && active !== null && active !== undefined) params.set('active', String(active));
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  const url = `${primeStoreItemsBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar item Prime Store');
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    page: data?.page ?? page,
+    limit: data?.limit ?? limit,
+    total: data?.total ?? 0,
+  };
+}
+
+export async function getPrimeStoreItem({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${primeStoreItemsBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil detail item Prime Store');
+}
+
+export async function createPrimeStoreItem({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${primeStoreItemsBase()}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat item Prime Store');
+}
+
+export async function updatePrimeStoreItem({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${primeStoreItemsBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui item Prime Store');
+}
+
+export async function deletePrimeStoreItem({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${primeStoreItemsBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus item Prime Store');
+}
+
+export async function listPrimeStoreDailyDiscounts({ token, date = '', page = 1, limit = 50 }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (date) params.set('date', date);
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  const url = `${primeStoreDiscountsBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar diskon harian Prime Store');
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    page: data?.page ?? page,
+    limit: data?.limit ?? limit,
+    total: data?.total ?? 0,
+  };
+}
+
+export async function upsertPrimeStoreDailyDiscount({ token, itemId, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${primeStoreItemsBase()}/${itemId}/daily-discount`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal menyimpan diskon harian Prime Store');
+}
+
+export async function deletePrimeStoreDailyDiscount({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${primeStoreDiscountsBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus diskon harian Prime Store');
 }
 
 // ===== Sponsor Admin (SUPERADMIN) =====

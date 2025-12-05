@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { Gift, Plus, Trash2, ListFilter } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listRedeemCodes, createRedeemCode, deleteRedeemCode } from '@/lib/api';
+import { listRedeemCodes, createRedeemCode, deleteRedeemCode, listAvatarBorders } from '@/lib/api';
 
 export default function RedeemCodesPage() {
   const router = useRouter();
@@ -44,7 +44,17 @@ export default function RedeemCodesPage() {
     badge_name: '',
     badge_icon: '',
     title_color: '',
+    // VOUCHER
+    voucher_discount_percent: '',
+    voucher_discount_amount: '',
+    voucher_valid_days: '',
+    // BORDER
+    border_id: '',
   });
+
+  // Avatar borders for BORDER type
+  const [borders, setBorders] = useState([]);
+  const [loadingBorders, setLoadingBorders] = useState(false);
 
   const loadList = async (opts = {}) => {
     setLoadingList(true);
@@ -77,6 +87,29 @@ export default function RedeemCodesPage() {
 
   const updateForm = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // Auto-load avatar borders when BORDER type selected
+  useEffect(() => {
+    const loadBorders = async () => {
+      try {
+        setLoadingBorders(true);
+        const token = getSession()?.token;
+        if (!token) return;
+        const data = await listAvatarBorders({ token, page: 1, limit: 200, q: '', active: 'true' });
+        setBorders(Array.isArray(data.items) ? data.items : []);
+      } catch (err) {
+        toast.error(err?.message || 'Gagal memuat avatar borders');
+      } finally {
+        setLoadingBorders(false);
+      }
+    };
+
+    if (!isSuperAdmin) return;
+    if (form.type !== 'BORDER') return;
+    if (borders.length > 0 || loadingBorders) return;
+    loadBorders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.type, isSuperAdmin]);
+
   const onCreate = async (e) => {
     e.preventDefault();
     const token = getSession()?.token;
@@ -86,7 +119,24 @@ export default function RedeemCodesPage() {
       await createRedeemCode({ token, payload });
       toast.success('Kode redeem dibuat');
       // reset minimal
-      setForm((f) => ({ ...f, code: '', max_uses: '', per_user_limit: '', starts_at: '', expires_at: '', coins_amount: '', vip_days: '', vip_level: '', badge_name: '', badge_icon: '', title_color: '' }));
+      setForm((f) => ({
+        ...f,
+        code: '',
+        max_uses: '',
+        per_user_limit: '',
+        starts_at: '',
+        expires_at: '',
+        coins_amount: '',
+        vip_days: '',
+        vip_level: '',
+        badge_name: '',
+        badge_icon: '',
+        title_color: '',
+        voucher_discount_percent: '',
+        voucher_discount_amount: '',
+        voucher_valid_days: '',
+        border_id: '',
+      }));
       await loadList({ page: 1 });
       setPage(1);
     } catch (err) {
@@ -135,6 +185,8 @@ export default function RedeemCodesPage() {
                   <option value="COIN">COIN</option>
                   <option value="VIP">VIP</option>
                   <option value="BADGE">BADGE</option>
+                  <option value="VOUCHER">VOUCHER</option>
+                  <option value="BORDER">BORDER</option>
                 </select>
               </div>
 
@@ -172,6 +224,68 @@ export default function RedeemCodesPage() {
                     <label className="text-sm font-extrabold">Title Color</label>
                     <input value={form.title_color} onChange={(e) => updateForm('title_color', e.target.value)} placeholder="#FF8800" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                   </div>
+                </>
+              )}
+
+              {form.type === 'VOUCHER' && (
+                <>
+                  <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                    <label className="text-sm font-extrabold">Diskon (%)</label>
+                    <input
+                      type="number"
+                      value={form.voucher_discount_percent}
+                      onChange={(e) => updateForm('voucher_discount_percent', e.target.value)}
+                      placeholder="Opsional, mis. 10"
+                      className="px-3 py-2 border-4 rounded-lg font-semibold"
+                      style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                    <label className="text-sm font-extrabold">Diskon Nominal</label>
+                    <input
+                      type="number"
+                      value={form.voucher_discount_amount}
+                      onChange={(e) => updateForm('voucher_discount_amount', e.target.value)}
+                      placeholder="Opsional, mis. 10000"
+                      className="px-3 py-2 border-4 rounded-lg font-semibold"
+                      style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                    <label className="text-sm font-extrabold">Masa Berlaku (hari)</label>
+                    <input
+                      type="number"
+                      value={form.voucher_valid_days}
+                      onChange={(e) => updateForm('voucher_valid_days', e.target.value)}
+                      placeholder="mis. 7"
+                      className="px-3 py-2 border-4 rounded-lg font-semibold"
+                      style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    />
+                  </div>
+                </>
+              )}
+
+              {form.type === 'BORDER' && (
+                <>
+                  <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                    <label className="text-sm font-extrabold">Avatar Border</label>
+                    <select
+                      value={form.border_id}
+                      onChange={(e) => updateForm('border_id', e.target.value)}
+                      className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                      style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    >
+                      <option value="">Pilih border...</option>
+                      {borders.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.title || b.code} (#{b.id})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {loadingBorders && (
+                    <div className="text-xs font-semibold opacity-70 col-span-2 ml-[120px]">Memuat avatar borders...</div>
+                  )}
                 </>
               )}
 
@@ -322,6 +436,14 @@ function buildPayload(form) {
     base.badge_name = form.badge_name;
     if (form.badge_icon) base.badge_icon = form.badge_icon;
     if (form.title_color) base.title_color = form.title_color;
+  } else if (form.type === 'VOUCHER') {
+    // Minimalnya salah satu jenis diskon atau masa berlaku harus diisi, tapi validasi detail bisa ditambah sesuai kebutuhan
+    if (form.voucher_discount_percent !== '') base.voucher_discount_percent = Number(form.voucher_discount_percent);
+    if (form.voucher_discount_amount !== '') base.voucher_discount_amount = Number(form.voucher_discount_amount);
+    if (form.voucher_valid_days !== '') base.voucher_valid_days = Number(form.voucher_valid_days);
+  } else if (form.type === 'BORDER') {
+    if (!form.border_id) throw new Error('Avatar border wajib dipilih');
+    base.border_id = Number(form.border_id);
   }
   return base;
 }

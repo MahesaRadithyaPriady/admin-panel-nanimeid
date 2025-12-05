@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { LayoutDashboard, Coins, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Coins, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import Header from '@/components/dashboard/Header';
 import Sidebar from '@/components/dashboard/Sidebar';
@@ -28,14 +28,18 @@ export default function DashboardLayout({ children }) {
       { key: 'keuangan', label: 'Keuangan', icon: Coins, roles: ['superadmin', 'keuangan'], href: '/dashboard/keuangan' },
       { key: 'topup-manual', label: 'Topup Manual', icon: CreditCard, roles: ['superadmin'], href: '/dashboard/topup' },
       { key: 'avatar-borders', label: 'Avatar Borders', icon: Image, roles: ['superadmin'], href: '/dashboard/avatar-borders' },
+      { key: 'badges', label: 'Super Badge', icon: Award, roles: ['superadmin'], href: '/dashboard/badges' },
+      { key: 'stickers', label: 'Stikers', icon: Image, roles: ['superadmin'], href: '/dashboard/stikers' },
       { key: 'uploader', label: 'Upload Konten', icon: Upload, roles: ['superadmin', 'uploader'], href: '/dashboard/uploader' },
       { key: 'status-konten', label: 'Status Konten', icon: BadgeCheck, roles: ['superadmin', 'uploader'], href: '/dashboard/status-konten' },
       { key: 'daftar-konten', label: 'Daftar Konten', icon: List, roles: ['superadmin', 'uploader'], href: '/dashboard/daftar-konten' },
       { key: 'waifu-vote', label: 'Waifu Vote', icon: Heart, roles: ['superadmin'], href: '/dashboard/waifu-vote' },
+      { key: 'vip-plans', label: 'VIP Plans', icon: Crown, roles: ['superadmin'], href: '/dashboard/vip-plans' },
       { key: 'admin-vip', label: 'Admin VIP', icon: Crown, roles: ['superadmin'], href: '/dashboard/admin-vip' },
       { key: 'admin-wallet', label: 'Admin Wallet', icon: Wallet, roles: ['superadmin'], href: '/dashboard/admin-wallet' },
       { key: 'redeem-codes', label: 'Kode Redeem', icon: Gift, roles: ['superadmin'], href: '/dashboard/redeem' },
       { key: 'store-admin', label: 'Store Admin', icon: ShoppingBag, roles: ['superadmin'], href: '/dashboard/store-admin' },
+      { key: 'prime-store', label: 'Prime Store', icon: ShoppingBag, roles: ['superadmin'], href: '/dashboard/prime-store' },
       { key: 'sponsor-admin', label: 'Sponsor Admin', icon: Megaphone, roles: ['superadmin'], href: '/dashboard/sponsor-admin' },
       { key: 'manga-admin', label: 'Manga Admin', icon: BookOpen, roles: ['superadmin', 'uploader'], href: '/dashboard/manga-admin' },
       { key: 'validasi-konten', label: 'Validasi Konten', icon: ListChecks, roles: ['superadmin'], href: '/dashboard/validasi-konten' },

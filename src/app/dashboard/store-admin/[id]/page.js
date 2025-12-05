@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { ShoppingBag, Save, Trash2, ArrowLeft } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { getStoreItem, updateStoreItem, deleteStoreItem } from '@/lib/api';
+import { getStoreItem, updateStoreItem, deleteStoreItem, listBadges, listStickers } from '@/lib/api';
 
 export default function StoreItemDetailPage() {
   const router = useRouter();
@@ -18,8 +18,14 @@ export default function StoreItemDetailPage() {
   const [loadingItem, setLoadingItem] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    sku: '', title: '', description: '', item_type: 'COIN', coin_price: '', coin_amount: '', vip_days: '', badge_name: '', badge_icon: '', title_color: '', is_active: true, sort_order: ''
+    sku: '', title: '', description: '', item_type: 'COIN', coin_price: '', coin_amount: '', vip_days: '', badge_name: '', badge_icon: '', badge_id: '', sticker_id: '', title_color: '', is_active: true, sort_order: ''
   });
+
+  const [badges, setBadges] = useState([]);
+  const [loadingBadges, setLoadingBadges] = useState(false);
+
+  const [stickers, setStickers] = useState([]);
+  const [loadingStickers, setLoadingStickers] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -43,6 +49,8 @@ export default function StoreItemDetailPage() {
           vip_days: it?.vip_days ?? '',
           badge_name: it?.badge_name || '',
           badge_icon: it?.badge_icon || '',
+          badge_id: it?.badge_id ?? '',
+          sticker_id: it?.sticker_id ?? '',
           title_color: it?.title_color || '',
           is_active: !!it?.is_active,
           sort_order: it?.sort_order ?? '',
@@ -55,6 +63,48 @@ export default function StoreItemDetailPage() {
     };
     load();
   }, [id, isSuperAdmin]);
+
+  useEffect(() => {
+    const loadBadges = async () => {
+      try {
+        setLoadingBadges(true);
+        const token = getSession()?.token;
+        if (!token) return;
+        const data = await listBadges({ token, page: 1, limit: 200, q: '', active: 'true' });
+        setBadges(Array.isArray(data.items) ? data.items : []);
+      } catch (err) {
+        toast.error(err?.message || 'Gagal memuat daftar badge');
+      } finally {
+        setLoadingBadges(false);
+      }
+    };
+
+    if (!isSuperAdmin) return;
+    if (form.item_type !== 'SUPERBADGE') return;
+    if (badges.length > 0 || loadingBadges) return;
+    loadBadges();
+  }, [form.item_type, isSuperAdmin, badges.length, loadingBadges]);
+
+  useEffect(() => {
+    const loadStickers = async () => {
+      try {
+        setLoadingStickers(true);
+        const token = getSession()?.token;
+        if (!token) return;
+        const data = await listStickers({ token, page: 1, limit: 200, q: '' });
+        setStickers(Array.isArray(data.items) ? data.items : []);
+      } catch (err) {
+        toast.error(err?.message || 'Gagal memuat daftar stiker');
+      } finally {
+        setLoadingStickers(false);
+      }
+    };
+
+    if (!isSuperAdmin) return;
+    if (form.item_type !== 'STICKER') return;
+    if (stickers.length > 0 || loadingStickers) return;
+    loadStickers();
+  }, [form.item_type, isSuperAdmin, stickers.length, loadingStickers]);
 
   const updateField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -110,6 +160,8 @@ export default function StoreItemDetailPage() {
                     <option value="COIN">COIN</option>
                     <option value="VIP">VIP</option>
                     <option value="BADGE">BADGE</option>
+                    <option value="SUPERBADGE">SUPERBADGE</option>
+                    <option value="STICKER">STICKER</option>
                     <option value="OTHER">OTHER</option>
                   </select>
                 </L>
@@ -121,6 +173,50 @@ export default function StoreItemDetailPage() {
                     <L label="Nama Badge"><input value={form.badge_name} onChange={(e)=>updateField('badge_name', e.target.value)} className="inp" /></L>
                     <L label="Icon URL"><input value={form.badge_icon} onChange={(e)=>updateField('badge_icon', e.target.value)} className="inp" /></L>
                     <L label="Title Color"><input value={form.title_color} onChange={(e)=>updateField('title_color', e.target.value)} className="inp" /></L>
+                  </>
+                )}
+
+                {form.item_type === 'SUPERBADGE' && (
+                  <>
+                    <L label="Super Badge">
+                      <select
+                        value={form.badge_id}
+                        onChange={(e)=>updateField('badge_id', e.target.value)}
+                        className="sel"
+                      >
+                        <option value="">Pilih Super Badge...</option>
+                        {badges.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name || b.code} (#{b.id})
+                          </option>
+                        ))}
+                      </select>
+                    </L>
+                    {loadingBadges && (
+                      <div className="text-xs font-semibold opacity-70">Memuat daftar badge...</div>
+                    )}
+                  </>
+                )}
+
+                {form.item_type === 'STICKER' && (
+                  <>
+                    <L label="Sticker">
+                      <select
+                        value={form.sticker_id}
+                        onChange={(e)=>updateField('sticker_id', e.target.value)}
+                        className="sel"
+                      >
+                        <option value="">Pilih Sticker...</option>
+                        {stickers.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name || s.code} (#{s.id})
+                          </option>
+                        ))}
+                      </select>
+                    </L>
+                    {loadingStickers && (
+                      <div className="text-xs font-semibold opacity-70">Memuat daftar stiker...</div>
+                    )}
                   </>
                 )}
 
@@ -177,6 +273,8 @@ function buildUpdatePayload(form) {
   setNum('coin_price');
   setNum('coin_amount');
   setNum('vip_days');
+  setNum('badge_id');
+  setNum('sticker_id');
   setStr('badge_name');
   setStr('badge_icon');
   setStr('title_color');

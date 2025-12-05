@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { Plus, Pencil, Trash2, List, ChevronDown, ChevronRight, ChevronUp, Film } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listAnime, createAnime, updateAnime, deleteAnime, listEpisodes, createEpisode, updateEpisode, deleteEpisode, searchAnime } from '@/lib/api';
+import { listAnime, createAnime, updateAnime, deleteAnime, listEpisodes, createEpisode, updateEpisode, deleteEpisode, searchAnime, getAnimeDetail } from '@/lib/api';
 
 export default function DaftarKontenPage() {
   const router = useRouter();
@@ -20,6 +20,8 @@ export default function DaftarKontenPage() {
   const [limit, setLimit] = useState(20);
   const [total, setTotal] = useState(0);
   const [q, setQ] = useState('');
+  const [status, setStatus] = useState('');
+  const [genre, setGenre] = useState('');
   const [loadingList, setLoadingList] = useState(false);
   const [expanded, setExpanded] = useState(() => new Set()); // anime ids expanded
 
@@ -39,6 +41,11 @@ export default function DaftarKontenPage() {
     studio_anime: '',
     fakta_menarik: '',
     tanggal_rilis_anime: '',
+    aliases: '',
+    alias_priority: '',
+    schedule_hari: '',
+    schedule_jam: '',
+    schedule_is_active: true,
   });
   // (HAPUS) Bulk Sync state dan fitur dihilangkan
   const [submittingTabEpisode, setSubmittingTabEpisode] = useState(false);
@@ -55,6 +62,11 @@ export default function DaftarKontenPage() {
     studio_anime: '',
     fakta_menarik: '',
     tanggal_rilis_anime: '',
+    aliases: '',
+    alias_priority: '',
+    schedule_hari: '',
+    schedule_jam: '',
+    schedule_is_active: true,
   });
 
   useEffect(() => {
@@ -66,7 +78,7 @@ export default function DaftarKontenPage() {
     setLoadingList(true);
     try {
       const token = getSession()?.token;
-      const params = { page, limit, q, ...opts };
+      const params = { page, limit, q, status: status || undefined, genre: genre || undefined, ...opts };
       const data = await listAnime({ token, ...params });
       setItems(data.items || []);
       setPage(data.page || 1);
@@ -77,6 +89,37 @@ export default function DaftarKontenPage() {
     } finally {
       setLoadingList(false);
     }
+  };
+
+  const parseAliases = (val) => {
+    const raw = (val || '').trim();
+    if (!raw) return undefined;
+    try {
+      if (raw.startsWith('[') || raw.startsWith('{')) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+        if (parsed && typeof parsed === 'object') return [parsed];
+      }
+    } catch {}
+    // Parse per-line, preserve JSON objects when possible
+    const tokens = raw.split(/\n/).map((s) => s.trim()).filter(Boolean);
+    const out = [];
+    for (const t of tokens) {
+      if (!t) continue;
+      if ((t.startsWith('{') && t.endsWith('}')) || (t.startsWith('[') && t.endsWith(']'))) {
+        try {
+          const j = JSON.parse(t);
+          if (Array.isArray(j)) out.push(...j);
+          else out.push(j);
+          continue;
+        } catch {}
+      }
+      // also split by comma for simple inline lists
+      const parts = t.split(',').map((s) => s.trim()).filter(Boolean);
+      if (parts.length > 1) out.push(...parts);
+      else out.push(t);
+    }
+    return out.length ? out : undefined;
   };
   const replaceEpisodeToken = (text, n) => {
     if (!text) return text;
@@ -193,6 +236,178 @@ export default function DaftarKontenPage() {
     }, 300);
     return () => { alive = false; clearTimeout(t); };
   }, [animeFilter]);
+
+  // ===== Anime Relations (Admin) =====
+  const RELATION_OPTIONS = useMemo(() => (['SEQUEL','PREQUEL','SIDE_STORY','SPINOFF','REMAKE','COMPILATION','DUB','ALT_CUT','SAME_FRANCHISE','OTHER']), []);
+  const [relations, setRelations] = useState([]);
+  const [relPage, setRelPage] = useState(1);
+  const [relLimit, setRelLimit] = useState(20);
+  const [relTotal, setRelTotal] = useState(0);
+  const [relLoading, setRelLoading] = useState(false);
+  const [relGroup, setRelGroup] = useState(false);
+  const [relGroups, setRelGroups] = useState(undefined);
+  const [relForm, setRelForm] = useState({ source_anime_id: '', related_anime_id: '', relation: 'SEQUEL', priority: 1 });
+  const [relSourceQuery, setRelSourceQuery] = useState('');
+  const [relRelatedQuery, setRelRelatedQuery] = useState('');
+  const [relSourceSug, setRelSourceSug] = useState([]);
+  const [relRelatedSug, setRelRelatedSug] = useState([]);
+  const [relSrcLoading, setRelSrcLoading] = useState(false);
+  const [relRelLoading, setRelRelLoading] = useState(false);
+  const [editingRelation, setEditingRelation] = useState(null); // { id, relation, priority }
+  const [submittingRelation, setSubmittingRelation] = useState(false);
+  const [confirmRelOpen, setConfirmRelOpen] = useState(false);
+  const [confirmRelTarget, setConfirmRelTarget] = useState(null); // { id }
+  const relTopRef = useRef(null);
+  const relConfirmRef = useRef(null);
+
+  const loadRelations = async (opts = {}) => {
+    if (!canAccess) return;
+    setRelLoading(true);
+    try {
+      const token = getSession()?.token;
+      const params = { page: relPage, limit: relLimit, group: relGroup, ...opts };
+      const data = await listAnimeRelations({ token, ...params });
+      setRelations(Array.isArray(data.items) ? data.items : []);
+      setRelPage(data.page || 1);
+      setRelLimit(data.limit || 20);
+      setRelTotal(data.total || 0);
+      setRelGroups(data.groups);
+    } catch (err) {
+      toast.error(err?.message || 'Gagal memuat relations');
+    } finally {
+      setRelLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!canAccess || activeTab !== 'related') return;
+    loadRelations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [relPage, relLimit, relGroup, canAccess, activeTab]);
+
+  // Debounce search for Source
+  useEffect(() => {
+    const q = (relSourceQuery || '').trim();
+    if (!q || q.length < 2) { setRelSourceSug([]); return; }
+    let alive = true;
+    const t = setTimeout(async () => {
+      try {
+        setRelSrcLoading(true);
+        const token = getSession()?.token;
+        const { items: sugg } = await searchAnime({ token, q, limit: 8, includeEpisodes: false });
+        if (!alive) return;
+        setRelSourceSug(Array.isArray(sugg) ? sugg : []);
+      } catch (_) {
+        if (!alive) return;
+        setRelSourceSug([]);
+      } finally {
+        if (alive) setRelSrcLoading(false);
+      }
+    }, 300);
+    return () => { alive = false; clearTimeout(t); };
+  }, [relSourceQuery]);
+
+  // Debounce search for Related
+  useEffect(() => {
+    const q = (relRelatedQuery || '').trim();
+    if (!q || q.length < 2) { setRelRelatedSug([]); return; }
+    let alive = true;
+    const t = setTimeout(async () => {
+      try {
+        setRelRelLoading(true);
+        const token = getSession()?.token;
+        const { items: sugg } = await searchAnime({ token, q, limit: 8, includeEpisodes: false });
+        if (!alive) return;
+        setRelRelatedSug(Array.isArray(sugg) ? sugg : []);
+      } catch (_) {
+        if (!alive) return;
+        setRelRelatedSug([]);
+      } finally {
+        if (alive) setRelRelLoading(false);
+      }
+    }, 300);
+    return () => { alive = false; clearTimeout(t); };
+  }, [relRelatedQuery]);
+
+  const onCreateRelation = async (e) => {
+    e.preventDefault();
+    const token = getSession()?.token;
+    if (!relForm.source_anime_id || !relForm.related_anime_id || !relForm.relation) {
+      toast.error('Lengkapi form relation');
+      return;
+    }
+    try {
+      setSubmittingRelation(true);
+      const payload = {
+        source_anime_id: Number(relForm.source_anime_id),
+        related_anime_id: Number(relForm.related_anime_id),
+        relation: relForm.relation,
+        priority: Number(relForm.priority) || 1,
+      };
+      const res = await createAnimeRelation({ token, payload });
+      toast.success(res?.message || 'Relation dibuat');
+      setRelForm({ source_anime_id: '', related_anime_id: '', relation: 'SEQUEL', priority: 1 });
+      setRelSourceQuery('');
+      setRelRelatedQuery('');
+      await loadRelations({ page: 1 });
+      setRelPage(1);
+    } catch (err) {
+      toast.error(err?.message || 'Gagal membuat relation');
+    } finally {
+      setSubmittingRelation(false);
+    }
+  };
+
+  const onStartEditRelation = (it) => {
+    setEditingRelation({ id: it.id, relation: it.relation || 'SEQUEL', priority: it.priority ?? 1 });
+    toast.success('Edit relation dibuka');
+    setTimeout(() => {
+      try { relTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
+    }, 0);
+  };
+  const onCancelEditRelation = () => setEditingRelation(null);
+  const onSubmitEditRelation = async (e) => {
+    e.preventDefault();
+    if (!editingRelation) return;
+    const token = getSession()?.token;
+    try {
+      setSubmittingRelation(true);
+      const payload = { relation: editingRelation.relation, priority: Number(editingRelation.priority) || 1 };
+      const res = await updateAnimeRelation({ token, id: editingRelation.id, payload });
+      toast.success(res?.message || 'Relation diperbarui');
+      setEditingRelation(null);
+      await loadRelations();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menyimpan relation');
+    } finally {
+      setSubmittingRelation(false);
+    }
+  };
+  const onRequestDeleteRelation = (it) => {
+    setConfirmRelTarget(it);
+    setConfirmRelOpen(true);
+    toast('Konfirmasi hapus dibuka');
+    setTimeout(() => {
+      try { relConfirmRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
+    }, 0);
+  };
+  const onCancelDeleteRelation = () => { setConfirmRelOpen(false); setConfirmRelTarget(null); };
+  const onConfirmDeleteRelation = async () => {
+    if (!confirmRelTarget) return;
+    const token = getSession()?.token;
+    try {
+      setSubmittingRelation(true);
+      const res = await deleteAnimeRelation({ token, id: confirmRelTarget.id });
+      toast.success(res?.message || 'Relation dihapus');
+      await loadRelations();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menghapus relation');
+    } finally {
+      setSubmittingRelation(false);
+      setConfirmRelOpen(false);
+      setConfirmRelTarget(null);
+    }
+  };
   const onSubmitCreateEpisodeFromTab = async () => {
     if (!tabEpisode?.animeId) {
       toast.error('Pilih anime terlebih dahulu');
@@ -499,11 +714,12 @@ export default function DaftarKontenPage() {
   };
 
   const buildPayload = () => {
+    const normalizedStatus = normalizeStatus(form.status_anime);
     const payload = {
       nama_anime: form.nama_anime,
       gambar_anime: form.gambar_anime,
       rating_anime: form.rating_anime,
-      status_anime: normalizeStatus(form.status_anime),
+      status_anime: normalizedStatus,
       sinopsis_anime: form.sinopsis_anime,
       label_anime: form.label_anime,
     };
@@ -513,8 +729,46 @@ export default function DaftarKontenPage() {
       studio_anime: parseMaybeArray(form.studio_anime),
       fakta_menarik: parseMaybeArray(form.fakta_menarik),
       tanggal_rilis_anime: form.tanggal_rilis_anime || undefined,
+      aliases: parseAliases(form.aliases),
     };
+    // Apply default alias priority if provided
+    const toInt = (v) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? Math.trunc(n) : undefined;
+    };
+    const defaultAliasPriority = form.alias_priority !== '' ? toInt(form.alias_priority) : undefined;
+    if (Array.isArray(optional.aliases)) {
+      optional.aliases = optional.aliases.map((a) => {
+        if (typeof a === 'string') {
+          if (defaultAliasPriority !== undefined) return { alias: a, priority: defaultAliasPriority };
+          return a;
+        }
+        if (a && typeof a === 'object') {
+          const coerced = { ...a };
+          if (coerced.priority !== undefined && coerced.priority !== null) {
+            const pi = toInt(coerced.priority);
+            coerced.priority = pi !== undefined ? pi : coerced.priority;
+          } else if (defaultAliasPriority !== undefined) {
+            coerced.priority = defaultAliasPriority;
+          }
+          return coerced;
+        }
+        return a;
+      });
+    }
     Object.keys(optional).forEach((k) => optional[k] === undefined || optional[k] === '' ? delete optional[k] : null);
+
+    const isOngoing = (normalizedStatus || '').toString().trim().toLowerCase() === 'ongoing';
+    if (isOngoing) {
+      const hari = (form.schedule_hari || '').trim();
+      const jam = (form.schedule_jam || '').trim();
+      payload.schedule = {
+        hari,
+        jam,
+        is_active: form.schedule_is_active !== undefined ? !!form.schedule_is_active : true,
+      };
+    }
+
     return { ...payload, ...optional };
   };
 
@@ -523,6 +777,13 @@ export default function DaftarKontenPage() {
     e.preventDefault();
     if (!form.nama_anime || !form.gambar_anime || !form.rating_anime || !form.status_anime || !form.sinopsis_anime || !form.label_anime) {
       return toast.error('Field wajib belum lengkap');
+    }
+    if (normalizeStatus(form.status_anime).toLowerCase() === 'ongoing') {
+      const hari = (form.schedule_hari || '').trim();
+      const jam = (form.schedule_jam || '').trim();
+      if (!hari || !jam) {
+        return toast.error('Untuk status ongoing, jadwal hari & jam wajib diisi');
+      }
     }
     const token = getSession()?.token;
     try {
@@ -562,7 +823,72 @@ export default function DaftarKontenPage() {
       studio_anime: Array.isArray(it.studio_anime) ? it.studio_anime.join(', ') : (it.studio_anime || ''),
       fakta_menarik: Array.isArray(it.fakta_menarik) ? it.fakta_menarik.join(', ') : (it.fakta_menarik || ''),
       tanggal_rilis_anime: it.tanggal_rilis_anime ? new Date(it.tanggal_rilis_anime).toISOString().slice(0, 10) : '', // yyyy-mm-dd
+      aliases: Array.isArray(it.aliases)
+        ? it.aliases.map((a) => (typeof a === 'string' ? a : (a?.alias || ''))).filter(Boolean).join('\n')
+        : '',
+      alias_priority: (() => {
+        const prs = Array.isArray(it.aliases)
+          ? it.aliases
+              .map((a) => (a && typeof a === 'object' && typeof a.priority === 'number' ? a.priority : undefined))
+              .filter((n) => typeof n === 'number')
+          : [];
+        if (!prs.length) return '';
+        return String(Math.min(...prs));
+      })(),
+      schedule_hari: '',
+      schedule_jam: '',
+      schedule_is_active: true,
     });
+    // Fetch latest aliases from API detail to ensure up-to-date
+    (async () => {
+      try {
+        const token = getSession()?.token;
+        if (!token) return;
+        const detail = await getAnimeDetail({ token, id: it.id });
+        const al = Array.isArray(detail?.item?.aliases) ? detail.item.aliases : detail?.aliases;
+        if (al) {
+          const aliasesStr = Array.isArray(al)
+            ? al
+                .map((a) => {
+                  if (typeof a === 'string') return a;
+                  if (a && typeof a === 'object') {
+                    const obj = { alias: a.alias || '', ...(a.language ? { language: a.language } : {}), ...(a.type ? { type: a.type } : {}), ...(typeof a.priority === 'number' ? { priority: a.priority } : {}) };
+                    // If has any metadata, render as JSON; else just alias string
+                    if (obj.language || obj.type || Object.prototype.hasOwnProperty.call(obj, 'priority')) return JSON.stringify(obj);
+                    return obj.alias;
+                  }
+                  return '';
+                })
+                .filter(Boolean)
+                .join('\n')
+            : '';
+          setForm((f) => ({ ...f, aliases: aliasesStr, alias_priority: f.alias_priority || (() => {
+            const prs = Array.isArray(al)
+              ? al
+                  .map((a) => (a && typeof a === 'object' && typeof a.priority === 'number' ? a.priority : undefined))
+                  .filter((n) => typeof n === 'number')
+              : [];
+            if (!prs.length) return '';
+            return String(Math.min(...prs));
+          })() }));
+        }
+
+        const schedules = Array.isArray(detail?.item?.schedules) ? detail.item.schedules : detail?.schedules;
+        if (Array.isArray(schedules) && schedules.length) {
+          const active = schedules.find((s) => s && s.is_active) || schedules[0];
+          if (active) {
+            setForm((f) => ({
+              ...f,
+              schedule_hari: active.hari || f.schedule_hari || '',
+              schedule_jam: active.jam || f.schedule_jam || '',
+              schedule_is_active: active.is_active !== undefined ? !!active.is_active : f.schedule_is_active,
+            }));
+          }
+        }
+      } catch (_) {
+        // Ignore fetch error for aliases, keep existing prefilled value
+      }
+    })();
   };
 
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -601,19 +927,43 @@ export default function DaftarKontenPage() {
             <h2 className="text-xl font-extrabold flex items-center gap-2"><List className="size-5" /> Daftar Konten</h2>
           </div>
 
-          {/* Search */}
-          <form onSubmit={onSearch} className="grid sm:grid-cols-[1fr_140px] gap-3">
-            <input
-              type="text"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Cari (nama/genre/tag)"
-              className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-            />
-            <button type="submit" disabled={loadingList} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
-              {loadingList ? 'Memuat...' : 'Cari'}
-            </button>
+          {/* Search + Filters */}
+          <form onSubmit={onSearch} className="grid gap-3">
+            <div className="grid sm:grid-cols-[1fr_140px] gap-3">
+              <input
+                type="text"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Cari (nama/genre/tag)"
+                className="px-3 py-2 border-4 rounded-lg font-semibold"
+                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              />
+              <button type="submit" disabled={loadingList} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
+                {loadingList ? 'Memuat...' : 'Cari'}
+              </button>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="px-3 py-2 border-4 rounded-lg font-semibold"
+                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              >
+                <option value="">Semua Status</option>
+                <option value="ONGOING">Ongoing</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="HIATUS">Hiatus</option>
+                <option value="UPCOMING">Upcoming</option>
+              </select>
+              <input
+                type="text"
+                value={genre}
+                onChange={(e) => setGenre(e.target.value)}
+                placeholder="Filter genre (exact, contoh: Action)"
+                className="px-3 py-2 border-4 rounded-lg font-semibold"
+                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              />
+            </div>
           </form>
 
           {/* Tabs: Tambah Anime | Tambah Episode */}
@@ -653,12 +1003,225 @@ export default function DaftarKontenPage() {
               <input type="text" value={form.studio_anime} onChange={(e) => setForm((f) => ({ ...f, studio_anime: e.target.value }))} placeholder="Studio (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               <input type="text" value={form.fakta_menarik} onChange={(e) => setForm((f) => ({ ...f, fakta_menarik: e.target.value }))} placeholder="Fakta menarik (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
             </div>
+            {form.status_anime === 'Ongoing' && (
+              <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-center">
+                <input
+                  type="text"
+                  value={form.schedule_hari}
+                  onChange={(e) => setForm((f) => ({ ...f, schedule_hari: e.target.value }))}
+                  placeholder="Hari tayang (contoh: Senin)"
+                  className="px-3 py-2 border-4 rounded-lg font-semibold"
+                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                />
+                <input
+                  type="text"
+                  value={form.schedule_jam}
+                  onChange={(e) => setForm((f) => ({ ...f, schedule_jam: e.target.value }))}
+                  placeholder="Jam tayang (HH:mm, contoh: 20:30)"
+                  className="px-3 py-2 border-4 rounded-lg font-semibold"
+                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                />
+                <label className="flex items-center gap-2 text-sm font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={!!form.schedule_is_active}
+                    onChange={(e) => setForm((f) => ({ ...f, schedule_is_active: e.target.checked }))}
+                  />
+                  <span>Jadwal aktif</span>
+                </label>
+              </div>
+            )}
+            <textarea
+              value={form.aliases}
+              onChange={(e) => setForm((f) => ({ ...f, aliases: e.target.value }))}
+              placeholder={`Aliases (opsional). Bisa dipisah baris/koma, atau JSON: [\n  "Alias 1",\n  { "alias": "Naruto Shippuden", "language": "EN", "type": "AKA" }\n]`}
+              rows={4}
+              className="px-3 py-2 border-4 rounded-lg font-semibold"
+              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            />
+            <div className="grid sm:grid-cols-2 gap-3">
+              <input
+                type="number"
+                value={form.alias_priority}
+                onChange={(e) => setForm((f) => ({ ...f, alias_priority: e.target.value }))}
+                placeholder="Default alias priority (opsional)"
+                className="px-3 py-2 border-4 rounded-lg font-semibold"
+                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              />
+            </div>
             <div className="grid sm:grid-cols-[160px]">
               <button type="submit" disabled={submittingAnime} className={`flex items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60`} style={{ boxShadow: '4px 4px 0 #000', background: mode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', color: mode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
                 {submittingAnime ? (mode === 'add' ? 'Menambah...' : 'Menyimpan...') : (mode === 'add' ? (<><Plus className="size-4" /> Tambah</>) : (<><Pencil className="size-4" /> Simpan</>))}
               </button>
             </div>
           </form>
+          )}
+
+          {/* Tab: Anime Related */}
+          {false && (
+            <div className="grid gap-4">
+              <div ref={relTopRef} />
+              <form onSubmit={() => {}} className="grid gap-3 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                <div className="font-extrabold">Tambah Relation</div>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  <div className="relative">
+                    <input type="text" value={relSourceQuery} onChange={(e) => setRelSourceQuery(e.target.value)} placeholder="Cari Source Anime..." className="w-full px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                    {(relSrcLoading || relSourceSug.length > 0) && relSourceQuery && relSourceQuery.length >= 2 && (
+                      <div className="absolute z-10 mt-1 w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+                        {relSrcLoading ? (
+                          <div className="px-3 py-2 text-sm font-semibold">Mencari...</div>
+                        ) : (
+                          <>
+                            {relSourceSug.map((it) => (
+                              <button key={it.id} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setRelForm((s) => ({ ...s, source_anime_id: it.id })); setRelSourceQuery(it.nama_anime || ''); setRelSourceSug([]); }} className="w-full text-left px-3 py-2 hover:opacity-90 font-semibold" style={{ color: 'var(--foreground)' }}>{it.nama_anime}</button>
+                            ))}
+                            {(!relSourceSug || relSourceSug.length === 0) && (
+                              <div className="px-3 py-2 text-sm font-semibold">Tidak ada hasil</div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                    <div className="text-xs opacity-70 mt-1">ID: {relForm.source_anime_id || '-'}</div>
+                  </div>
+                  <div className="relative">
+                    <input type="text" value={relRelatedQuery} onChange={(e) => setRelRelatedQuery(e.target.value)} placeholder="Cari Related Anime..." className="w-full px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                    {(relRelLoading || relRelatedSug.length > 0) && relRelatedQuery && relRelatedQuery.length >= 2 && (
+                      <div className="absolute z-10 mt-1 w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+                        {relRelLoading ? (
+                          <div className="px-3 py-2 text-sm font-semibold">Mencari...</div>
+                        ) : (
+                          <>
+                            {relRelatedSug.map((it) => (
+                              <button key={it.id} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setRelForm((s) => ({ ...s, related_anime_id: it.id })); setRelRelatedQuery(it.nama_anime || ''); setRelRelatedSug([]); }} className="w-full text-left px-3 py-2 hover:opacity-90 font-semibold" style={{ color: 'var(--foreground)' }}>{it.nama_anime}</button>
+                            ))}
+                            {(!relRelatedSug || relRelatedSug.length === 0) && (
+                              <div className="px-3 py-2 text-sm font-semibold">Tidak ada hasil</div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                    <div className="text-xs opacity-70 mt-1">ID: {relForm.related_anime_id || '-'}</div>
+                  </div>
+                  <select value={relForm.relation} onChange={(e) => setRelForm((s) => ({ ...s, relation: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                    {RELATION_OPTIONS.map((op) => (<option key={op} value={op}>{op}</option>))}
+                  </select>
+                  <input type="number" value={relForm.priority} onChange={(e) => setRelForm((s) => ({ ...s, priority: Number(e.target.value) }))} placeholder="Priority" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="grid sm:grid-cols-[180px]">
+                  <button type="submit" disabled={submittingRelation} className="flex items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>{submittingRelation ? 'Menambah...' : (<><Plus className="size-4" /> Tambah Relation</>)}</button>
+                </div>
+              </form>
+
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 font-semibold">
+                  <input id="rel-group-toggle" type="checkbox" checked={relGroup} onChange={(e) => { setRelGroup(e.target.checked); setRelPage(1); }} />
+                  <label htmlFor="rel-group-toggle">Group berdasar base/franchise</label>
+                </div>
+                <div className="text-sm opacity-80">Total: {relTotal}</div>
+              </div>
+
+              <div className="overflow-auto">
+                <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <thead style={{ background: 'var(--panel-bg)' }}>
+                    <tr>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Source ID</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Source Name</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Relation</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Related ID</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Related Name</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Priority</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {relations.map((it) => (
+                      <tr key={it.id}>
+                        <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.source_anime_id}</td>
+                        <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.source_name || '-'}</td>
+                        <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.relation}</td>
+                        <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.related_anime_id}</td>
+                        <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.related_name || '-'}</td>
+                        <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.priority ?? '-'}</td>
+                        <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
+                          <div className="flex items-center gap-2">
+                            <button type="button" onClick={() => onStartEditRelation(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}><Pencil className="size-4" /></button>
+                            <button type="button" onClick={() => onRequestDeleteRelation(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}><Trash2 className="size-4" /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {relations.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="px-3 py-6 text-center text-sm opacity-70">{relLoading ? 'Memuat...' : 'Belum ada relation.'}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {relGroup && Array.isArray(relGroups) && (
+                <div className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <div className="font-extrabold mb-2">Groups</div>
+                  <div className="space-y-2">
+                    {relGroups.map((g) => (
+                      <div key={g.key} className="p-2 border-4 rounded-lg" style={{ borderColor: 'var(--panel-border)' }}>
+                        <div className="font-bold">{(g.titles || []).join(', ')}</div>
+                        <div className="text-sm opacity-80">Key: {g.key}</div>
+                        <div className="mt-1 text-sm">
+                          {(g.relations || []).map((r) => (
+                            <div key={r.id} className="flex items-center gap-2 py-1 border-b last:border-b-0" style={{ borderColor: 'var(--panel-border)' }}>
+                              <div className="flex-1">{r.source_name} → {r.related_name}</div>
+                              <div className="w-[120px] text-right font-semibold">{r.relation}</div>
+                              <div className="flex items-center gap-2">
+                                <button type="button" onClick={() => onStartEditRelation(r)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }} aria-label="Edit relation"><Pencil className="size-4" /></button>
+                                <button type="button" onClick={() => onRequestDeleteRelation(r)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }} aria-label="Hapus relation"><Trash2 className="size-4" /></button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {relGroups.length === 0 && (
+                      <div className="text-sm opacity-70">Tidak ada group.</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {confirmRelOpen && (
+                <div ref={relConfirmRef} className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <div className="font-extrabold">Konfirmasi Hapus Relation</div>
+                  <div className="text-sm mt-1">Yakin ingin menghapus relation ID: <span className="font-bold">{confirmRelTarget?.id}</span>?</div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <button type="button" disabled={submittingRelation} onClick={onCancelDeleteRelation} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Batal</button>
+                    <button type="button" disabled={submittingRelation} onClick={onConfirmDeleteRelation} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>{submittingRelation ? 'Menghapus...' : 'Hapus'}</button>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <button disabled={relPage <= 1} onClick={() => setRelPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Prev</button>
+                <div className="text-sm font-extrabold">Page {relPage} / {Math.max(1, Math.ceil(relTotal / relLimit))}</div>
+                <button disabled={relPage >= Math.ceil(relTotal / relLimit)} onClick={() => setRelPage((p) => p + 1)} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Next</button>
+              </div>
+
+              {editingRelation && (
+                <form onSubmit={onSubmitEditRelation} className="p-3 border-4 rounded-lg space-y-2" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <div className="font-extrabold">Edit Relation</div>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    <select value={editingRelation.relation} onChange={(e) => setEditingRelation((s) => ({ ...s, relation: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                      {RELATION_OPTIONS.map((op) => (<option key={op} value={op}>{op}</option>))}
+                    </select>
+                    <input type="number" value={editingRelation.priority} onChange={(e) => setEditingRelation((s) => ({ ...s, priority: Number(e.target.value) }))} placeholder="Priority" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button type="button" disabled={submittingRelation} onClick={onCancelEditRelation} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Batal</button>
+                    <button type="submit" disabled={submittingRelation} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>{submittingRelation ? 'Menyimpan...' : 'Simpan'}</button>
+                  </div>
+                </form>
+              )}
+            </div>
           )}
 
           {/* (HAPUS) Form Bulk dihilangkan */}

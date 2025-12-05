@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Image as ImageIcon, Pencil, Trash2, Plus, ArrowRight } from 'lucide-react';
+import { Image as ImageIcon, Pencil, Trash2, Plus, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { createAvatarBorder, createAvatarBorderWithFile, listAvatarBorders, updateAvatarBorder, updateAvatarBorderWithFile, deleteAvatarBorder } from '@/lib/api';
@@ -272,6 +272,11 @@ export default function AvatarBordersPage() {
             <h2 className="text-xl font-extrabold flex items-center gap-2">
               <ImageIcon className="size-5" /> {mode === 'add' ? 'Tambah Avatar Border' : 'Ubah Avatar Border'}
             </h2>
+            <div className="flex items-center gap-2">
+              <button onClick={() => router.push('/dashboard')} className="btn-pg flex items-center gap-2">
+                <ArrowLeft className="size-4" /> Kembali
+              </button>
+            </div>
           </div>
 
           {/* Filters */}
