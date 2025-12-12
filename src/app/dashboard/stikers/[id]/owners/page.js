@@ -13,8 +13,6 @@ export default function StickerOwnersPage() {
   const params = useParams();
   const stickerId = Number(params?.id);
   const { user, loading } = useSession();
-  const role = (user?.role || '').toLowerCase();
-  const canAccess = role === 'superadmin';
 
   const [sticker, setSticker] = useState(null);
   const [items, setItems] = useState([]);
@@ -46,7 +44,7 @@ export default function StickerOwnersPage() {
   };
 
   const loadOwners = async (opts = {}) => {
-    if (!canAccess || !stickerId) return;
+    if (!stickerId) return;
     setLoadingList(true);
     try {
       const token = getSession()?.token;
@@ -64,15 +62,15 @@ export default function StickerOwnersPage() {
   };
 
   useEffect(() => {
-    if (!canAccess || !stickerId) return;
+    if (!stickerId) return;
     loadSticker();
-  }, [canAccess, stickerId]);
+  }, [stickerId]);
 
   useEffect(() => {
-    if (!canAccess || !stickerId) return;
+    if (!stickerId) return;
     loadOwners();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, canAccess, stickerId]);
+  }, [page, limit, stickerId]);
 
   const onFilter = (e) => {
     e.preventDefault();
@@ -134,14 +132,6 @@ export default function StickerOwnersPage() {
   };
 
   if (loading || !user) return null;
-  if (!canAccess) {
-    return (
-      <div className="text-sm font-semibold">
-        Halaman ini khusus superadmin. Anda login sebagai{' '}
-        <span className="px-2 py-1 border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--foreground)' }}>{user.role}</span>.
-      </div>
-    );
-  }
 
   const totalPages = Math.max(1, Math.ceil((total || 0) / (limit || 1)));
 

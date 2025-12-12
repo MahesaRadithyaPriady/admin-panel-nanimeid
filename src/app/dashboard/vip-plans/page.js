@@ -17,8 +17,6 @@ import {
 export default function VipPlansPage() {
   const router = useRouter();
   const { user, loading } = useSession();
-  const role = (user?.role || "").toLowerCase();
-  const canAccess = role === "superadmin";
 
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
@@ -46,7 +44,6 @@ export default function VipPlansPage() {
   }, [loading, user, router]);
 
   const loadList = async (opts = {}) => {
-    if (!canAccess) return;
     setLoadingList(true);
     try {
       const token = getSession()?.token;
@@ -64,10 +61,10 @@ export default function VipPlansPage() {
   };
 
   useEffect(() => {
-    if (!canAccess) return;
+    if (!user) return;
     loadList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize, includeInactive, canAccess]);
+  }, [page, pageSize, includeInactive, user]);
 
   const resetForm = () => {
     setMode("add");
@@ -171,17 +168,6 @@ export default function VipPlansPage() {
   };
 
   if (loading || !user) return null;
-  if (!canAccess) {
-    return (
-      <div className="text-sm font-semibold">
-        Halaman ini khusus superadmin. Anda login sebagai{" "}
-        <span className="px-2 py-1 border-2 rounded">
-          {user.role}
-        </span>
-        .
-      </div>
-    );
-  }
 
   const totalPages = Math.max(1, Math.ceil((total || 0) / (pageSize || 1)));
 

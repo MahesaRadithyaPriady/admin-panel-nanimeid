@@ -11,7 +11,6 @@ import { listRedeemCodes, createRedeemCode, deleteRedeemCode, listAvatarBorders 
 export default function RedeemCodesPage() {
   const router = useRouter();
   const { user, loading } = useSession();
-  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPERADMIN';
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -74,10 +73,10 @@ export default function RedeemCodesPage() {
   };
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!user) return;
     loadList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, isSuperAdmin]);
+  }, [page, limit, user]);
 
   const onSearch = (e) => {
     e.preventDefault();
@@ -103,7 +102,6 @@ export default function RedeemCodesPage() {
       }
     };
 
-    if (!isSuperAdmin) return;
     if (form.type !== 'BORDER') return;
     if (borders.length > 0 || loadingBorders) return;
     loadBorders();
@@ -159,12 +157,7 @@ export default function RedeemCodesPage() {
 
   return (
     <div className="space-y-6">
-      {loading || !user ? null : !isSuperAdmin ? (
-        <div className="text-sm font-semibold">
-          Halaman ini khusus superadmin. Anda login sebagai{' '}
-          <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">{user.role}</span>.
-        </div>
-      ) : (
+      {loading || !user ? null : (
         <>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-extrabold flex items-center gap-2">

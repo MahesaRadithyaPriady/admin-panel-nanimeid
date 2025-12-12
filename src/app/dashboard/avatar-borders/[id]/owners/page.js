@@ -19,7 +19,6 @@ export default function BorderOwnersPage() {
   }, [params]);
 
   const { user, loading } = useSession();
-  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPERADMIN';
 
   // Border info (optional header)
   const [borderInfo, setBorderInfo] = useState(null);
@@ -74,11 +73,11 @@ export default function BorderOwnersPage() {
   };
 
   useEffect(() => {
-    if (!isSuperAdmin || !borderId) return;
+    if (!user || !borderId) return;
     loadBorderInfo();
     loadOwners();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [borderId, page, limit, isSuperAdmin]);
+  }, [borderId, page, limit, user]);
 
   const onSearch = (e) => {
     e.preventDefault();
@@ -149,12 +148,7 @@ export default function BorderOwnersPage() {
 
   return (
     <div className="space-y-6">
-      {loading || !user ? null : !isSuperAdmin ? (
-        <div className="text-sm font-semibold">
-          Halaman ini khusus superadmin. Anda login sebagai{' '}
-          <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">{user.role}</span>.
-        </div>
-      ) : (
+      {loading || !user ? null : (
         <>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

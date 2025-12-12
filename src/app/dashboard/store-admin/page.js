@@ -11,7 +11,6 @@ import { listStoreItems, createStoreItem, deleteStoreItem, listBadges, listStick
 export default function StoreAdminPage() {
   const router = useRouter();
   const { user, loading } = useSession();
-  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPERADMIN';
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -99,26 +98,26 @@ export default function StoreAdminPage() {
   };
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!user) return;
     loadList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, active, isSuperAdmin]);
+  }, [page, limit, active, user]);
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!user) return;
     if (form.item_type !== 'SUPERBADGE') return;
     if (badges.length > 0 || loadingBadges) return;
     loadBadges();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.item_type, isSuperAdmin]);
+  }, [form.item_type, user, badges.length, loadingBadges]);
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!user) return;
     if (form.item_type !== 'STICKER') return;
     if (stickers.length > 0 || loadingStickers) return;
     loadStickers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.item_type, isSuperAdmin]);
+  }, [form.item_type, user, stickers.length, loadingStickers]);
 
   const onSearch = (e) => {
     e.preventDefault();
@@ -159,12 +158,7 @@ export default function StoreAdminPage() {
 
   return (
     <div className="space-y-6">
-      {loading || !user ? null : !isSuperAdmin ? (
-        <div className="text-sm font-semibold">
-          Halaman ini khusus superadmin. Anda login sebagai{' '}
-          <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">{user.role}</span>.
-        </div>
-      ) : (
+      {loading || !user ? null : (
         <>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-extrabold flex items-center gap-2">

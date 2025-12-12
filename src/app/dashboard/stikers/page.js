@@ -12,8 +12,6 @@ import { listStickers, createSticker, updateSticker, deleteSticker } from '@/lib
 export default function StickersPage() {
   const router = useRouter();
   const { user, loading } = useSession();
-  const role = (user?.role || '').toLowerCase();
-  const canAccess = role === 'superadmin';
 
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
@@ -44,7 +42,6 @@ export default function StickersPage() {
   }, [loading, user, router]);
 
   const loadList = async (opts = {}) => {
-    if (!canAccess) return;
     setLoadingList(true);
     try {
       const token = getSession()?.token;
@@ -62,10 +59,10 @@ export default function StickersPage() {
   };
 
   useEffect(() => {
-    if (!canAccess) return;
+    if (!user) return;
     loadList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, canAccess]);
+  }, [page, limit, user]);
 
   const onSearch = (e) => {
     e.preventDefault();
@@ -180,14 +177,6 @@ export default function StickersPage() {
   };
 
   if (loading || !user) return null;
-  if (!canAccess) {
-    return (
-      <div className="text-sm font-semibold">
-        Halaman ini khusus superadmin. Anda login sebagai{' '}
-        <span className="px-2 py-1 border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--foreground)' }}>{user.role}</span>.
-      </div>
-    );
-  }
 
   const totalPages = Math.max(1, Math.ceil((total || 0) / (limit || 1)));
 

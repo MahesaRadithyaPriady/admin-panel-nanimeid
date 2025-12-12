@@ -89,13 +89,75 @@ curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
   "https://api.example.com/admin/users/10"
 ```
 
+## Statistik Registrasi User
+- Method: GET
+- Path: `/users/stats/registrations`
+- Deskripsi: Mengembalikan jumlah user yang terdaftar pada beberapa rentang waktu:
+  - `today` (hari ini, sejak awal hari ini)
+  - `yesterday` (kemarin, dari awal hari kemarin sampai sebelum awal hari ini)
+  - `thisMonth` (sejak awal bulan ini)
+  - `lastMonth` (bulan lalu, dari awal bulan lalu sampai sebelum awal bulan ini)
+  - `thisYear` (sejak awal tahun ini)
+  - `lastYear` (tahun lalu, dari awal tahun lalu sampai sebelum awal tahun ini)
+- Response 200:
+```json
+{
+  "today": 5,
+  "yesterday": 12,
+  "thisMonth": 120,
+  "lastMonth": 340,
+  "thisYear": 1500,
+  "lastYear": 4200
+}
+```
+- Contoh curl:
+```bash
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "https://api.example.com/admin/users/stats/registrations"
+```
+
+## Daftar User Online Sekarang
+- Method: GET
+- Path: `/users/online`
+- Deskripsi: Mengembalikan daftar user yang saat ini berstatus online (`UserProfile.is_online = true`). Cocok untuk tampilan Overview atau monitoring.
+- Query params:
+  - `page` (number, default 1)
+  - `limit` (number, default 20)
+- Response 200:
+```json
+{
+  "page": 1,
+  "limit": 20,
+  "total": 3,
+  "items": [
+    {
+      "id": 10,
+      "userID": "USR-00010",
+      "username": "john",
+      "email": "john@example.com",
+      "createdAt": "2025-08-31T11:00:00.000Z",
+      "profile": {
+        "full_name": "John Doe",
+        "avatar_url": "/v1/static/avatars/u10.png",
+        "is_online": true
+      }
+    }
+  ]
+}
+```
+- Contoh curl:
+```bash
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "https://api.example.com/admin/users/online?page=1&limit=20"
+```
+
 ## Keamanan
 - Semua endpoint mewajibkan header `Authorization: Bearer <ADMIN_JWT>`.
 - Saat ini akses dibuka untuk semua admin terautentikasi. Jika ingin khusus SUPERADMIN, tambahkan middleware `authorizeAdminRoles("SUPERADMIN")` pada route di `src/routes/admin.routes.js`.
 
 ## Lokasi Kode Terkait
-- Controller: `src/controllers/adminUsers.controller.js` (`listUsersAdmin`, `updateUserAdmin`, `deleteUserAdmin`)
-- Routes: `src/routes/admin.routes.js` (`/admin/users`, `/admin/users/:id`)
+- Controller: `src/controllers/adminUsers.controller.js` (`listUsersAdmin`, `updateUserAdmin`, `deleteUserAdmin`, `getUserRegistrationStatsAdmin`, `listOnlineUsersAdmin`)
+- Routes: `src/routes/admin.routes.js` (`/admin/users`, `/admin/users/:id`, `/admin/users/stats/registrations`, `/admin/users/online`)
 
 ## Status Akun (Account Status)
 - Nilai yang didukung:

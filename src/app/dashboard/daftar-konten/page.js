@@ -11,8 +11,6 @@ import { listAnime, createAnime, updateAnime, deleteAnime, listEpisodes, createE
 export default function DaftarKontenPage() {
   const router = useRouter();
   const { user, loading } = useSession();
-  const role = (user?.role || '').toLowerCase();
-  const canAccess = role === 'superadmin' || role === 'uploader';
 
   // List state
   const [items, setItems] = useState([]);
@@ -74,7 +72,6 @@ export default function DaftarKontenPage() {
   }, [loading, user, router]);
 
   const loadList = async (opts = {}) => {
-    if (!canAccess) return;
     setLoadingList(true);
     try {
       const token = getSession()?.token;
@@ -261,7 +258,6 @@ export default function DaftarKontenPage() {
   const relConfirmRef = useRef(null);
 
   const loadRelations = async (opts = {}) => {
-    if (!canAccess) return;
     setRelLoading(true);
     try {
       const token = getSession()?.token;
@@ -280,10 +276,10 @@ export default function DaftarKontenPage() {
   };
 
   useEffect(() => {
-    if (!canAccess || activeTab !== 'related') return;
+    if (!user || activeTab !== 'related') return;
     loadRelations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [relPage, relLimit, relGroup, canAccess, activeTab]);
+  }, [relPage, relLimit, relGroup, user, activeTab]);
 
   // Debounce search for Source
   useEffect(() => {
@@ -682,10 +678,10 @@ export default function DaftarKontenPage() {
   };
 
   useEffect(() => {
-    if (!canAccess) return;
+    if (!user) return;
     loadList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, canAccess]);
+  }, [page, limit, user]);
 
   const onSearch = (e) => {
     e.preventDefault();
@@ -916,12 +912,7 @@ export default function DaftarKontenPage() {
 
   return (
     <div className="space-y-6">
-      {loading || !user ? null : !canAccess ? (
-        <div className="text-sm font-semibold">
-          Halaman ini khusus superadmin/uploader. Anda login sebagai{' '}
-          <span className="px-2 py-1 border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--foreground)' }}>{user.role}</span>.
-        </div>
-      ) : (
+      {loading || !user ? null : (
         <>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-extrabold flex items-center gap-2"><List className="size-5" /> Daftar Konten</h2>

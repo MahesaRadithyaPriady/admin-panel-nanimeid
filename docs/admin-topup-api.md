@@ -120,6 +120,39 @@ Content-Type: application/json
 
 ---
 
+## GET /admin/topup/requests/stats
+Ambil statistik jumlah permintaan topup berdasarkan waktu pembuatan (`created_at`). Endpoint ini biasanya dipakai di halaman Overview.
+
+- Method: `GET`
+- Auth: Admin token + role SUPERADMIN (permission menu `overview`)
+- Deskripsi: Mengembalikan jumlah topup request yang dibuat pada beberapa rentang waktu:
+  - `today` (hari ini, sejak awal hari ini)
+  - `yesterday` (kemarin, dari awal hari kemarin sampai sebelum awal hari ini)
+  - `thisMonth` (sejak awal bulan ini)
+  - `lastMonth` (bulan lalu, dari awal bulan lalu sampai sebelum awal bulan ini)
+  - `thisYear` (sejak awal tahun ini)
+  - `lastYear` (tahun lalu, dari awal tahun lalu sampai sebelum awal tahun ini)
+
+### Contoh Request
+```
+GET /1.0.10/admin/topup/requests/stats
+Authorization: Bearer <ADMIN_TOKEN>
+```
+
+### Contoh Response (200)
+```json
+{
+  "today": 3,
+  "yesterday": 10,
+  "thisMonth": 80,
+  "lastMonth": 240,
+  "thisYear": 900,
+  "lastYear": 3000
+}
+```
+
+---
+
 ## Error Umum
 - 400 `status wajib`
 - 400 `status tidak valid`
@@ -133,5 +166,6 @@ Content-Type: application/json
   - `adminListTopupRequests()` → `TopupService.list()`
   - `adminGetTopupRequest()` → `TopupService.get()`
   - `adminSetTopupStatus()` → `TopupService.setStatus()` (auto kredit pada `APPROVED/PAID`)
+  - `adminTopupRequestStats()` → aggregasi `topupRequest` dengan prisma
 - Routes: `src/routes/admin.routes.js`
-  - `GET /topup/requests`, `GET /topup/requests/:id`, `PATCH /topup/requests/:id/status`
+  - `GET /topup/requests`, `GET /topup/requests/stats`, `GET /topup/requests/:id`, `PATCH /topup/requests/:id/status`

@@ -5,6 +5,44 @@ import { toast } from "react-hot-toast";
 import { Shield, LogIn } from "lucide-react";
 import { loginAdmin } from "@/lib/auth";
 
+// Prioritas redirect dashboard berdasarkan permission
+const PERMISSION_ROUTE_PRIORITY = [
+  // Overview
+  { key: 'overview', href: '/dashboard' },
+
+  // Kelola
+  { key: 'kelola-user', href: '/dashboard/kelola-user' },
+  { key: 'kelola-admin', href: '/dashboard/kelola-admin' },
+
+  // Keuangan
+  { key: 'keuangan', href: '/dashboard/keuangan' },
+  { key: 'topup-manual', href: '/dashboard/topup' },
+
+  // Store
+  { key: 'store-admin', href: '/dashboard/store-admin' },
+  { key: 'prime-store', href: '/dashboard/prime-store' },
+  { key: 'sponsor-admin', href: '/dashboard/sponsor-admin' },
+
+  // VIP & Items
+  { key: 'vip-plans', href: '/dashboard/vip-plans' },
+  { key: 'admin-vip', href: '/dashboard/admin-vip' },
+  { key: 'admin-wallet', href: '/dashboard/admin-wallet' },
+  { key: 'redeem-codes', href: '/dashboard/redeem' },
+  { key: 'avatar-borders', href: '/dashboard/avatar-borders' },
+  { key: 'badges', href: '/dashboard/badges' },
+  { key: 'stickers', href: '/dashboard/stikers' },
+
+  // Konten
+  { key: 'daftar-konten', href: '/dashboard/daftar-konten' },
+  { key: 'manga-admin', href: '/dashboard/manga-admin' },
+
+  // Lainnya
+  { key: 'waifu-vote', href: '/dashboard/waifu-vote' },
+
+  // Pengaturan
+  { key: 'settings', href: '/dashboard/pengaturan' },
+];
+
 export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -17,7 +55,22 @@ export default function LoginPage() {
     try {
       const session = await loginAdmin({ username: username.trim(), password });
       toast.success(`Login berhasil sebagai ${session.role}`);
-      router.push("/dashboard");
+
+      const permissions = Array.isArray(session?.permissions) ? session.permissions : [];
+
+      // Jika punya overview, langsung ke dashboard utama
+      if (permissions.includes('overview')) {
+        router.push("/dashboard");
+        return;
+      }
+
+      // Jika tidak ada overview, cari halaman pertama sesuai permission
+      const firstAllowed = PERMISSION_ROUTE_PRIORITY.find((item) =>
+        permissions.includes(item.key)
+      );
+      if (firstAllowed) {
+        router.push(firstAllowed.href);
+      }
     } catch (err) {
       toast.error(err?.message || "Login gagal", { icon: "⚠️" });
     } finally {

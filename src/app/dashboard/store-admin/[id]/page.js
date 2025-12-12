@@ -12,7 +12,6 @@ export default function StoreItemDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { user, loading } = useSession();
-  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPERADMIN';
   const id = params?.id;
 
   const [loadingItem, setLoadingItem] = useState(true);
@@ -33,7 +32,7 @@ export default function StoreItemDetailPage() {
 
   useEffect(() => {
     const load = async () => {
-      if (!id || !isSuperAdmin) return;
+      if (!id) return;
       setLoadingItem(true);
       try {
         const token = getSession()?.token;
@@ -62,7 +61,7 @@ export default function StoreItemDetailPage() {
       }
     };
     load();
-  }, [id, isSuperAdmin]);
+  }, [id]);
 
   useEffect(() => {
     const loadBadges = async () => {
@@ -79,7 +78,6 @@ export default function StoreItemDetailPage() {
       }
     };
 
-    if (!isSuperAdmin) return;
     if (form.item_type !== 'SUPERBADGE') return;
     if (badges.length > 0 || loadingBadges) return;
     loadBadges();
@@ -100,7 +98,6 @@ export default function StoreItemDetailPage() {
       }
     };
 
-    if (!isSuperAdmin) return;
     if (form.item_type !== 'STICKER') return;
     if (stickers.length > 0 || loadingStickers) return;
     loadStickers();
@@ -136,9 +133,7 @@ export default function StoreItemDetailPage() {
 
   return (
     <div className="space-y-6">
-      {loading || !user ? null : !isSuperAdmin ? (
-        <div className="text-sm font-semibold">Halaman ini khusus superadmin.</div>
-      ) : (
+      {loading || !user ? null : (
         <>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-extrabold flex items-center gap-2"><ShoppingBag className="size-5" /> Detail Item Store</h2>

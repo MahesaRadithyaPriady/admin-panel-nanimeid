@@ -11,7 +11,6 @@ import { listAdmins, createAdmin, updateAdmin, deleteAdmin } from '@/lib/api';
 export default function KelolaAdminPage() {
   const router = useRouter();
   const { user, loading } = useSession();
-  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPERADMIN';
 
   // State
   const [admins, setAdmins] = useState([]);
@@ -20,13 +19,13 @@ export default function KelolaAdminPage() {
   const [limit, setLimit] = useState(20);
   const [total, setTotal] = useState(0);
   const [loadingList, setLoadingList] = useState(false);
-  const [form, setForm] = useState({ id: null, email: '', username: '', password: '', role: 'UPLOADER' });
+  const [form, setForm] = useState({ id: null, email: '', username: '', password: '', role: 'UPLOADER', permissions: [] });
   const [mode, setMode] = useState('add'); // add | edit
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const resetForm = () => setForm({ id: null, email: '', username: '', password: '', role: 'UPLOADER' });
+  const resetForm = () => setForm({ id: null, email: '', username: '', password: '', role: 'UPLOADER', permissions: [] });
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -50,16 +49,92 @@ export default function KelolaAdminPage() {
   };
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!user) return;
     loadAdmins();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, isSuperAdmin]);
+  }, [page, limit, user]);
 
   const onSearch = (e) => {
     e.preventDefault();
     setPage(1);
     loadAdmins({ page: 1 });
   };
+
+  const PERMISSION_GROUPS = [
+    {
+      title: 'Overview',
+      items: [
+        { key: 'overview', label: 'Overview' },
+      ],
+    },
+    {
+      title: 'Kelola',
+      items: [
+        { key: 'kelola-user', label: 'Kelola User' },
+        { key: 'kelola-admin', label: 'Kelola Admin' },
+      ],
+    },
+    {
+      title: 'Keuangan',
+      items: [
+        { key: 'keuangan', label: 'Keuangan' },
+        { key: 'topup-manual', label: 'Topup Manual' },
+      ],
+    },
+    {
+      title: 'Store',
+      items: [
+        { key: 'store-admin', label: 'Store Admin' },
+        { key: 'prime-store', label: 'Prime Store' },
+        { key: 'sponsor-admin', label: 'Sponsor Admin' },
+      ],
+    },
+    {
+      title: 'VIP & Items',
+      items: [
+        { key: 'vip-plans', label: 'VIP Plans' },
+        { key: 'admin-vip', label: 'Admin VIP' },
+        { key: 'admin-wallet', label: 'Admin Wallet' },
+        { key: 'redeem-codes', label: 'Kode Redeem' },
+        { key: 'avatar-borders', label: 'Avatar Borders' },
+        { key: 'badges', label: 'Badges' },
+        { key: 'stickers', label: 'Stickers' },
+      ],
+    },
+    {
+      title: 'Konten',
+      items: [
+        { key: 'daftar-konten', label: 'Daftar Konten' },
+        { key: 'manga-admin', label: 'Manga Admin' },
+      ],
+    },
+    {
+      title: 'Lainnya',
+      items: [
+        { key: 'waifu-vote', label: 'Waifu Vote' },
+      ],
+    },
+    {
+      title: 'Settings',
+      items: [
+        { key: 'settings', label: 'Pengaturan' },
+      ],
+    },
+  ];
+
+  const togglePermission = (key) => {
+    setForm((f) => {
+      const has = f.permissions.includes(key);
+      return {
+        ...f,
+        permissions: has
+          ? f.permissions.filter((p) => p !== key)
+          : [...f.permissions, key],
+      };
+    });
+  };
+
+  const hasPermission = (key) => form.permissions.includes(key);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -71,7 +146,7 @@ export default function KelolaAdminPage() {
         return toast.error('Email, username, dan password wajib diisi');
       }
       try {
-        const res = await createAdmin({ token, email: form.email, username: form.username, password: form.password, role: form.role });
+        const res = await createAdmin({ token, email: form.email, username: form.username, password: form.password, role: form.role, permissions: form.permissions });
         toast.success(res?.message || 'Admin ditambahkan');
         resetForm();
         setPage(1);
@@ -87,7 +162,7 @@ export default function KelolaAdminPage() {
         return toast.error('Email dan username wajib diisi');
       }
       try {
-        const res = await updateAdmin({ token, id: form.id, email: form.email, username: form.username, password: form.password || undefined, role: form.role });
+        const res = await updateAdmin({ token, id: form.id, email: form.email, username: form.username, password: form.password || undefined, role: form.role, permissions: form.permissions });
         toast.success(res?.message || 'Admin diperbarui');
         setMode('add');
         resetForm();
@@ -102,7 +177,14 @@ export default function KelolaAdminPage() {
 
   const onEdit = (u) => {
     setMode('edit');
-    setForm({ id: u.id, email: u.email || '', username: u.username || '', password: '', role: u.role || 'UPLOADER' });
+    setForm({
+      id: u.id,
+      email: u.email || '',
+      username: u.username || '',
+      password: '',
+      role: u.role || 'UPLOADER',
+      permissions: Array.isArray(u.permissions) ? u.permissions : [],
+    });
   };
 
   const onRequestDelete = (target) => {
@@ -138,12 +220,7 @@ export default function KelolaAdminPage() {
 
   return (
     <div className="space-y-6">
-      {loading || !user ? null : !isSuperAdmin ? (
-        <div className="text-sm font-semibold">
-          Halaman ini khusus superadmin. Anda login sebagai{' '}
-          <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">{user.role}</span>.
-        </div>
-      ) : (
+      {loading || !user ? null : (
         <>
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-extrabold flex items-center gap-2"><Shield className="size-5" /> Kelola Admin</h2>
@@ -205,6 +282,29 @@ export default function KelolaAdminPage() {
         >
           {mode === 'add' ? (<><Plus className="size-4" /> Tambah</>) : (<><Pencil className="size-4" /> Simpan</>)}
         </button>
+        <div className="sm:col-span-5 border-4 rounded-lg p-3 space-y-3" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <div className="text-sm font-extrabold mb-1">Permissions</div>
+          <div className="grid md:grid-cols-3 gap-3">
+            {PERMISSION_GROUPS.map((group) => (
+              <div key={group.title} className="border-4 rounded-md p-2" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
+                <div className="text-xs font-extrabold mb-1">{group.title}</div>
+                <div className="space-y-1">
+                  {group.items.map((item) => (
+                    <label key={item.key} className="flex items-center gap-2 text-xs font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={hasPermission(item.key)}
+                        onChange={() => togglePermission(item.key)}
+                        className="size-4 border-4 border-[var(--panel-border)] rounded-sm"
+                      />
+                      <span>{item.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </form>
 
       {/* Table */}

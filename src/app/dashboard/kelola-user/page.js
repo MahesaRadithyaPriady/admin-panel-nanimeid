@@ -51,7 +51,7 @@ export default function KelolaUserPage() {
   };
 
   useEffect(() => {
-    if (!user || user.role !== 'superadmin') return;
+    if (!user) return;
     loadUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, user]);
@@ -140,12 +140,7 @@ export default function KelolaUserPage() {
 
   return (
     <div className="space-y-6">
-      {loading || !user ? null : user.role !== 'superadmin' ? (
-        <div className="text-sm font-semibold">
-          Halaman ini khusus superadmin. Anda login sebagai{' '}
-          <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">{user.role}</span>.
-        </div>
-      ) : (
+      {loading || !user ? null : (
         <>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-extrabold flex items-center gap-2"><Users  className="size-5" /> Kelola User</h2>

@@ -22,7 +22,6 @@ import {
 export default function PrimeStoreAdminPage() {
   const router = useRouter();
   const { user, loading } = useSession();
-  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPERADMIN';
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -142,42 +141,42 @@ export default function PrimeStoreAdminPage() {
   };
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!user) return;
     loadItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, active, isSuperAdmin]);
+  }, [page, limit, active, user]);
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!user) return;
     if (form.item_type !== 'VIP') return;
     if (vipPlans.length > 0 || loadingVipPlans) return;
     loadVipPlans();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.item_type, isSuperAdmin]);
+  }, [form.item_type, user, vipPlans.length]);
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!user) return;
     if (form.item_type !== 'SUPERBADGE') return;
     if (badges.length > 0 || loadingBadges) return;
     loadBadges();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.item_type, isSuperAdmin]);
+  }, [form.item_type, user, badges.length]);
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!user) return;
     if (form.item_type !== 'STICKER') return;
     if (stickers.length > 0 || loadingStickers) return;
     loadStickers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.item_type, isSuperAdmin]);
+    // eslint-disable-next-line react-hooks-exhaustive-deps
+  }, [form.item_type, user, stickers.length]);
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!user) return;
     if (form.item_type !== 'BORDER') return;
     if (borders.length > 0 || loadingBorders) return;
     loadBorders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.item_type, isSuperAdmin]);
+    // eslint-disable-next-line react-hooks-exhaustive-deps
+  }, [form.item_type, user, borders.length]);
 
   const onSearch = (e) => {
     e.preventDefault();
@@ -267,10 +266,10 @@ export default function PrimeStoreAdminPage() {
   };
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!user) return;
     loadDiscounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [discPage, discLimit, discDate, isSuperAdmin]);
+  }, [discPage, discLimit, discDate, user]);
 
   const updateDiscForm = (k, v) => setDiscForm((f) => ({ ...f, [k]: v }));
 
@@ -332,14 +331,6 @@ export default function PrimeStoreAdminPage() {
   };
 
   if (loading || !user) return null;
-  if (!isSuperAdmin) {
-    return (
-      <div className="text-sm font-semibold">
-        Halaman ini khusus superadmin. Anda login sebagai{' '}
-        <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">{user.role}</span>.
-      </div>
-    );
-  }
 
   const totalPages = Math.max(1, Math.ceil((total || 0) / (limit || 1)));
   const discTotalPages = Math.max(1, Math.ceil((discTotal || 0) / (discLimit || 1)));

@@ -12,8 +12,6 @@ export default function ChapterPagesPage() {
   const router = useRouter();
   const params = useParams();
   const { user, loading } = useSession();
-  const role = (user?.role || '').toLowerCase();
-  const isAllowed = role === 'superadmin' || role === 'uploader';
   const id = params?.id;
   const chapterNumber = params?.chapterNumber;
 
@@ -30,7 +28,7 @@ export default function ChapterPagesPage() {
 
   useEffect(() => {
     const load = async () => {
-      if (!id || !chapterNumber || !isAllowed) return;
+      if (!id || !chapterNumber) return;
       setLoadingPages(true);
       try {
         const token = getSession()?.token;
@@ -116,9 +114,7 @@ export default function ChapterPagesPage() {
 
   return (
     <div className="space-y-4">
-      {loading || !user ? null : !isAllowed ? (
-        <div className="text-sm font-semibold">Halaman ini khusus superadmin/uploader.</div>
-      ) : (
+      {loading || !user ? null : (
         <>
           <div className="flex items-center justify-between">
             <div className="text-lg font-extrabold">Chapter {chapter?.chapter_number || chapterNumber}: {chapter?.title || '-'}</div>

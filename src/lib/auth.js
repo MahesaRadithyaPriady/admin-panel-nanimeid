@@ -14,6 +14,43 @@ function normalizeRole(role) {
   return r; // fallback
 }
 
+function getDefaultPermissionsForRole(role) {
+  const r = normalizeRole(role);
+  if (r === 'superadmin') {
+    // Superadmin: semua permissions (daftar diambil dari docs admin-permissions-api)
+    return [
+      'overview',
+      'kelola-user',
+      'kelola-admin',
+      'keuangan',
+      'topup-manual',
+      'store-admin',
+      'prime-store',
+      'sponsor-admin',
+      'vip-plans',
+      'admin-vip',
+      'admin-wallet',
+      'redeem-codes',
+      'avatar-borders',
+      'badges',
+      'stickers',
+      'daftar-konten',
+      'manga-admin',
+      'waifu-vote',
+      'settings',
+    ];
+  }
+  if (r === 'keuangan') {
+    // Sesuai docs: ['overview', 'keuangan', 'topup-manual']
+    return ['overview', 'keuangan', 'topup-manual'];
+  }
+  if (r === 'uploader') {
+    // Sesuai docs: ['overview', 'daftar-konten', 'manga-admin']
+    return ['overview', 'daftar-konten', 'manga-admin'];
+  }
+  return [];
+}
+
 export async function loginAdmin({ username, password }) {
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
   const url = `${API_BASE}/admin/auth/login`;
@@ -38,18 +75,30 @@ export async function loginAdmin({ username, password }) {
   // {
   //   message: 'Login admin success',
   //   token: '...jwt...'
-  //   admin: { id, username, email, role: 'SUPERADMIN', createdAt }
+  //   admin: { id, username, email, role: 'SUPERADMIN', createdAt, permissions?: string[] }
+  //   permissions?: string[] // optional global permissions array
   // }
-  const { token, admin } = data || {};
+  const { token, admin, permissions: topLevelPermissions } = data || {};
   if (!token || !admin) {
     throw new Error('Invalid login response');
   }
+
+  const normalizedRole = normalizeRole(admin.role);
+  const permissionsFromAdmin = Array.isArray(admin.permissions) ? admin.permissions : [];
+  const permissionsFromTopLevel = Array.isArray(topLevelPermissions) ? topLevelPermissions : [];
+  const permissions =
+    permissionsFromAdmin.length > 0
+      ? permissionsFromAdmin
+      : permissionsFromTopLevel.length > 0
+        ? permissionsFromTopLevel
+        : getDefaultPermissionsForRole(normalizedRole);
 
   const session = {
     id: admin.id,
     username: admin.username,
     email: admin.email,
-    role: normalizeRole(admin.role),
+    role: normalizedRole,
+    permissions,
     token,
     createdAt: admin.createdAt,
   };

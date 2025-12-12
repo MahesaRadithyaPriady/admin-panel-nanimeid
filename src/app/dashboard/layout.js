@@ -18,39 +18,113 @@ export default function DashboardLayout({ children }) {
   }, [loading, user, router]);
 
   const role = user?.role ?? 'guest';
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
 
-  // Define all menus with href and visibility per role
+  // Define all menus with href dan mapping ke permission key.
+  // Visibility akan ditentukan berdasarkan user.permissions.
   const allMenus = useMemo(
     () => [
       { key: 'overview', label: 'Overview', icon: LayoutDashboard, roles: ['superadmin', 'keuangan', 'uploader'], href: '/dashboard' },
-      { key: 'kelola-user', label: 'Kelola User', icon: UsersIcon, roles: ['superadmin'], href: '/dashboard/kelola-user' },
-      { key: 'kelola-admin', label: 'Kelola Admin', icon: Shield, roles: ['superadmin'], href: '/dashboard/kelola-admin' },
-      { key: 'keuangan', label: 'Keuangan', icon: Coins, roles: ['superadmin', 'keuangan'], href: '/dashboard/keuangan' },
-      { key: 'topup-manual', label: 'Topup Manual', icon: CreditCard, roles: ['superadmin'], href: '/dashboard/topup' },
-      { key: 'avatar-borders', label: 'Avatar Borders', icon: Image, roles: ['superadmin'], href: '/dashboard/avatar-borders' },
-      { key: 'badges', label: 'Super Badge', icon: Award, roles: ['superadmin'], href: '/dashboard/badges' },
-      { key: 'stickers', label: 'Stikers', icon: Image, roles: ['superadmin'], href: '/dashboard/stikers' },
-      { key: 'uploader', label: 'Upload Konten', icon: Upload, roles: ['superadmin', 'uploader'], href: '/dashboard/uploader' },
-      { key: 'status-konten', label: 'Status Konten', icon: BadgeCheck, roles: ['superadmin', 'uploader'], href: '/dashboard/status-konten' },
-      { key: 'daftar-konten', label: 'Daftar Konten', icon: List, roles: ['superadmin', 'uploader'], href: '/dashboard/daftar-konten' },
-      { key: 'waifu-vote', label: 'Waifu Vote', icon: Heart, roles: ['superadmin'], href: '/dashboard/waifu-vote' },
-      { key: 'vip-plans', label: 'VIP Plans', icon: Crown, roles: ['superadmin'], href: '/dashboard/vip-plans' },
-      { key: 'admin-vip', label: 'Admin VIP', icon: Crown, roles: ['superadmin'], href: '/dashboard/admin-vip' },
-      { key: 'admin-wallet', label: 'Admin Wallet', icon: Wallet, roles: ['superadmin'], href: '/dashboard/admin-wallet' },
-      { key: 'redeem-codes', label: 'Kode Redeem', icon: Gift, roles: ['superadmin'], href: '/dashboard/redeem' },
-      { key: 'store-admin', label: 'Store Admin', icon: ShoppingBag, roles: ['superadmin'], href: '/dashboard/store-admin' },
-      { key: 'prime-store', label: 'Prime Store', icon: ShoppingBag, roles: ['superadmin'], href: '/dashboard/prime-store' },
-      { key: 'sponsor-admin', label: 'Sponsor Admin', icon: Megaphone, roles: ['superadmin'], href: '/dashboard/sponsor-admin' },
-      { key: 'manga-admin', label: 'Manga Admin', icon: BookOpen, roles: ['superadmin', 'uploader'], href: '/dashboard/manga-admin' },
-      { key: 'validasi-konten', label: 'Validasi Konten', icon: ListChecks, roles: ['superadmin'], href: '/dashboard/validasi-konten' },
+      
+      // Kelola Dropdown
+      { 
+        key: 'kelola', 
+        label: 'Kelola', 
+        icon: UsersIcon, 
+        roles: ['superadmin'],
+        children: [
+          { key: 'kelola-user', label: 'Kelola User', icon: UsersIcon, roles: ['superadmin'], href: '/dashboard/kelola-user' },
+          { key: 'kelola-admin', label: 'Kelola Admin', icon: Shield, roles: ['superadmin'], href: '/dashboard/kelola-admin' },
+        ]
+      },
+
+      // Keuangan Dropdown
+      { 
+        key: 'keuangan-group', 
+        label: 'Keuangan', 
+        icon: Coins, 
+        roles: ['superadmin', 'keuangan'],
+        children: [
+          { key: 'keuangan', label: 'Keuangan', icon: Coins, roles: ['superadmin', 'keuangan'], href: '/dashboard/keuangan' },
+          { key: 'topup-manual', label: 'Topup Manual', icon: CreditCard, roles: ['superadmin'], href: '/dashboard/topup' },
+        ]
+      },
+
+      // Store Dropdown
+      { 
+        key: 'store-group', 
+        label: 'Store', 
+        icon: ShoppingBag, 
+        roles: ['superadmin'],
+        children: [
+          { key: 'store-admin', label: 'Store Admin', icon: ShoppingBag, roles: ['superadmin'], href: '/dashboard/store-admin' },
+          { key: 'prime-store', label: 'Prime Store', icon: ShoppingBag, roles: ['superadmin'], href: '/dashboard/prime-store' },
+          { key: 'sponsor-admin', label: 'Sponsor Admin', icon: Megaphone, roles: ['superadmin'], href: '/dashboard/sponsor-admin' },
+        ]
+      },
+
+      // VIP & Items Dropdown
+      { 
+        key: 'vip-items', 
+        label: 'VIP & Items', 
+        icon: Crown, 
+        roles: ['superadmin'],
+        children: [
+          { key: 'vip-plans', label: 'VIP Plans', icon: Crown, roles: ['superadmin'], href: '/dashboard/vip-plans' },
+          { key: 'admin-vip', label: 'Admin VIP', icon: Crown, roles: ['superadmin'], href: '/dashboard/admin-vip' },
+          { key: 'admin-wallet', label: 'Admin Wallet', icon: Wallet, roles: ['superadmin'], href: '/dashboard/admin-wallet' },
+          { key: 'redeem-codes', label: 'Kode Redeem', icon: Gift, roles: ['superadmin'], href: '/dashboard/redeem' },
+          { key: 'avatar-borders', label: 'Avatar Borders', icon: Image, roles: ['superadmin'], href: '/dashboard/avatar-borders' },
+          { key: 'badges', label: 'Super Badge', icon: Award, roles: ['superadmin'], href: '/dashboard/badges' },
+          { key: 'stickers', label: 'Stikers', icon: Image, roles: ['superadmin'], href: '/dashboard/stikers' },
+        ]
+      },
+
+      // Konten Dropdown
+      { 
+        key: 'konten-group', 
+        label: 'Konten', 
+        icon: BookOpen, 
+        roles: ['superadmin', 'uploader'],
+        children: [
+          { key: 'daftar-konten', label: 'Daftar Konten', icon: List, roles: ['superadmin', 'uploader'], href: '/dashboard/daftar-konten' },
+          { key: 'manga-admin', label: 'Manga Admin', icon: BookOpen, roles: ['superadmin', 'uploader'], href: '/dashboard/manga-admin' },
+        ]
+      },
+
+      // Lainnya Dropdown
+      { 
+        key: 'lainnya', 
+        label: 'Lainnya', 
+        icon: Heart, 
+        roles: ['superadmin'],
+        children: [
+          { key: 'waifu-vote', label: 'Waifu Vote', icon: Heart, roles: ['superadmin'], href: '/dashboard/waifu-vote' },
+        ]
+      },
+
       { key: 'settings', label: 'Pengaturan', icon: Settings, roles: ['superadmin'], href: '/dashboard/pengaturan' },
     ],
     []
   );
 
   const visibleMenus = useMemo(
-    () => allMenus.filter((m) => m.roles.includes(role)),
-    [allMenus, role]
+    () =>
+      allMenus
+        .map((m) => {
+          if (m.children) {
+            const filteredChildren = m.children.filter((child) => permissions.includes(child.key));
+            return { ...m, children: filteredChildren };
+          }
+          return m;
+        })
+        .filter((m) => {
+          if (m.children) {
+            return m.children.length > 0;
+          }
+          return permissions.includes(m.key);
+        }),
+    [allMenus, permissions]
   );
 
   const onLogout = () => {

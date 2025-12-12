@@ -33,23 +33,26 @@ export async function getAdminDetail({ token, id }) {
   return await handleJson(res, 'Gagal mengambil detail admin');
 }
 
-export async function createAdmin({ token, username, email, password, role }) {
+export async function createAdmin({ token, username, email, password, role, permissions }) {
   if (!token) throw new Error('Token tidak tersedia');
+  const payload = { username, email, password, role };
+  if (Array.isArray(permissions)) payload.permissions = permissions;
   const res = await fetch(`${adminsBase()}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, email, password, role }),
+    body: JSON.stringify(payload),
   });
   return await handleJson(res, 'Gagal membuat admin');
 }
 
-export async function updateAdmin({ token, id, username, email, password, role }) {
+export async function updateAdmin({ token, id, username, email, password, role, permissions }) {
   if (!token) throw new Error('Token tidak tersedia');
   const payload = {};
   if (username) payload.username = username;
   if (email) payload.email = email;
   if (password) payload.password = password;
   if (role) payload.role = role;
+   if (Array.isArray(permissions)) payload.permissions = permissions;
   const res = await fetch(`${adminsBase()}/${id}`, {
     method: 'PUT',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -131,6 +134,41 @@ export async function deleteAdminUser({ token, id }) {
   });
   const data = await handleJson(res, 'Gagal menghapus user');
   return data;
+}
+
+export async function getUserRegistrationStats({ token }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const API_BASE = getApiBase();
+  const res = await fetch(`${API_BASE}/admin/users/stats/registrations`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil statistik registrasi user');
+  return {
+    today: data?.today ?? 0,
+    yesterday: data?.yesterday ?? 0,
+    thisMonth: data?.thisMonth ?? 0,
+    lastMonth: data?.lastMonth ?? 0,
+    thisYear: data?.thisYear ?? 0,
+    lastYear: data?.lastYear ?? 0,
+  };
+}
+
+export async function listOnlineUsers({ token, page = 1, limit = 20 }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const API_BASE = getApiBase();
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  const url = `${API_BASE}/admin/users/online?${params.toString()}`;
+
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar user online');
+  return {
+    page: data?.page ?? page,
+    limit: data?.limit ?? limit,
+    total: data?.total ?? 0,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
 }
 
 // ===== Admin Anime (SUPERADMIN | UPLOADER) =====
@@ -493,6 +531,22 @@ export async function listTopupRequests({ token, userId = '', status = '', page 
     limit: pg.limit ?? limit,
     total: pg.total ?? 0,
     items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+export async function getTopupRequestStats({ token }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${topupBase()}/requests/stats`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil statistik topup request');
+  return {
+    today: data?.today ?? 0,
+    yesterday: data?.yesterday ?? 0,
+    thisMonth: data?.thisMonth ?? 0,
+    lastMonth: data?.lastMonth ?? 0,
+    thisYear: data?.thisYear ?? 0,
+    lastYear: data?.lastYear ?? 0,
   };
 }
 

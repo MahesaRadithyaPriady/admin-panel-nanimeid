@@ -16,8 +16,6 @@ export default function ValidasiKontenPage() {
     if (!loading && !user) router.replace('/');
   }, [loading, user, router]);
 
-  const allowed = useMemo(() => ['superadmin'], []);
-
   // Data dari API: kelompokkan berdasarkan target (type + id)
   const [shows, setShows] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
@@ -68,15 +66,8 @@ export default function ValidasiKontenPage() {
   const [rejectMsg, setRejectMsg] = useState('');
   const [savingReject, setSavingReject] = useState(false);
 
-  // Early returns after all hooks
+  // Early return: hanya cek login
   if (loading || !user) return null;
-  if (!allowed.includes(user.role)) {
-    return (
-      <div className="text-sm font-semibold">
-        Halaman ini khusus <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">superadmin</span>.
-      </div>
-    );
-  }
 
   const toggleExpand = (id) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
 

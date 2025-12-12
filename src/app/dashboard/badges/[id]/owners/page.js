@@ -19,7 +19,6 @@ export default function BadgeOwnersPage() {
   }, [params]);
 
   const { user, loading } = useSession();
-  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPERADMIN';
 
   const [badgeInfo, setBadgeInfo] = useState(null);
 
@@ -56,7 +55,7 @@ export default function BadgeOwnersPage() {
   };
 
   const loadOwners = async (opts = {}) => {
-    if (!isSuperAdmin || !badgeId) return;
+    if (!badgeId) return;
     setLoadingList(true);
     try {
       const token = getSession()?.token;
@@ -74,15 +73,15 @@ export default function BadgeOwnersPage() {
   };
 
   useEffect(() => {
-    if (!isSuperAdmin || !badgeId) return;
+    if (!badgeId) return;
     loadBadgeInfo();
-  }, [isSuperAdmin, badgeId]);
+  }, [badgeId]);
 
   useEffect(() => {
-    if (!isSuperAdmin || !badgeId) return;
+    if (!badgeId) return;
     loadOwners();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, activeFilter, isSuperAdmin, badgeId]);
+  }, [page, limit, activeFilter, badgeId]);
 
   const onSearch = (e) => {
     e.preventDefault();
@@ -172,17 +171,6 @@ export default function BadgeOwnersPage() {
   };
 
   if (loading || !user) return null;
-  if (!isSuperAdmin) {
-    return (
-      <div className="text-sm font-semibold">
-        Halaman ini khusus superadmin. Anda login sebagai{' '}
-        <span className="px-2 py-1 border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--foreground)' }}>
-          {user.role}
-        </span>
-        .
-      </div>
-    );
-  }
 
   const totalPages = Math.max(1, Math.ceil((total || 0) / (limit || 1)));
 

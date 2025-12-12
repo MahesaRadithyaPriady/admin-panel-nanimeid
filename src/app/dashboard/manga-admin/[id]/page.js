@@ -12,8 +12,6 @@ export default function MangaDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { user, loading } = useSession();
-  const role = (user?.role || '').toLowerCase();
-  const isAllowed = role === 'superadmin' || role === 'uploader';
   const id = params?.id;
 
   const [loadingItem, setLoadingItem] = useState(true);
@@ -37,7 +35,7 @@ export default function MangaDetailPage() {
 
   useEffect(() => {
     const load = async () => {
-      if (!id || !isAllowed) return;
+      if (!id) return;
       setLoadingItem(true);
       try {
         const token = getSession()?.token;
@@ -96,7 +94,7 @@ export default function MangaDetailPage() {
     }
   };
 
-  useEffect(() => { if (isAllowed) loadChapters(); }, [isAllowed]);
+  useEffect(() => { if (user) loadChapters(); }, [user]);
 
   const updateField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -190,9 +188,7 @@ export default function MangaDetailPage() {
 
   return (
     <div className="space-y-6">
-      {loading || !user ? null : !isAllowed ? (
-        <div className="text-sm font-semibold">Halaman ini khusus superadmin/uploader.</div>
-      ) : (
+      {loading || !user ? null : (
         <>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-extrabold flex items-center gap-2"><BookOpen className="size-5" /> Detail Manga</h2>

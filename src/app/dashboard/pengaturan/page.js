@@ -15,8 +15,6 @@ export default function PengaturanPage() {
   useEffect(() => {
     if (!loading && !user) router.replace('/');
   }, [loading, user, router]);
-
-  const allowed = useMemo(() => ['superadmin'], []);
   const [loadingSettings, setLoadingSettings] = useState(false);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
@@ -55,13 +53,6 @@ export default function PengaturanPage() {
   }, []);
 
   if (loading || !user) return null;
-  if (!allowed.includes(user.role)) {
-    return (
-      <div className="text-sm font-semibold">
-        Halaman ini khusus <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">superadmin</span>.
-      </div>
-    );
-  }
 
   const toggle = (key) => {
     setSettings((s) => {

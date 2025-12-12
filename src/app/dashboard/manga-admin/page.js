@@ -11,8 +11,6 @@ import { listManga, createManga, deleteManga, grabKomikuRange, uploadMangaCover 
 export default function MangaAdminPage() {
   const router = useRouter();
   const { user, loading } = useSession();
-  const role = (user?.role || '').toLowerCase();
-  const isAllowed = role === 'superadmin' || role === 'uploader';
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -77,10 +75,10 @@ export default function MangaAdminPage() {
   };
 
   useEffect(() => {
-    if (!isAllowed) return;
+    if (!user) return;
     loadList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAllowed, page, limit]);
+  }, [user, page, limit]);
 
   const updateForm = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -130,9 +128,7 @@ export default function MangaAdminPage() {
 
   return (
     <div className="space-y-6">
-      {loading || !user ? null : !isAllowed ? (
-        <div className="text-sm font-semibold">Halaman ini khusus superadmin/uploader.</div>
-      ) : (
+      {loading || !user ? null : (
         <>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-extrabold flex items-center gap-2"><BookOpen className="size-5" /> Manga Admin</h2>
