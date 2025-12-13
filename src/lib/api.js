@@ -1129,9 +1129,140 @@ export async function deleteRedeemCode({ token, id }) {
   if (!token) throw new Error('Token tidak tersedia');
   const res = await fetch(`${redeemCodesBase()}/${id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal menghapus kode redeem');
+}
+
+// ===== Admin Gacha (SUPERADMIN / GACHA ADMIN) =====
+const adminGachaBase = () => `${getApiBase()}/admin/gacha`;
+
+// Gacha Configs
+export async function listGachaConfigs({ token }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${adminGachaBase()}/configs`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil daftar konfigurasi gacha');
+  const configs = Array.isArray(data?.configs) ? data.configs : Array.isArray(data?.items) ? data.items : [];
+  return { configs };
+}
+
+export async function getGachaConfig({ token, event_code }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!event_code) throw new Error('event_code wajib diisi');
+  const safe = encodeURIComponent(event_code);
+  const res = await fetch(`${adminGachaBase()}/configs/${safe}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil konfigurasi gacha');
+}
+
+// Upsert penuh
+export async function upsertGachaConfig({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${adminGachaBase()}/configs`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal menyimpan konfigurasi gacha');
+}
+
+// Patch sebagian field berdasarkan event_code
+export async function patchGachaConfig({ token, event_code, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!event_code) throw new Error('event_code wajib diisi');
+  const safe = encodeURIComponent(event_code);
+  const res = await fetch(`${adminGachaBase()}/configs/${safe}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui konfigurasi gacha');
+}
+
+// Gacha Prizes
+export async function listGachaPrizes({ token, event_code = '' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (event_code) params.set('event_code', event_code);
+  const qs = params.toString();
+  const url = `${adminGachaBase()}/prizes${qs ? `?${qs}` : ''}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar hadiah gacha');
+  const items = Array.isArray(data?.prizes) ? data.prizes : Array.isArray(data?.items) ? data.items : [];
+  return { items };
+}
+
+export async function createGachaPrize({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${adminGachaBase()}/prizes`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat hadiah gacha');
+}
+
+export async function updateGachaPrize({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${adminGachaBase()}/prizes/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui hadiah gacha');
+}
+
+export async function deleteGachaPrize({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${adminGachaBase()}/prizes/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus hadiah gacha');
+}
+
+// Gacha Sharp Token Shop (GachaShopItem)
+export async function listGachaShopItems({ token, event_code = '' } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (event_code) params.set('event_code', event_code);
+  const qs = params.toString();
+  const url = `${adminGachaBase()}/shop/items${qs ? `?${qs}` : ''}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar item shop gacha');
+  const items = Array.isArray(data?.items) ? data.items : [];
+  return { items };
+}
+
+export async function createGachaShopItem({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${adminGachaBase()}/shop/items`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat item shop gacha');
+}
+
+export async function updateGachaShopItem({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${adminGachaBase()}/shop/items/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui item shop gacha');
+}
+
+export async function deleteGachaShopItem({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${adminGachaBase()}/shop/items/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus item shop gacha');
 }
 
 // ===== Store Admin (SUPERADMIN) =====

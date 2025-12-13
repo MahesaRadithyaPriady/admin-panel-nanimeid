@@ -99,6 +99,7 @@ export default function KelolaAdminPage() {
         { key: 'avatar-borders', label: 'Avatar Borders' },
         { key: 'badges', label: 'Badges' },
         { key: 'stickers', label: 'Stickers' },
+        { key: 'gacha-admin', label: 'Gacha Admin' },
       ],
     },
     {

@@ -106,7 +106,7 @@ export default function RedeemCodesPage() {
     if (borders.length > 0 || loadingBorders) return;
     loadBorders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.type, isSuperAdmin]);
+  }, [form.type, borders.length, loadingBorders]);
 
   const onCreate = async (e) => {
     e.preventDefault();

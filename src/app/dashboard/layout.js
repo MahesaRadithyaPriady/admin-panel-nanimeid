@@ -80,6 +80,17 @@ export default function DashboardLayout({ children }) {
         ]
       },
 
+      // Gacha Dropdown
+      {
+        key: 'gacha-group',
+        label: 'Gacha',
+        icon: Gift,
+        roles: ['superadmin'],
+        children: [
+          { key: 'gacha-admin', label: 'Gacha Admin', icon: Gift, roles: ['superadmin'], href: '/dashboard/gacha-admin' },
+        ],
+      },
+
       // Konten Dropdown
       { 
         key: 'konten-group', 
@@ -108,24 +119,30 @@ export default function DashboardLayout({ children }) {
     []
   );
 
-  const visibleMenus = useMemo(
-    () =>
-      allMenus
-        .map((m) => {
-          if (m.children) {
-            const filteredChildren = m.children.filter((child) => permissions.includes(child.key));
-            return { ...m, children: filteredChildren };
-          }
-          return m;
-        })
-        .filter((m) => {
-          if (m.children) {
-            return m.children.length > 0;
-          }
-          return permissions.includes(m.key);
-        }),
-    [allMenus, permissions]
-  );
+  const visibleMenus = useMemo(() => {
+    const roleKey = String(role || '').toLowerCase();
+
+    // Superadmin: tampilkan semua menu tanpa cek permissions
+    if (roleKey === 'superadmin') {
+      return allMenus;
+    }
+
+    // Role lain: tetap filter berdasarkan permissions
+    return allMenus
+      .map((m) => {
+        if (m.children) {
+          const filteredChildren = m.children.filter((child) => permissions.includes(child.key));
+          return { ...m, children: filteredChildren };
+        }
+        return m;
+      })
+      .filter((m) => {
+        if (m.children) {
+          return m.children.length > 0;
+        }
+        return permissions.includes(m.key);
+      });
+  }, [allMenus, permissions, role]);
 
   const onLogout = () => {
     try {
