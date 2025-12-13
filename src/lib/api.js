@@ -1265,6 +1265,20 @@ export async function deleteGachaShopItem({ token, id }) {
   return await handleJson(res, 'Gagal menghapus item shop gacha');
 }
 
+// Upload banner special event (image)
+export async function uploadGachaBanner({ token, file }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!(file instanceof File)) throw new Error('File gambar tidak valid');
+  const fd = new FormData();
+  fd.set('image', file);
+  const res = await fetch(`${adminGachaBase()}/upload-banner`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  return await handleJson(res, 'Gagal mengupload banner gacha');
+}
+
 // ===== Store Admin (SUPERADMIN) =====
 const storeAdminBase = () => `${getApiBase()}/store/admin/items`;
 

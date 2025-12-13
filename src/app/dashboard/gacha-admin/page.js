@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { Gift, Settings2, Plus, Save, RefreshCw, Trash2 } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listGachaConfigs, upsertGachaConfig, listGachaPrizes, createGachaPrize, updateGachaPrize, deleteGachaPrize, listAvatarBorders, listBadges, listStickers, listGachaShopItems, createGachaShopItem, updateGachaShopItem, deleteGachaShopItem } from '@/lib/api';
+import { listGachaConfigs, upsertGachaConfig, listGachaPrizes, createGachaPrize, updateGachaPrize, deleteGachaPrize, listAvatarBorders, listBadges, listStickers, listGachaShopItems, createGachaShopItem, updateGachaShopItem, deleteGachaShopItem, uploadGachaBanner } from '@/lib/api';
 
 export default function GachaAdminPage() {
   const router = useRouter();
@@ -27,6 +27,9 @@ export default function GachaAdminPage() {
     border_spent_threshold: '',
     border_prob_high_spent: '',
     border_prob_low_spent: '',
+    special_image_url: '',
+    special_starts_at: '',
+    special_ends_at: '',
   });
   const [savingConfig, setSavingConfig] = useState(false);
   const [specialEvent, setSpecialEvent] = useState(null);
@@ -92,6 +95,27 @@ export default function GachaAdminPage() {
       toast.error(err?.message || 'Gagal memuat konfigurasi gacha');
     } finally {
       setLoadingConfigs(false);
+    }
+  };
+
+  const onUploadBannerChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const token = getSession()?.token;
+    try {
+      const res = await uploadGachaBanner({ token, file });
+      const url = res?.url || res?.image_url || '';
+      if (url) {
+        setConfigForm((f) => ({ ...f, special_image_url: url }));
+        toast.success('Banner diupload');
+      } else {
+        toast.error('Upload berhasil tapi URL tidak ditemukan');
+      }
+    } catch (err) {
+      toast.error(err?.message || 'Gagal mengupload banner');
+    } finally {
+      // reset input supaya bisa pilih file yang sama lagi kalau perlu
+      e.target.value = '';
     }
   };
 
@@ -209,10 +233,21 @@ export default function GachaAdminPage() {
   }, [user]);
 
   const handleSelectEvent = (eventCode) => {
-    setSpecialEvent(null);
     setSelectedEvent(eventCode || '');
     const found = configs.find((c) => c.event_code === eventCode) || null;
     if (found) {
+      const se = found.specialEvent || null;
+      setSpecialEvent(se);
+      const toDatetimeLocal = (value) => {
+        if (!value) return '';
+        try {
+          const d = new Date(value);
+          if (Number.isNaN(d.getTime())) return String(value).slice(0, 16);
+          return d.toISOString().slice(0, 16);
+        } catch {
+          return String(value).slice(0, 16);
+        }
+      };
       setConfigForm({
         event_code: found.event_code || '',
         title: found.title || '',
@@ -224,11 +259,18 @@ export default function GachaAdminPage() {
         border_spent_threshold: found.border_spent_threshold != null ? String(found.border_spent_threshold) : '',
         border_prob_high_spent: found.border_prob_high_spent != null ? String(found.border_prob_high_spent) : '',
         border_prob_low_spent: found.border_prob_low_spent != null ? String(found.border_prob_low_spent) : '',
+        special_image_url: se?.image_url || '',
+        special_starts_at: toDatetimeLocal(se?.starts_at),
+        special_ends_at: toDatetimeLocal(se?.ends_at),
       });
     } else {
+      setSpecialEvent(null);
       setConfigForm((f) => ({
         ...f,
         event_code: eventCode || '',
+        special_image_url: '',
+        special_starts_at: '',
+        special_ends_at: '',
       }));
     }
     if (eventCode) {
@@ -264,6 +306,9 @@ export default function GachaAdminPage() {
         border_spent_threshold: configForm.border_spent_threshold !== '' ? Number(configForm.border_spent_threshold) : undefined,
         border_prob_high_spent: configForm.border_prob_high_spent !== '' ? Number(configForm.border_prob_high_spent) : undefined,
         border_prob_low_spent: configForm.border_prob_low_spent !== '' ? Number(configForm.border_prob_low_spent) : undefined,
+        special_image_url: configForm.special_image_url || undefined,
+        special_starts_at: configForm.special_starts_at || undefined,
+        special_ends_at: configForm.special_ends_at || undefined,
         auto_special_event: true,
       };
       const res = await upsertGachaConfig({ token, payload });
@@ -693,6 +738,40 @@ export default function GachaAdminPage() {
                   value={configForm.border_prob_low_spent}
                   onChange={(e) => updateConfigField('border_prob_low_spent', e.target.value)}
                   className="inp"
+                />
+              </F>
+              <F label="Special Image URL (banner)">
+                <input
+                  value={configForm.special_image_url}
+                  onChange={(e) => updateConfigField('special_image_url', e.target.value)}
+                  className="inp"
+                  placeholder="https://... (hasil upload-banner)"
+                />
+              </F>
+              <F label="Special Starts At (ISO datetime)">
+                <input
+                  type="datetime-local"
+                  value={configForm.special_starts_at}
+                  onChange={(e) => updateConfigField('special_starts_at', e.target.value)}
+                  className="inp"
+                  placeholder="2025-12-20T00:00:00Z"
+                />
+              </F>
+              <F label="Special Ends At (ISO datetime)">
+                <input
+                  type="datetime-local"
+                  value={configForm.special_ends_at}
+                  onChange={(e) => updateConfigField('special_ends_at', e.target.value)}
+                  className="inp"
+                  placeholder="2026-01-05T00:00:00Z"
+                />
+              </F>
+              <F label="Upload Banner ">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="inp"
+                  onChange={onUploadBannerChange}
                 />
               </F>
             </div>

@@ -116,22 +116,55 @@ Semua endpoint diawali dengan prefix `/admin/gacha` dan sudah otomatis ter-prote
 
 #### GET `/admin/gacha/configs`
 
-- **Deskripsi**: List semua konfigurasi gacha.
+- **Deskripsi**: List semua konfigurasi gacha + special event terkait (jika ada).
 - **Auth**: admin + permission gacha.
 - **Response**:
 
 ```json
 {
   "success": true,
-  "configs": [ { ...GachaConfig }, ... ]
+  "configs": [
+    {
+      "event_code": "GACHA_BORDER_SSS_PLUS",
+      "title": "...",
+      "description": "...",
+      "is_active": true,
+      "cost_per_spin": 250,
+      ...,
+      "specialEvent": {
+        "code": "SPIN_XMAS_25",
+        "gacha_event_code": "GACHA_BORDER_SSS_PLUS",
+        "image_url": "https://.../static/uploads/banners/xxx.png",
+        "starts_at": "2025-12-20T00:00:00.000Z",
+        "ends_at": "2026-01-05T00:00:00.000Z",
+        ...
+      }
+    }
+  ]
 }
 ```
 
 #### GET `/admin/gacha/configs/:event_code`
 
-- **Deskripsi**: Ambil satu config berdasarkan `event_code`.
+- **Deskripsi**: Ambil satu config berdasarkan `event_code` beserta `specialEvent` terbaru yang terhubung ke `gacha_event_code` tersebut.
 - **Params**:
   - `event_code` (path): kode event.
+- **Response**:
+
+```json
+{
+  "success": true,
+  "config": { "event_code": "GACHA_BORDER_SSS_PLUS", ... },
+  "specialEvent": {
+    "code": "SPIN_XMAS_25",
+    "gacha_event_code": "GACHA_BORDER_SSS_PLUS",
+    "image_url": "https://.../static/uploads/banners/xxx.png",
+    "starts_at": "2025-12-20T00:00:00.000Z",
+    "ends_at": "2026-01-05T00:00:00.000Z",
+    ...
+  }
+}
+```
 
 #### POST `/admin/gacha/configs`
 
@@ -185,6 +218,31 @@ Field tambahan opsional di body:
 - `special_starts_at` / `special_ends_at` (String, ISO datetime): window aktif event.
 - `special_is_active` (Boolean):
   - Default: ikut `is_active` (kalau dikirim), kalau tidak → `true`.
+
+#### Upload banner special event
+
+Untuk mengatur gambar/banner special event, gunakan endpoint upload berikut terlebih dahulu:
+
+- `POST /admin/gacha/upload-banner`
+  - **Auth**: admin + permission gacha (middleware `authenticateAdmin` + `ensureGachaPermission`).
+  - **Body**: `multipart/form-data` dengan field:
+    - `image` (file): gambar banner.
+  - **Behavior**:
+    - File disimpan ke folder `static/uploads/banners`.
+    - Backend membangun URL publik penuh berdasarkan `.env BASE_URL` + path versi API (`/v1` atau `/1.0.10`), misal:
+      - `https://mainappsv1.nanimeid.xyz/1.0.10/static/uploads/banners/1762427582547-yz03v6.png`.
+  - **Response contoh**:
+
+```json
+{
+  "success": true,
+  "url": "https://mainappsv1.nanimeid.xyz/1.0.10/static/uploads/banners/1762427582547-yz03v6.png",
+  "path": "/static/uploads/banners/1762427582547-yz03v6.png",
+  "filename": "1762427582547-yz03v6.png"
+}
+```
+
+Gunakan nilai `url` dari response di field `special_image_url` ketika memanggil `POST /admin/gacha/configs` atau `PATCH /admin/gacha/configs/:event_code`. Backend akan menyimpan nilai tersebut ke `SpecialEvent.image_url`. Saat melakukan GET config (list maupun detail), FE bisa membaca kembali nilai ini melalui `specialEvent.image_url`, serta window waktu aktif melalui `specialEvent.starts_at` dan `specialEvent.ends_at` untuk mengisi ulang form edit.
 
 Contoh payload lengkap (membuat jenis gacha + 1 special event kampanye Natal):
 
