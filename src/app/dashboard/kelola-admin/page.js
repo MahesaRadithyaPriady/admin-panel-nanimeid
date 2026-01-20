@@ -12,6 +12,9 @@ export default function KelolaAdminPage() {
   const router = useRouter();
   const { user, loading } = useSession();
 
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const canAccess = permissions.includes('kelola-admin') || String(user?.role || '').toLowerCase() === 'superadmin';
+
   // State
   const [admins, setAdmins] = useState([]);
   const [q, setQ] = useState('');
@@ -30,6 +33,13 @@ export default function KelolaAdminPage() {
   useEffect(() => {
     if (!loading && !user) router.replace('/');
   }, [loading, user, router]);
+
+  useEffect(() => {
+    if (!loading && user && !canAccess) {
+      toast.error('Kamu tidak punya permission untuk Kelola Admin');
+      router.replace('/dashboard');
+    }
+  }, [loading, user, canAccess, router]);
 
   const loadAdmins = async (opts = {}) => {
     setLoadingList(true);
@@ -68,10 +78,17 @@ export default function KelolaAdminPage() {
       ],
     },
     {
+      title: 'Moderation',
+      items: [
+        { key: 'moderation', label: 'Moderation' },
+      ],
+    },
+    {
       title: 'Kelola',
       items: [
         { key: 'kelola-user', label: 'Kelola User' },
         { key: 'kelola-admin', label: 'Kelola Admin' },
+        { key: 'signin-event-configs', label: 'Sign-In Event Configs' },
       ],
     },
     {
@@ -93,6 +110,8 @@ export default function KelolaAdminPage() {
       title: 'VIP & Items',
       items: [
         { key: 'vip-plans', label: 'VIP Plans' },
+        { key: 'vip-tiers', label: 'VIP Tiers' },
+        { key: 'vip-feature-requirements', label: 'VIP Feature Requirements' },
         { key: 'admin-vip', label: 'Admin VIP' },
         { key: 'admin-wallet', label: 'Admin Wallet' },
         { key: 'redeem-codes', label: 'Kode Redeem' },
@@ -107,6 +126,7 @@ export default function KelolaAdminPage() {
       items: [
         { key: 'daftar-konten', label: 'Daftar Konten' },
         { key: 'manga-admin', label: 'Manga Admin' },
+        { key: 'episode-video-issues', label: 'Episode Issue' },
       ],
     },
     {

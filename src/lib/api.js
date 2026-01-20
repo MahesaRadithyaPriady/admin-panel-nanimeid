@@ -10,6 +10,15 @@ export async function grabMangaChapter({ token, mangaId, chapterNumber, url, tit
 // ===== Admin Management (SUPERADMIN only) =====
 const adminsBase = () => `${getApiBase()}/admin`;
 
+// ===== Admin Sign-In Event Configs =====
+const signinEventConfigsBase = () => `${getApiBase()}/admin/signin-event-configs`;
+
+// ===== Admin Watch Event Configs =====
+const watchEventConfigsBase = () => `${getApiBase()}/admin/watch-event-configs`;
+
+// ===== Admin Moderation =====
+const moderationBase = () => `${getApiBase()}/admin/moderation`;
+
 export async function listAdmins({ token, page = 1, limit = 20, q = '' }) {
   if (!token) throw new Error('Token tidak tersedia');
   const params = new URLSearchParams();
@@ -68,6 +77,270 @@ export async function deleteAdmin({ token, id }) {
     headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal menghapus admin');
+}
+
+export async function listModerationComments({
+  token,
+  page = 1,
+  limit = 20,
+  q = '',
+  is_deleted,
+  anime_id,
+  episode_id,
+  user_id,
+} = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 100)));
+  if (q) params.set('q', String(q));
+  if (is_deleted !== undefined && is_deleted !== null && is_deleted !== '') params.set('is_deleted', String(is_deleted));
+  if (anime_id !== undefined && anime_id !== null && anime_id !== '') params.set('anime_id', String(anime_id));
+  if (episode_id !== undefined && episode_id !== null && episode_id !== '') params.set('episode_id', String(episode_id));
+  if (user_id !== undefined && user_id !== null && user_id !== '') params.set('user_id', String(user_id));
+
+  const url = `${moderationBase()}/comments?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar comments');
+  const d = data?.data ?? data;
+  return {
+    page: d?.page ?? page,
+    limit: d?.limit ?? limit,
+    total: d?.total ?? 0,
+    totalPages: d?.totalPages ?? undefined,
+    items: Array.isArray(d?.items) ? d.items : [],
+  };
+}
+
+export async function listModerationGlobalChat({
+  token,
+  page = 1,
+  limit = 20,
+  q = '',
+  is_deleted,
+  parent_id,
+  user_id,
+  kind,
+} = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 100)));
+  if (q) params.set('q', String(q));
+  if (is_deleted !== undefined && is_deleted !== null && is_deleted !== '') params.set('is_deleted', String(is_deleted));
+  if (parent_id !== undefined && parent_id !== null && parent_id !== '') params.set('parent_id', String(parent_id));
+  if (user_id !== undefined && user_id !== null && user_id !== '') params.set('user_id', String(user_id));
+  if (kind !== undefined && kind !== null && kind !== '') params.set('kind', String(kind));
+
+  const url = `${moderationBase()}/global-chat?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar global chat');
+  const d = data?.data ?? data;
+  return {
+    page: d?.page ?? page,
+    limit: d?.limit ?? limit,
+    total: d?.total ?? 0,
+    totalPages: d?.totalPages ?? undefined,
+    items: Array.isArray(d?.items) ? d.items : [],
+  };
+}
+
+export async function listModerationCommentReplies({ token, commentId, page = 1, limit = 50, q = '', is_deleted } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!commentId && commentId !== 0) throw new Error('commentId tidak valid');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 100)));
+  if (q) params.set('q', String(q));
+  if (is_deleted !== undefined && is_deleted !== null && is_deleted !== '') params.set('is_deleted', String(is_deleted));
+
+  const url = `${moderationBase()}/comments/${commentId}/replies?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar comment replies');
+  const d = data?.data ?? data;
+  return {
+    parent: d?.comment_id !== undefined ? { comment_id: d.comment_id } : undefined,
+    page: d?.page ?? page,
+    limit: d?.limit ?? limit,
+    total: d?.total ?? 0,
+    totalPages: d?.totalPages ?? undefined,
+    items: Array.isArray(d?.items) ? d.items : [],
+  };
+}
+
+export async function listModerationGlobalChatReplies({ token, messageId, page = 1, limit = 50, q = '', is_deleted } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!messageId && messageId !== 0) throw new Error('messageId tidak valid');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 100)));
+  if (q) params.set('q', String(q));
+  if (is_deleted !== undefined && is_deleted !== null && is_deleted !== '') params.set('is_deleted', String(is_deleted));
+
+  const url = `${moderationBase()}/global-chat/${messageId}/replies?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar global chat replies');
+  const d = data?.data ?? data;
+  return {
+    parent: d?.parent ?? undefined,
+    page: d?.page ?? page,
+    limit: d?.limit ?? limit,
+    total: d?.total ?? 0,
+    totalPages: d?.totalPages ?? undefined,
+    items: Array.isArray(d?.items) ? d.items : [],
+  };
+}
+
+export async function softDeleteComment({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id) throw new Error('ID komentar tidak valid');
+  const res = await fetch(`${moderationBase()}/comments/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal soft-delete comment');
+}
+
+export async function softDeleteCommentReply({ token, replyId }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!replyId) throw new Error('Reply ID tidak valid');
+  const res = await fetch(`${moderationBase()}/comment-replies/${replyId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal soft-delete comment reply');
+}
+
+export async function softDeleteGlobalChat({ token, messageId }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!messageId) throw new Error('Message ID tidak valid');
+  const res = await fetch(`${moderationBase()}/global-chat/${messageId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal soft-delete global chat');
+}
+
+export async function listSigninEventConfigs({ token, page = 1, limit = 20, is_active } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 100)));
+  if (is_active !== undefined && is_active !== null && is_active !== '') params.set('is_active', String(is_active));
+  const url = `${signinEventConfigsBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar sign-in event configs');
+  return {
+    page: data?.page ?? page,
+    limit: data?.limit ?? limit,
+    total: data?.total ?? 0,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+export async function getSigninEventConfig({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${signinEventConfigsBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil detail sign-in event config');
+}
+
+export async function createSigninEventConfig({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${signinEventConfigsBase()}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat sign-in event config');
+}
+
+export async function updateSigninEventConfig({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${signinEventConfigsBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal mengupdate sign-in event config');
+}
+
+export async function toggleSigninEventConfig({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${signinEventConfigsBase()}/${id}/toggle`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal toggle sign-in event config');
+}
+
+export async function deleteSigninEventConfig({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${signinEventConfigsBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus sign-in event config');
+}
+
+export async function listWatchEventConfigs({ token, page = 1, limit = 20, is_active } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 100)));
+  if (is_active !== undefined && is_active !== null && is_active !== '') params.set('is_active', String(is_active));
+  const url = `${watchEventConfigsBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar watch event configs');
+  return {
+    page: data?.page ?? page,
+    limit: data?.limit ?? limit,
+    total: data?.total ?? 0,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+export async function getWatchEventConfig({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${watchEventConfigsBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil detail watch event config');
+}
+
+export async function createWatchEventConfig({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${watchEventConfigsBase()}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat watch event config');
+}
+
+export async function updateWatchEventConfig({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${watchEventConfigsBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal mengupdate watch event config');
+}
+
+export async function toggleWatchEventConfig({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${watchEventConfigsBase()}/${id}/toggle`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal toggle watch event config');
+}
+
+export async function deleteWatchEventConfig({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${watchEventConfigsBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus watch event config');
 }
 
 // Admin Users APIs
@@ -173,6 +446,67 @@ export async function listOnlineUsers({ token, page = 1, limit = 20 }) {
 
 // ===== Admin Anime (SUPERADMIN | UPLOADER) =====
 const animeBase = () => `${getApiBase()}/admin/anime`;
+
+// ===== Admin Anime Requests (permission: daftar-konten) =====
+const animeRequestsBase = () => `${getApiBase()}/admin/anime-requests`;
+
+export async function listAnimeRequests({ token, page = 1, limit = 20, status = '', user_id = '', admin_id = '', q = '' } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 100)));
+  if (status) params.set('status', status);
+  if (q) params.set('q', q);
+  if (user_id !== '' && user_id !== undefined && user_id !== null) params.set('user_id', String(user_id));
+  if (admin_id !== '' && admin_id !== undefined && admin_id !== null) params.set('admin_id', String(admin_id));
+  const url = `${animeRequestsBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil daftar anime requests');
+}
+
+export async function createAnimeRequest({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(animeRequestsBase(), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat anime request');
+}
+
+export async function getAnimeRequestDetail({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${animeRequestsBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil detail anime request');
+}
+
+export async function updateAnimeRequest({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${animeRequestsBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui anime request');
+}
+
+export async function deleteAnimeRequest({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${animeRequestsBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus anime request');
+}
+
+export async function takeAnimeRequest({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${animeRequestsBase()}/${id}/take`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil anime request');
+}
 
 export async function listAnime({ token, page = 1, limit = 20, q = '', status = '', genre = '', includeEpisodes } = {}) {
   if (!token) throw new Error('Token tidak tersedia');
@@ -305,6 +639,92 @@ export async function deleteEpisode({ token, id }) {
     headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal menghapus episode');
+}
+
+// ===== Admin Episode Video Issues (permission: episode-video-issues) =====
+const episodeVideoIssuesBase = () => `${getApiBase()}/admin/episode-video-issues`;
+
+// Reasons
+export async function listEpisodeVideoIssueReasons({ token, include_inactive = false } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (include_inactive) params.set('include_inactive', 'true');
+  const url = `${episodeVideoIssuesBase()}/reasons${params.toString() ? `?${params.toString()}` : ''}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil daftar reasons');
+}
+
+export async function createEpisodeVideoIssueReason({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${episodeVideoIssuesBase()}/reasons`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat reason');
+}
+
+export async function updateEpisodeVideoIssueReason({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${episodeVideoIssuesBase()}/reasons/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui reason');
+}
+
+export async function deleteEpisodeVideoIssueReason({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${episodeVideoIssuesBase()}/reasons/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus reason');
+}
+
+// Reports
+export async function listEpisodeVideoIssueReports({ token, page = 1, limit = 20, status = '', episode_id = '', user_id = '', reason_id = '' } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 100)));
+  if (status) params.set('status', status);
+  if (episode_id !== '' && episode_id !== undefined && episode_id !== null) params.set('episode_id', String(episode_id));
+  if (user_id !== '' && user_id !== undefined && user_id !== null) params.set('user_id', String(user_id));
+  if (reason_id !== '' && reason_id !== undefined && reason_id !== null) params.set('reason_id', String(reason_id));
+  const url = `${episodeVideoIssuesBase()}/reports?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil daftar reports');
+}
+
+export async function updateEpisodeVideoIssueReport({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${episodeVideoIssuesBase()}/reports/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui report');
+}
+
+export async function updateEpisodeVideoIssueReportStatus({ token, id, status }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${episodeVideoIssuesBase()}/reports/${id}/status`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  return await handleJson(res, 'Gagal memperbarui status report');
+}
+
+export async function deleteEpisodeVideoIssueReport({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${episodeVideoIssuesBase()}/reports/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus report');
 }
 
 // ===== Anime Relations (SUPERADMIN | UPLOADER) =====
@@ -1342,6 +1762,12 @@ const primeStoreDiscountsBase = () => `${getApiBase()}/admin/prime-store/daily-d
 // ===== VIP Plan Admin (SUPERADMIN) =====
 const vipPlansBase = () => `${getApiBase()}/admin/vip-plans`;
 
+// ===== VIP Feature Requirements Admin =====
+const vipFeatureRequirementsBase = () => `${getApiBase()}/admin/vip-feature-requirements`;
+
+// ===== VIP Tiers Admin =====
+const vipTiersBase = () => `${getApiBase()}/admin/vip-tiers`;
+
 export async function listVipPlans({ token, page = 1, pageSize = 20, includeInactive = false } = {}) {
   if (!token) throw new Error('Token tidak tersedia');
   const params = new URLSearchParams();
@@ -1407,6 +1833,121 @@ export async function deleteVipPlan({ token, id }) {
     headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal menghapus VIP plan');
+}
+
+export async function listVipFeatureRequirements({ token, page = 1, limit = 50, q = '', enabled } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 200)));
+  if (q) params.set('q', q);
+  if (enabled !== undefined && enabled !== null && enabled !== '') params.set('enabled', String(enabled));
+  const url = `${vipFeatureRequirementsBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar VIP feature requirements');
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    pagination: data?.pagination,
+  };
+}
+
+export async function getVipFeatureRequirement({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipFeatureRequirementsBase()}/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil detail VIP feature requirement');
+}
+
+export async function updateVipFeatureRequirement({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipFeatureRequirementsBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal mengupdate VIP feature requirement');
+}
+
+export async function upsertVipFeatureRequirementByFeature({ token, feature, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipFeatureRequirementsBase()}/by-feature/${encodeURIComponent(String(feature))}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal upsert VIP feature requirement');
+}
+
+export async function toggleVipFeatureRequirement({ token, id, is_enabled }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipFeatureRequirementsBase()}/${id}/toggle`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_enabled }),
+  });
+  return await handleJson(res, 'Gagal mengubah status VIP feature requirement');
+}
+
+export async function listVipTiers({ token, page = 1, limit = 50, q = '', active } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 200)));
+  if (q) params.set('q', q);
+  if (active !== undefined && active !== null && active !== '') params.set('active', String(active));
+  const url = `${vipTiersBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar VIP tiers');
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    pagination: data?.pagination,
+  };
+}
+
+export async function getVipTier({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipTiersBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil detail VIP tier');
+}
+
+export async function createVipTier({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipTiersBase()}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat VIP tier');
+}
+
+export async function updateVipTier({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipTiersBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal memperbarui VIP tier');
+}
+
+export async function toggleVipTierStatus({ token, id, is_active }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipTiersBase()}/${id}/toggle`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_active }),
+  });
+  return await handleJson(res, 'Gagal mengubah status VIP tier');
+}
+
+export async function deleteVipTier({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${vipTiersBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus VIP tier');
 }
 
 export async function listPrimeStoreItems({ token, q = '', active = '', page = 1, limit = 20 }) {

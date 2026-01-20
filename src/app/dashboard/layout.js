@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { LayoutDashboard, Coins, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award } from 'lucide-react';
+import { LayoutDashboard, Coins, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, Film } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import Header from '@/components/dashboard/Header';
 import Sidebar from '@/components/dashboard/Sidebar';
@@ -35,6 +35,9 @@ export default function DashboardLayout({ children }) {
         children: [
           { key: 'kelola-user', label: 'Kelola User', icon: UsersIcon, roles: ['superadmin'], href: '/dashboard/kelola-user' },
           { key: 'kelola-admin', label: 'Kelola Admin', icon: Shield, roles: ['superadmin'], href: '/dashboard/kelola-admin' },
+          { key: 'moderation', permissionKey: 'moderation', label: 'Moderation', icon: Shield, roles: ['superadmin'], href: '/dashboard/moderation' },
+          { key: 'signin-event-configs', permissionKey: 'signin-event-configs', label: 'Sign-In Event Configs', icon: ListChecks, roles: ['superadmin'], href: '/dashboard/signin-event-configs' },
+          { key: 'watch-event-configs', permissionKey: 'watch-event-configs', label: 'Watch Event Configs', icon: Film, roles: ['superadmin'], href: '/dashboard/watch-event-configs' },
         ]
       },
 
@@ -71,6 +74,7 @@ export default function DashboardLayout({ children }) {
         roles: ['superadmin'],
         children: [
           { key: 'vip-plans', label: 'VIP Plans', icon: Crown, roles: ['superadmin'], href: '/dashboard/vip-plans' },
+          { key: 'vip-features', permissionKey: 'vip-tiers', label: 'VIP Tier & Requirement', icon: Crown, roles: ['superadmin'], href: '/dashboard/vip-features' },
           { key: 'admin-vip', label: 'Admin VIP', icon: Crown, roles: ['superadmin'], href: '/dashboard/admin-vip' },
           { key: 'admin-wallet', label: 'Admin Wallet', icon: Wallet, roles: ['superadmin'], href: '/dashboard/admin-wallet' },
           { key: 'redeem-codes', label: 'Kode Redeem', icon: Gift, roles: ['superadmin'], href: '/dashboard/redeem' },
@@ -103,6 +107,18 @@ export default function DashboardLayout({ children }) {
         ]
       },
 
+      // Episode Issue Dropdown
+      {
+        key: 'episode-issue-group',
+        label: 'Episode Issue',
+        icon: Film,
+        roles: ['superadmin', 'uploader'],
+        children: [
+          { key: 'episode-issue-reasons', permissionKey: 'episode-video-issues', label: 'Reason', icon: ListChecks, roles: ['superadmin', 'uploader'], href: '/dashboard/episode-issue/reasons' },
+          { key: 'episode-issue-reports', permissionKey: 'episode-video-issues', label: 'Report', icon: BadgeCheck, roles: ['superadmin', 'uploader'], href: '/dashboard/episode-issue/reports' },
+        ],
+      },
+
       // Lainnya Dropdown
       { 
         key: 'lainnya', 
@@ -131,7 +147,7 @@ export default function DashboardLayout({ children }) {
     return allMenus
       .map((m) => {
         if (m.children) {
-          const filteredChildren = m.children.filter((child) => permissions.includes(child.key));
+          const filteredChildren = m.children.filter((child) => permissions.includes(child.permissionKey ?? child.key));
           return { ...m, children: filteredChildren };
         }
         return m;
@@ -140,7 +156,7 @@ export default function DashboardLayout({ children }) {
         if (m.children) {
           return m.children.length > 0;
         }
-        return permissions.includes(m.key);
+        return permissions.includes(m.permissionKey ?? m.key);
       });
   }, [allMenus, permissions, role]);
 

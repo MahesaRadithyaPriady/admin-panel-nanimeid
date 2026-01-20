@@ -42,7 +42,7 @@ export default function ChapterPagesPage() {
       }
     };
     load();
-  }, [id, chapterNumber, isAllowed]);
+  }, [id, chapterNumber]);
 
   const onAddToQueue = (e) => {
     e.preventDefault();

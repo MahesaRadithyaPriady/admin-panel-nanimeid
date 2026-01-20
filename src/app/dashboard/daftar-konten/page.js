@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { Plus, Pencil, Trash2, List, ChevronDown, ChevronRight, ChevronUp, Film } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listAnime, createAnime, updateAnime, deleteAnime, listEpisodes, createEpisode, updateEpisode, deleteEpisode, searchAnime, getAnimeDetail } from '@/lib/api';
+import { listAnime, createAnime, updateAnime, deleteAnime, listEpisodes, createEpisode, updateEpisode, deleteEpisode, searchAnime, getAnimeDetail, listAnimeRequests, createAnimeRequest, updateAnimeRequest, deleteAnimeRequest, takeAnimeRequest } from '@/lib/api';
 
 export default function DaftarKontenPage() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function DaftarKontenPage() {
 
   // Form state (add/edit)
   const [mode, setMode] = useState('add'); // add | edit
-  const [activeTab, setActiveTab] = useState('anime'); // anime | episode
+  const [activeTab, setActiveTab] = useState('anime'); // anime | episode | requests
   const [form, setForm] = useState({
     id: null,
     nama_anime: '',
@@ -47,6 +47,151 @@ export default function DaftarKontenPage() {
   });
   // (HAPUS) Bulk Sync state dan fitur dihilangkan
   const [submittingTabEpisode, setSubmittingTabEpisode] = useState(false);
+
+  // ===== Tab: Anime Requests =====
+  const REQUEST_STATUSES = useMemo(() => (['PENDING', 'UNDER_REVIEW', 'UPLOAD_IN_PROGRESS', 'COMPLETED', 'REJECTED']), []);
+  const [reqItems, setReqItems] = useState([]);
+  const [reqPage, setReqPage] = useState(1);
+  const [reqLimit, setReqLimit] = useState(20);
+  const [reqTotal, setReqTotal] = useState(0);
+  const [reqLoading, setReqLoading] = useState(false);
+  const [reqQ, setReqQ] = useState('');
+  const [reqStatus, setReqStatus] = useState('');
+  const [reqUserId, setReqUserId] = useState('');
+  const [reqAdminId, setReqAdminId] = useState('');
+  const [reqMode, setReqMode] = useState('add'); // add | edit
+  const [reqForm, setReqForm] = useState({ id: null, user_id: '', nama_anime: '', season: 1, status: 'PENDING', note: '' });
+  const [reqSubmitting, setReqSubmitting] = useState(false);
+  const [reqTakingId, setReqTakingId] = useState(null);
+  const [reqConfirmOpen, setReqConfirmOpen] = useState(false);
+  const [reqConfirmTarget, setReqConfirmTarget] = useState(null);
+  const [reqDeleting, setReqDeleting] = useState(false);
+
+  const loadAnimeRequests = async (opts = {}) => {
+    setReqLoading(true);
+    try {
+      const token = getSession()?.token;
+      const params = {
+        page: reqPage,
+        limit: reqLimit,
+        q: reqQ,
+        status: reqStatus || undefined,
+        user_id: reqUserId || undefined,
+        admin_id: reqAdminId || undefined,
+        ...opts,
+      };
+      const data = await listAnimeRequests({ token, ...params });
+      const pg = data?.pagination || {};
+      setReqItems(Array.isArray(data?.items) ? data.items : []);
+      setReqPage(pg.page || params.page || 1);
+      setReqLimit(pg.limit || params.limit || 20);
+      setReqTotal(pg.total || 0);
+    } catch (err) {
+      toast.error(err?.message || 'Gagal memuat anime requests');
+    } finally {
+      setReqLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    if (activeTab !== 'requests') return;
+    loadAnimeRequests({ page: 1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, activeTab]);
+
+  const resetReqForm = () => {
+    setReqMode('add');
+    setReqForm({ id: null, user_id: '', nama_anime: '', season: 1, status: 'PENDING', note: '' });
+  };
+
+  const onSubmitReq = async (e) => {
+    e.preventDefault();
+    const token = getSession()?.token;
+    if (!token) return toast.error('Token tidak tersedia');
+    if (!reqForm.user_id || !reqForm.nama_anime) return toast.error('user_id dan nama_anime wajib diisi');
+
+    const payload = {
+      user_id: Number(reqForm.user_id),
+      nama_anime: reqForm.nama_anime,
+      season: reqForm.season === '' || reqForm.season === null || reqForm.season === undefined ? undefined : Number(reqForm.season),
+      status: reqForm.status || 'PENDING',
+      note: reqForm.note === '' ? null : reqForm.note,
+    };
+
+    try {
+      setReqSubmitting(true);
+      if (reqMode === 'add') {
+        const res = await createAnimeRequest({ token, payload });
+        toast.success(res?.message || 'Request dibuat');
+      } else {
+        const updatePayload = { ...payload };
+        delete updatePayload.user_id; // user_id tidak ada di contoh update docs
+        const res = await updateAnimeRequest({ token, id: reqForm.id, payload: updatePayload });
+        toast.success(res?.message || 'Request diperbarui');
+      }
+      resetReqForm();
+      await loadAnimeRequests();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menyimpan request');
+    } finally {
+      setReqSubmitting(false);
+    }
+  };
+
+  const onEditReq = (it) => {
+    setReqMode('edit');
+    setReqForm({
+      id: it.id,
+      user_id: String(it.user_id ?? ''),
+      nama_anime: it.nama_anime || '',
+      season: it.season ?? 1,
+      status: it.status || 'PENDING',
+      note: it.note || '',
+    });
+  };
+
+  const onTakeReq = async (it) => {
+    const token = getSession()?.token;
+    if (!token) return toast.error('Token tidak tersedia');
+    try {
+      setReqTakingId(it.id);
+      const res = await takeAnimeRequest({ token, id: it.id });
+      toast.success(res?.message || 'Request diambil');
+      await loadAnimeRequests();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal mengambil request');
+    } finally {
+      setReqTakingId(null);
+    }
+  };
+
+  const onRequestDeleteReq = (it) => {
+    setReqConfirmTarget(it);
+    setReqConfirmOpen(true);
+  };
+  const onCancelDeleteReq = () => {
+    setReqConfirmOpen(false);
+    setReqConfirmTarget(null);
+  };
+  const onConfirmDeleteReq = async () => {
+    if (!reqConfirmTarget) return;
+    const token = getSession()?.token;
+    if (!token) return toast.error('Token tidak tersedia');
+    try {
+      setReqDeleting(true);
+      const res = await deleteAnimeRequest({ token, id: reqConfirmTarget.id });
+      toast.success(res?.message || 'Request dihapus');
+      if (reqMode === 'edit' && reqForm.id === reqConfirmTarget.id) resetReqForm();
+      setReqConfirmOpen(false);
+      setReqConfirmTarget(null);
+      await loadAnimeRequests();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menghapus request');
+    } finally {
+      setReqDeleting(false);
+    }
+  };
   const resetForm = () => setForm({
     id: null,
     nama_anime: '',
@@ -141,6 +286,10 @@ export default function DaftarKontenPage() {
     thumbnail_episode: '',
     deskripsi_episode: '',
     durasi_episode: 0,
+    intro_start_seconds: '',
+    intro_duration_seconds: 90,
+    outro_start_seconds: '',
+    outro_duration_seconds: 90,
     tanggal_rilis_episode: '',
     qualities: [],
   });
@@ -199,6 +348,10 @@ export default function DaftarKontenPage() {
       thumbnail_episode: latest?.thumbnail_episode || '',
       deskripsi_episode: latest?.deskripsi_episode || '',
       durasi_episode: Number(latest?.durasi_episode) || 0,
+      intro_start_seconds: latest?.intro_start_seconds ?? 0,
+      intro_duration_seconds: latest?.intro_duration_seconds ?? 90,
+      outro_start_seconds: latest?.outro_start_seconds ?? 0,
+      outro_duration_seconds: latest?.outro_duration_seconds ?? 90,
       tanggal_rilis_episode: '',
       qualities: defaultQualities,
     }));
@@ -256,6 +409,14 @@ export default function DaftarKontenPage() {
   const [confirmRelTarget, setConfirmRelTarget] = useState(null); // { id }
   const relTopRef = useRef(null);
   const relConfirmRef = useRef(null);
+  const episodeVideoRef = useRef(null);
+
+  const getEpisodeVideoSrc = (ep) => {
+    if (!ep) return '';
+    const qualities = Array.isArray(ep.qualities) ? ep.qualities : [];
+    const candidate = qualities.find((q) => q?.source_quality);
+    return candidate?.source_quality || '';
+  };
 
   const loadRelations = async (opts = {}) => {
     setRelLoading(true);
@@ -416,6 +577,10 @@ export default function DaftarKontenPage() {
       thumbnail_episode: tabEpisode.thumbnail_episode,
       deskripsi_episode: tabEpisode.deskripsi_episode || null,
       durasi_episode: Number(tabEpisode.durasi_episode) || 0,
+      intro_start_seconds: Number(tabEpisode.intro_start_seconds) || 0,
+      intro_duration_seconds: Number(tabEpisode.intro_duration_seconds) || 90,
+      outro_start_seconds: Number(tabEpisode.outro_start_seconds) || 0,
+      outro_duration_seconds: Number(tabEpisode.outro_duration_seconds) || 90,
       tanggal_rilis_episode: tabEpisode.tanggal_rilis_episode ? new Date(tabEpisode.tanggal_rilis_episode).toISOString() : undefined,
     };
     if (Array.isArray(tabEpisode.qualities)) {
@@ -433,9 +598,22 @@ export default function DaftarKontenPage() {
         next.add(tabEpisode.animeId);
         return next;
       });
-      await loadEpisodes(tabEpisode.animeId);
+      await loadEpisodes(tabEpisode.animeId, 1, true);
       // reset form values (keep anime selection) and set default qualities again
-      setTabEpisode((s) => ({ ...s, judul_episode: '', nomor_episode: 1, thumbnail_episode: '', deskripsi_episode: '', durasi_episode: 0, tanggal_rilis_episode: '', qualities: defaultQualities }));
+      setTabEpisode((s) => ({
+        ...s,
+        judul_episode: '',
+        nomor_episode: 1,
+        thumbnail_episode: '',
+        deskripsi_episode: '',
+        durasi_episode: 0,
+        intro_start_seconds: 0,
+        intro_duration_seconds: 90,
+        outro_start_seconds: 0,
+        outro_duration_seconds: 90,
+        tanggal_rilis_episode: '',
+        qualities: defaultQualities,
+      }));
     } catch (err) {
       toast.error(err?.message || 'Gagal membuat episode');
     } finally {
@@ -519,6 +697,10 @@ export default function DaftarKontenPage() {
       thumbnail_episode: ep.thumbnail_episode || '',
       deskripsi_episode: ep.deskripsi_episode || '',
       durasi_episode: ep.durasi_episode || 0,
+      intro_start_seconds: ep.intro_start_seconds ?? 0,
+      intro_duration_seconds: ep.intro_duration_seconds ?? 90,
+      outro_start_seconds: ep.outro_start_seconds ?? 0,
+      outro_duration_seconds: ep.outro_duration_seconds ?? 90,
       tanggal_rilis_episode: ep.tanggal_rilis_episode ? new Date(ep.tanggal_rilis_episode).toISOString().slice(0, 16) : '', // yyyy-mm-ddThh:mm
       qualities: Array.isArray(ep.qualities)
         ? ep.qualities.map((q) => ({ id: q.id, nama_quality: q.nama_quality || '', source_quality: q.source_quality || '' }))
@@ -536,6 +718,10 @@ export default function DaftarKontenPage() {
       thumbnail_episode: editingEpisode.thumbnail_episode,
       deskripsi_episode: editingEpisode.deskripsi_episode ?? null,
       durasi_episode: editingEpisode.durasi_episode,
+      intro_start_seconds: Number(editingEpisode.intro_start_seconds) || 0,
+      intro_duration_seconds: Number(editingEpisode.intro_duration_seconds) || 90,
+      outro_start_seconds: Number(editingEpisode.outro_start_seconds) || 0,
+      outro_duration_seconds: Number(editingEpisode.outro_duration_seconds) || 90,
       tanggal_rilis_episode: editingEpisode.tanggal_rilis_episode ? new Date(editingEpisode.tanggal_rilis_episode).toISOString() : undefined,
     };
     if (Array.isArray(editingEpisode.qualities)) {
@@ -549,7 +735,7 @@ export default function DaftarKontenPage() {
       toast.success(res?.message || 'Episode diperbarui');
       const animeId = editingEpisode.animeId;
       setEditingEpisode(null);
-      await loadEpisodes(animeId);
+      await loadEpisodes(animeId, 1, true);
     } catch (err) {
       toast.error(err?.message || 'Gagal menyimpan episode');
     } finally {
@@ -593,7 +779,7 @@ export default function DaftarKontenPage() {
       // find anime id to reload
       const parent = items.find((a) => Array.isArray(a.episodes) && a.episodes.some((e) => e.id === confirmEpTarget.id));
       const animeId = parent?.id || editingEpisode?.animeId;
-      await loadEpisodes(animeId);
+      if (animeId) await loadEpisodes(animeId, 1, true);
     } catch (err) {
       toast.error(err?.message || 'Gagal menghapus episode');
     } finally {
@@ -623,6 +809,10 @@ export default function DaftarKontenPage() {
       thumbnail_episode: latest?.thumbnail_episode || '',
       deskripsi_episode: latest?.deskripsi_episode || '',
       durasi_episode: Number(latest?.durasi_episode) || 0,
+      intro_start_seconds: latest?.intro_start_seconds ?? 0,
+      intro_duration_seconds: latest?.intro_duration_seconds ?? 90,
+      outro_start_seconds: latest?.outro_start_seconds ?? 0,
+      outro_duration_seconds: latest?.outro_duration_seconds ?? 90,
       tanggal_rilis_episode: '', // yyyy-mm-ddThh:mm
       qualities: defaultQualities,
     });
@@ -657,6 +847,10 @@ export default function DaftarKontenPage() {
       thumbnail_episode: newEpisode.thumbnail_episode,
       deskripsi_episode: newEpisode.deskripsi_episode ?? null,
       durasi_episode: Number(newEpisode.durasi_episode) || 0,
+      intro_start_seconds: Number(newEpisode.intro_start_seconds) || 0,
+      intro_duration_seconds: Number(newEpisode.intro_duration_seconds) || 90,
+      outro_start_seconds: Number(newEpisode.outro_start_seconds) || 0,
+      outro_duration_seconds: Number(newEpisode.outro_duration_seconds) || 90,
       tanggal_rilis_episode: newEpisode.tanggal_rilis_episode ? new Date(newEpisode.tanggal_rilis_episode).toISOString() : undefined,
     };
     if (Array.isArray(newEpisode.qualities)) {
@@ -668,7 +862,7 @@ export default function DaftarKontenPage() {
       setSubmittingNewEpisode(true);
       const res = await createEpisode({ token, animeId: creatingForAnime, payload });
       toast.success(res?.message || 'Episode dibuat');
-      await loadEpisodes(creatingForAnime);
+      await loadEpisodes(creatingForAnime, 1, true);
       cancelCreateEpisode();
     } catch (err) {
       toast.error(err?.message || 'Gagal membuat episode');
@@ -918,100 +1112,193 @@ export default function DaftarKontenPage() {
             <h2 className="text-xl font-extrabold flex items-center gap-2"><List className="size-5" /> Daftar Konten</h2>
           </div>
 
-          {/* Search + Filters */}
-          <form onSubmit={onSearch} className="grid gap-3">
-            <div className="grid sm:grid-cols-[1fr_140px] gap-3">
-              <input
-                type="text"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Cari (nama/genre/tag)"
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              />
-              <button type="submit" disabled={loadingList} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
-                {loadingList ? 'Memuat...' : 'Cari'}
-              </button>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              >
-                <option value="">Semua Status</option>
-                <option value="ONGOING">Ongoing</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="HIATUS">Hiatus</option>
-                <option value="UPCOMING">Upcoming</option>
-              </select>
-              <input
-                type="text"
-                value={genre}
-                onChange={(e) => setGenre(e.target.value)}
-                placeholder="Filter genre (exact, contoh: Action)"
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              />
-            </div>
-          </form>
-
-          {/* Tabs: Tambah Anime | Tambah Episode */}
+          {/* Tabs: Tambah Anime | Tambah Episode | Request Anime */}
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setActiveTab('anime')} className={`px-3 py-2 border-4 rounded-lg font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'anime' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: activeTab === 'anime' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Tambah Anime</button>
             <button type="button" onClick={() => setActiveTab('episode')} className={`px-3 py-2 border-4 rounded-lg font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'episode' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: activeTab === 'episode' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Tambah Episode</button>
+            <button type="button" onClick={() => setActiveTab('requests')} className={`px-3 py-2 border-4 rounded-lg font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'requests' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: activeTab === 'requests' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Request Anime</button>
           </div>
+
+          {/* Search + Filters */}
+          {activeTab === 'requests' ? (
+            <div className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <div className="font-extrabold mb-2">Cari Anime Requests</div>
+              <form
+                onSubmit={(e) => { e.preventDefault(); setReqPage(1); loadAnimeRequests({ page: 1 }); }}
+                className="grid gap-3"
+              >
+                <div className="grid sm:grid-cols-3 gap-4">
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Cari nama anime</div>
+                    <input value={reqQ} onChange={(e) => setReqQ(e.target.value)} placeholder="Cari nama_anime" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Status</div>
+                    <select value={reqStatus} onChange={(e) => setReqStatus(e.target.value)} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                      <option value="">Semua status</option>
+                      {REQUEST_STATUSES.map((s) => (<option key={s} value={s}>{s}</option>))}
+                    </select>
+                  </div>
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">User ID</div>
+                    <input value={reqUserId} onChange={(e) => setReqUserId(e.target.value)} placeholder="user_id" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
+                </div>
+                <div className="grid gap-1 sm:max-w-[420px]">
+                  <div className="text-xs font-extrabold">Admin ID</div>
+                  <input value={reqAdminId} onChange={(e) => setReqAdminId(e.target.value)} placeholder="admin_id" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="submit" disabled={reqLoading} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>{reqLoading ? 'Memuat...' : 'Cari'}</button>
+                  <button
+                    type="button"
+                    onClick={() => { setReqQ(''); setReqStatus(''); setReqUserId(''); setReqAdminId(''); setReqPage(1); loadAnimeRequests({ page: 1, q: '', status: undefined, user_id: undefined, admin_id: undefined }); }}
+                    className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  >
+                    Reset
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <form onSubmit={onSearch} className="grid gap-3">
+              <div className="grid sm:grid-cols-[1fr_140px] gap-3">
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Pencarian</div>
+                  <input
+                    type="text"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Cari (nama/genre/tag)"
+                    className="px-3 py-2 border-4 rounded-lg font-semibold"
+                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  />
+                </div>
+                <button type="submit" disabled={loadingList} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
+                  {loadingList ? 'Memuat...' : 'Cari'}
+                </button>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Status</div>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                    className="px-3 py-2 border-4 rounded-lg font-semibold"
+                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  >
+                    <option value="">Semua Status</option>
+                    <option value="ONGOING">Ongoing</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="HIATUS">Hiatus</option>
+                    <option value="UPCOMING">Upcoming</option>
+                  </select>
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Genre</div>
+                  <input
+                    type="text"
+                    value={genre}
+                    onChange={(e) => setGenre(e.target.value)}
+                    placeholder="Filter genre (exact, contoh: Action)"
+                    className="px-3 py-2 border-4 rounded-lg font-semibold"
+                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  />
+                </div>
+              </div>
+            </form>
+          )}
 
           {/* Form Tambah / Edit Anime */}
           {activeTab === 'anime' && (
           <form onSubmit={onSubmit} className="grid gap-3">
             <div className="grid sm:grid-cols-2 gap-3">
-              <input type="text" value={form.nama_anime} onChange={(e) => setForm((f) => ({ ...f, nama_anime: e.target.value }))} placeholder="Nama anime (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              <input type="url" value={form.gambar_anime} onChange={(e) => setForm((f) => ({ ...f, gambar_anime: e.target.value }))} placeholder="URL gambar (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              <input type="text" value={form.rating_anime} onChange={(e) => setForm((f) => ({ ...f, rating_anime: e.target.value }))} placeholder="Rating (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              <select value={form.status_anime} onChange={(e) => setForm((f) => ({ ...f, status_anime: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                <option value="" disabled>Pilih Status (wajib)</option>
-                <option value="Ongoing">Ongoing</option>
-                <option value="Completed">Completed</option>
-                <option value="Hiatus">Hiatus</option>
-                <option value="Upcoming">Upcoming</option>
-              </select>
-              <select value={form.label_anime} onChange={(e) => setForm((f) => ({ ...f, label_anime: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                <option value="" disabled>Pilih Label (wajib)</option>
-                <option value="TV">TV</option>
-                <option value="Movie">Movie</option>
-                <option value="OVA">OVA</option>
-                <option value="ONA">ONA</option>
-                <option value="Special">Special</option>
-              </select>
-              <input type="date" value={form.tanggal_rilis_anime} onChange={(e) => setForm((f) => ({ ...f, tanggal_rilis_anime: e.target.value }))} placeholder="Tanggal rilis (opsional)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Nama Anime</div>
+                <input type="text" value={form.nama_anime} onChange={(e) => setForm((f) => ({ ...f, nama_anime: e.target.value }))} placeholder="Nama anime (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              </div>
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Gambar Anime (URL)</div>
+                <input type="url" value={form.gambar_anime} onChange={(e) => setForm((f) => ({ ...f, gambar_anime: e.target.value }))} placeholder="URL gambar (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              </div>
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Rating</div>
+                <input type="text" value={form.rating_anime} onChange={(e) => setForm((f) => ({ ...f, rating_anime: e.target.value }))} placeholder="Rating (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              </div>
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Status</div>
+                <select value={form.status_anime} onChange={(e) => setForm((f) => ({ ...f, status_anime: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <option value="" disabled>Pilih Status (wajib)</option>
+                  <option value="Ongoing">Ongoing</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Hiatus">Hiatus</option>
+                  <option value="Upcoming">Upcoming</option>
+                </select>
+              </div>
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Label</div>
+                <select value={form.label_anime} onChange={(e) => setForm((f) => ({ ...f, label_anime: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <option value="" disabled>Pilih Label (wajib)</option>
+                  <option value="TV">TV</option>
+                  <option value="Movie">Movie</option>
+                  <option value="OVA">OVA</option>
+                  <option value="ONA">ONA</option>
+                  <option value="Donghua">Donghua</option>
+                  <option value="Special">Special</option>
+                </select>
+              </div>
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Tanggal Rilis</div>
+                <input type="date" value={form.tanggal_rilis_anime} onChange={(e) => setForm((f) => ({ ...f, tanggal_rilis_anime: e.target.value }))} placeholder="Tanggal rilis (opsional)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              </div>
             </div>
-            <textarea value={form.sinopsis_anime} onChange={(e) => setForm((f) => ({ ...f, sinopsis_anime: e.target.value }))} placeholder="Sinopsis (wajib)" rows={3} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Sinopsis</div>
+              <textarea value={form.sinopsis_anime} onChange={(e) => setForm((f) => ({ ...f, sinopsis_anime: e.target.value }))} placeholder="Sinopsis (wajib)" rows={3} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+            </div>
             <div className="grid sm:grid-cols-2 gap-3">
-              <input type="text" value={form.tags_anime} onChange={(e) => setForm((f) => ({ ...f, tags_anime: e.target.value }))} placeholder="Tags (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              <input type="text" value={form.genre_anime} onChange={(e) => setForm((f) => ({ ...f, genre_anime: e.target.value }))} placeholder="Genre (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              <input type="text" value={form.studio_anime} onChange={(e) => setForm((f) => ({ ...f, studio_anime: e.target.value }))} placeholder="Studio (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              <input type="text" value={form.fakta_menarik} onChange={(e) => setForm((f) => ({ ...f, fakta_menarik: e.target.value }))} placeholder="Fakta menarik (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Tags</div>
+                <input type="text" value={form.tags_anime} onChange={(e) => setForm((f) => ({ ...f, tags_anime: e.target.value }))} placeholder="Tags (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              </div>
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Genre</div>
+                <input type="text" value={form.genre_anime} onChange={(e) => setForm((f) => ({ ...f, genre_anime: e.target.value }))} placeholder="Genre (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              </div>
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Studio</div>
+                <input type="text" value={form.studio_anime} onChange={(e) => setForm((f) => ({ ...f, studio_anime: e.target.value }))} placeholder="Studio (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              </div>
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Fakta Menarik</div>
+                <input type="text" value={form.fakta_menarik} onChange={(e) => setForm((f) => ({ ...f, fakta_menarik: e.target.value }))} placeholder="Fakta menarik (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              </div>
             </div>
             {form.status_anime === 'Ongoing' && (
               <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-center">
-                <input
-                  type="text"
-                  value={form.schedule_hari}
-                  onChange={(e) => setForm((f) => ({ ...f, schedule_hari: e.target.value }))}
-                  placeholder="Hari tayang (contoh: Senin)"
-                  className="px-3 py-2 border-4 rounded-lg font-semibold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                />
-                <input
-                  type="text"
-                  value={form.schedule_jam}
-                  onChange={(e) => setForm((f) => ({ ...f, schedule_jam: e.target.value }))}
-                  placeholder="Jam tayang (HH:mm, contoh: 20:30)"
-                  className="px-3 py-2 border-4 rounded-lg font-semibold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                />
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Jadwal Hari</div>
+                  <input
+                    type="text"
+                    value={form.schedule_hari}
+                    onChange={(e) => setForm((f) => ({ ...f, schedule_hari: e.target.value }))}
+                    placeholder="Hari tayang (contoh: Senin)"
+                    className="px-3 py-2 border-4 rounded-lg font-semibold"
+                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Jadwal Jam</div>
+                  <input
+                    type="text"
+                    value={form.schedule_jam}
+                    onChange={(e) => setForm((f) => ({ ...f, schedule_jam: e.target.value }))}
+                    placeholder="Jam tayang (HH:mm, contoh: 20:30)"
+                    className="px-3 py-2 border-4 rounded-lg font-semibold"
+                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  />
+                </div>
                 <label className="flex items-center gap-2 text-sm font-semibold">
                   <input
                     type="checkbox"
@@ -1022,23 +1309,29 @@ export default function DaftarKontenPage() {
                 </label>
               </div>
             )}
-            <textarea
-              value={form.aliases}
-              onChange={(e) => setForm((f) => ({ ...f, aliases: e.target.value }))}
-              placeholder={`Aliases (opsional). Bisa dipisah baris/koma, atau JSON: [\n  "Alias 1",\n  { "alias": "Naruto Shippuden", "language": "EN", "type": "AKA" }\n]`}
-              rows={4}
-              className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-            />
-            <div className="grid sm:grid-cols-2 gap-3">
-              <input
-                type="number"
-                value={form.alias_priority}
-                onChange={(e) => setForm((f) => ({ ...f, alias_priority: e.target.value }))}
-                placeholder="Default alias priority (opsional)"
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Aliases</div>
+              <textarea
+                value={form.aliases}
+                onChange={(e) => setForm((f) => ({ ...f, aliases: e.target.value }))}
+                placeholder={`Aliases (opsional). Bisa dipisah baris/koma, atau JSON: [\n  "Alias 1",\n  { "alias": "Naruto Shippuden", "language": "EN", "type": "AKA" }\n]`}
+                rows={4}
                 className="px-3 py-2 border-4 rounded-lg font-semibold"
                 style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               />
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Default Alias Priority</div>
+                <input
+                  type="number"
+                  value={form.alias_priority}
+                  onChange={(e) => setForm((f) => ({ ...f, alias_priority: e.target.value }))}
+                  placeholder="Default alias priority (opsional)"
+                  className="px-3 py-2 border-4 rounded-lg font-semibold"
+                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                />
+              </div>
             </div>
             <div className="grid sm:grid-cols-[160px]">
               <button type="submit" disabled={submittingAnime} className={`flex items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60`} style={{ boxShadow: '4px 4px 0 #000', background: mode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', color: mode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
@@ -1223,6 +1516,7 @@ export default function DaftarKontenPage() {
               <div className="font-extrabold">Tambah Episode</div>
               <div className="grid sm:grid-cols-2 gap-2">
                 <div className="relative">
+                  <div className="text-xs font-extrabold mb-1">Anime</div>
                   <input
                     type="text"
                     placeholder="Cari Anime..."
@@ -1263,19 +1557,56 @@ export default function DaftarKontenPage() {
                     </div>
                   )}
                 </div>
-                <input type="text" value={tabEpisode?.judul_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                <input type="number" value={tabEpisode?.nomor_episode || 1} onChange={(e) => setTabEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                <input type="url" value={tabEpisode?.thumbnail_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                <input type="number" value={tabEpisode?.durasi_episode || 0} onChange={(e) => setTabEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                <input type="datetime-local" value={tabEpisode?.tanggal_rilis_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Judul Episode</div>
+                  <input type="text" value={tabEpisode?.judul_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Nomor Episode</div>
+                  <input type="number" value={tabEpisode?.nomor_episode || 1} onChange={(e) => setTabEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Thumbnail (URL)</div>
+                  <input type="url" value={tabEpisode?.thumbnail_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Durasi Episode (detik)</div>
+                  <input type="number" value={tabEpisode?.durasi_episode || 0} onChange={(e) => setTabEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Intro Start (detik)</div>
+                  <input type="number" value={tabEpisode?.intro_start_seconds ?? 0} onChange={(e) => setTabEpisode((s) => ({ ...s, intro_start_seconds: Number(e.target.value) }))} placeholder="Intro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Intro Durasi (detik)</div>
+                  <input type="number" value={tabEpisode?.intro_duration_seconds ?? 90} onChange={(e) => setTabEpisode((s) => ({ ...s, intro_duration_seconds: Number(e.target.value) }))} placeholder="Intro durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Outro Start (detik)</div>
+                  <input type="number" value={tabEpisode?.outro_start_seconds ?? 0} onChange={(e) => setTabEpisode((s) => ({ ...s, outro_start_seconds: Number(e.target.value) }))} placeholder="Outro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Outro Durasi (detik)</div>
+                  <input type="number" value={tabEpisode?.outro_duration_seconds ?? 90} onChange={(e) => setTabEpisode((s) => ({ ...s, outro_duration_seconds: Number(e.target.value) }))} placeholder="Outro durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Tanggal Rilis</div>
+                  <input type="datetime-local" value={tabEpisode?.tanggal_rilis_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
               </div>
               <div className="pt-1">
                 <div className="font-extrabold mb-2">Qualities</div>
                 <div className="space-y-2">
                   {(tabEpisode?.qualities || []).map((q, idx) => (
                     <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto_auto_auto] gap-2">
-                      <input type="text" value={q.nama_quality} onChange={(e) => updateTabQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                      <input type="url" value={q.source_quality} onChange={(e) => updateTabQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                      <div className="grid gap-1">
+                        <div className="text-xs font-extrabold">Nama Quality</div>
+                        <input type="text" value={q.nama_quality} onChange={(e) => updateTabQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                      </div>
+                      <div className="grid gap-1">
+                        <div className="text-xs font-extrabold">Source URL</div>
+                        <input type="url" value={q.source_quality} onChange={(e) => updateTabQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                      </div>
                       <button type="button" onClick={() => moveTabQuality(idx, -1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === 0} aria-label="Naikkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                         <ChevronUp className="size-4" />
                       </button>
@@ -1290,7 +1621,10 @@ export default function DaftarKontenPage() {
                   <button type="button" onClick={() => addTabQuality()} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>+ Tambah Quality</button>
                 </div>
               </div>
-              <textarea rows={3} value={tabEpisode?.deskripsi_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Deskripsi Episode</div>
+                <textarea rows={3} value={tabEpisode?.deskripsi_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              </div>
               <div className="grid sm:grid-cols-[160px]">
                 <button type="submit" disabled={submittingTabEpisode} className="flex items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>
                   {submittingTabEpisode ? 'Menambah...' : (<><Plus className="size-4" /> Tambah Episode</>)}
@@ -1299,179 +1633,449 @@ export default function DaftarKontenPage() {
             </form>
           )}
 
-          {/* Table */}
-          <div className="overflow-auto">
-            <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-              <thead style={{ background: 'var(--panel-bg)' }}>
-                <tr>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>&nbsp;</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Nama</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Rating</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Status</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Label</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((it, idx) => (
-                  <>
-                    <tr key={`${it.id}-row`}>
-                      <td className="px-2 py-2 border-b-4 align-top" style={{ borderColor: 'var(--panel-border)' }}>
-                        <button onClick={() => toggleExpand(it.id)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '2px 2px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }} aria-label="Toggle episodes">
-                          {expanded.has(it.id) ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                        </button>
-                      </td>
-                      <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.nama_anime}</td>
-                      <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.rating_anime}</td>
-                      <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.status_anime}</td>
-                      <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.label_anime}</td>
-                      <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => onEdit(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
-                            <Pencil className="size-4" />
-                          </button>
-                          <button onClick={() => onRequestDelete(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>
-                            <Trash2 className="size-4" />
-                          </button>
-                        </div>
-                      </td>
+          {/* Tab: Request Anime */}
+          {activeTab === 'requests' && (
+            <div className="space-y-4">
+              <div className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                <div className="font-extrabold mb-2">{reqMode === 'add' ? 'Tambah Request (Admin Manual)' : `Edit Request #${reqForm.id}`}</div>
+                <form onSubmit={onSubmitReq} className="grid gap-3">
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="grid gap-1">
+                      <div className="text-xs font-extrabold">User ID</div>
+                      <input value={reqForm.user_id} onChange={(e) => setReqForm((s) => ({ ...s, user_id: e.target.value }))} placeholder="user_id (wajib)" disabled={reqMode !== 'add'} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                    </div>
+                    <div className="grid gap-1">
+                      <div className="text-xs font-extrabold">Nama Anime</div>
+                      <input value={reqForm.nama_anime} onChange={(e) => setReqForm((s) => ({ ...s, nama_anime: e.target.value }))} placeholder="nama_anime (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                    </div>
+                    <div className="grid gap-1">
+                      <div className="text-xs font-extrabold">Season</div>
+                      <input type="number" value={reqForm.season} onChange={(e) => setReqForm((s) => ({ ...s, season: Number(e.target.value) }))} placeholder="season" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                    </div>
+                    <div className="grid gap-1">
+                      <div className="text-xs font-extrabold">Status</div>
+                      <select value={reqForm.status} onChange={(e) => setReqForm((s) => ({ ...s, status: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                        {REQUEST_STATUSES.map((s) => (<option key={s} value={s}>{s}</option>))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Note</div>
+                    <textarea value={reqForm.note} onChange={(e) => setReqForm((s) => ({ ...s, note: e.target.value }))} placeholder="note (opsional)" rows={2} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button type="submit" disabled={reqSubmitting} className="flex w-32 py-2 items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: reqMode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', color: reqMode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
+                      {reqSubmitting ? (reqMode === 'add' ? 'Menambah...' : 'Menyimpan...') : (reqMode === 'add' ? (<><Plus className="size-4" /> Tambah</>) : (<><Pencil className="size-4" /> Simpan</>))}
+                    </button>
+                    {reqMode === 'edit' && (
+                      <button type="button" onClick={resetReqForm} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Batal Edit</button>
+                    )}
+                  </div>
+                </form>
+              </div>
+
+              <div className="overflow-auto">
+                <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <thead style={{ background: 'var(--panel-bg)' }}>
+                    <tr>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>ID</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Nama</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Season</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Status</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>User</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Admin</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Note</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
                     </tr>
-                    {expanded.has(it.id) && (
-                      <tr key={`${it.id}-episodes`}>
-                        <td className="px-3 py-2 border-b-4" colSpan={6} style={{ borderColor: 'var(--panel-border)' }}>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between gap-2 font-extrabold">
-                              <div className="flex items-center gap-2"><Film className="size-4" /> Episodes</div>
-                              <button type="button" onClick={() => startCreateEpisode(it.id)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>+ Tambah Episode</button>
-                            </div>
-                            {creatingForAnime === it.id && newEpisode && (
-                              <form onSubmit={onSubmitCreateEpisode} className="p-3 border-4 rounded-lg space-y-2" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                                <div className="font-extrabold">Tambah Episode</div>
-                                <div className="grid sm:grid-cols-2 gap-2">
-                                  <input type="text" value={newEpisode.judul_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                  <input type="number" value={newEpisode.nomor_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                  <input type="url" value={newEpisode.thumbnail_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                  <input type="number" value={newEpisode.durasi_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                  <input type="datetime-local" value={newEpisode.tanggal_rilis_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                </div>
-                                <div className="pt-1">
-                                  <div className="font-extrabold mb-2">Qualities</div>
-                                  <div className="space-y-2">
-                                    {(newEpisode.qualities || []).map((q, idx) => (
-                                      <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto_auto_auto] gap-2">
-                                        <input type="text" value={q.nama_quality} onChange={(e) => updateNewQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                        <input type="url" value={q.source_quality} onChange={(e) => updateNewQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                        <button type="button" onClick={() => moveNewQuality(idx, -1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === 0} aria-label="Naikkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                                          <ChevronUp className="size-4" />
-                                        </button>
-                                        <button type="button" onClick={() => moveNewQuality(idx, 1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === (newEpisode?.qualities?.length || 0) - 1} aria-label="Turunkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                                          <ChevronDown className="size-4" />
-                                        </button>
-                                        <button type="button" onClick={() => removeNewQuality(idx)} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Hapus</button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  <div className="mt-2 flex items-center gap-2 flex-wrap">
-                                    <button type="button" onClick={addNewQuality} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>+ Tambah Quality</button>
-                                  </div>
-                                </div>
-                                <textarea rows={3} value={newEpisode.deskripsi_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                <div className="flex items-center gap-2">
-                                  <button type="button" disabled={submittingNewEpisode} onClick={cancelCreateEpisode} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Batal</button>
-                                  <button type="submit" disabled={submittingNewEpisode} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>{submittingNewEpisode ? 'Menyimpan...' : 'Simpan'}</button>
-                                </div>
-                              </form>
-                            )}
-                            {editingEpisode && editingEpisode.animeId === it.id && (
-                              <form onSubmit={onSubmitEpisode} className="p-3 border-4 rounded-lg space-y-2" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                                <div className="font-extrabold">Edit Episode (Mockup)</div>
-                                <div className="grid sm:grid-cols-2 gap-2">
-                                  <input type="text" value={editingEpisode.judul_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                  <input type="number" value={editingEpisode.nomor_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                  <input type="url" value={editingEpisode.thumbnail_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                  <input type="number" value={editingEpisode.durasi_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                  <input type="datetime-local" value={editingEpisode.tanggal_rilis_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                </div>
-                                <div className="pt-1">
-                                  <div className="font-extrabold mb-2">Qualities</div>
-                                  <div className="space-y-2">
-                                    {(editingEpisode.qualities || []).map((q, idx) => (
-                                      <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto] gap-2">
-                                        <input type="text" value={q.nama_quality} onChange={(e) => updateQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                        <input type="url" value={q.source_quality} onChange={(e) => updateQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                        <button type="button" onClick={() => removeQuality(idx)} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Hapus</button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  <div className="mt-2">
-                                    <button type="button" onClick={addQuality} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>+ Tambah Quality</button>
-                                  </div>
-                                </div>
-                                <textarea rows={3} value={editingEpisode.deskripsi_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                <div className="flex items-center gap-2">
-                                  <button type="button" disabled={submittingEditEpisode} onClick={onCancelEditEpisode} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Batal</button>
-                                  <button type="submit" disabled={submittingEditEpisode} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>{submittingEditEpisode ? 'Menyimpan...' : 'Simpan'}</button>
-                                </div>
-                              </form>
-                            )}
-                            {(it.episodes && it.episodes.length > 0) ? (
-                              <div
-                                className="space-y-2 max-h-[480px] overflow-auto no-scrollbar"
-                                onScroll={(e) => {
-                                  const el = e.currentTarget;
-                                  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) {
-                                    maybeLoadMoreEpisodes(it.id);
-                                  }
-                                }}
-                              >
-                                {it.episodes.map((ep) => (
-                                  <div key={ep.id} className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                                    <div className="flex items-start justify-between gap-3">
-                                      <div className="font-extrabold">Ep {ep.nomor_episode}: {ep.judul_episode}</div>
-                                      <div className="flex items-center gap-2">
-                                        <button onClick={() => onEditEpisode(it.id, ep)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>
-                                          <Pencil className="size-4" />
-                                        </button>
-                                        <button onClick={() => onRequestDeleteEpisode(ep)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                                          <Trash2 className="size-4" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                    <div className="text-xs opacity-80">Durasi: {ep.durasi_episode} detik • Rilis: {ep.tanggal_rilis_episode ? new Date(ep.tanggal_rilis_episode).toLocaleString() : '-'}</div>
-                                    {Array.isArray(ep.qualities) && ep.qualities.length > 0 && (
-                                      <div className="mt-1 flex flex-wrap gap-2 text-xs">
-                                        {ep.qualities.map((q) => (
-                                          <span key={q.id} className="px-2 py-0.5 border-2 rounded font-extrabold" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--foreground)' }}>{q.nama_quality}</span>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="text-sm opacity-70">Belum ada episode.</div>
-                            )}
+                  </thead>
+                  <tbody>
+                    {reqItems.map((it) => (
+                      <tr key={it.id}>
+                        <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.id}</td>
+                        <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.nama_anime}</td>
+                        <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.season ?? '-'}</td>
+                        <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.status}</td>
+                        <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.user?.username ? `${it.user.username} (#${it.user_id})` : `#${it.user_id}`}</td>
+                        <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.admin ? (it.admin.username || `#${it.admin_id}`) : (it.admin_id ? `#${it.admin_id}` : '-')}</td>
+                        <td className="px-3 py-2 border-b-4 text-xs" style={{ borderColor: 'var(--panel-border)' }}>{it.note || '-'}</td>
+                        <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button type="button" onClick={() => onEditReq(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}><Pencil className="size-4" /></button>
+                            <button
+                              type="button"
+                              onClick={() => onTakeReq(it)}
+                              disabled={reqTakingId === it.id || !!it.admin_id}
+                              className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60"
+                              style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}
+                            >
+                              {reqTakingId === it.id ? 'Mengambil...' : (it.admin_id ? 'Sudah diambil' : 'Ambil')}
+                            </button>
+                            <button type="button" onClick={() => onRequestDeleteReq(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}><Trash2 className="size-4" /></button>
                           </div>
                         </td>
                       </tr>
+                    ))}
+                    {reqItems.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="px-3 py-6 text-center text-sm opacity-70">{reqLoading ? 'Memuat...' : 'Belum ada request.'}</td>
+                      </tr>
                     )}
-                  </>
-                ))}
-                {items.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-3 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Belum ada konten.'}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </tbody>
+                </table>
+              </div>
 
-          {/* Pagination */}
-          <div className="flex items-center gap-2">
-            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Prev</button>
-            <div className="text-sm font-extrabold">Page {page} / {Math.max(1, Math.ceil(total / limit))}</div>
-            <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Next</button>
-          </div>
+              <div className="flex items-center gap-2">
+                <button disabled={reqPage <= 1 || reqLoading} onClick={() => loadAnimeRequests({ page: Math.max(1, reqPage - 1) })} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Prev</button>
+                <div className="text-sm font-extrabold">Page {reqPage} / {Math.max(1, Math.ceil((reqTotal || 0) / (reqLimit || 1)))}</div>
+                <button disabled={reqPage >= Math.ceil((reqTotal || 0) / (reqLimit || 1)) || reqLoading} onClick={() => loadAnimeRequests({ page: reqPage + 1 })} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Next</button>
+              </div>
+
+              {reqConfirmOpen && (
+                <div className="fixed inset-0 z-50 grid place-items-center">
+                  <div className="absolute inset-0 bg-black/40" onClick={onCancelDeleteReq} />
+                  <div className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="grid place-items-center size-10 border-4 rounded-md" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+                        <Trash2 className="size-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-extrabold">Hapus Request?</h3>
+                        <p className="text-sm opacity-80 break-words">#{reqConfirmTarget?.id} - {reqConfirmTarget?.nama_anime}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={onCancelDeleteReq} disabled={reqDeleting} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Batal</button>
+                      <button onClick={onConfirmDeleteReq} disabled={reqDeleting} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>{reqDeleting ? 'Menghapus...' : 'Ya, Hapus'}</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab !== 'requests' && (
+            <>
+              {/* Table */}
+              <div className="overflow-auto">
+                <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <thead style={{ background: 'var(--panel-bg)' }}>
+                    <tr>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>&nbsp;</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Nama</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Rating</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Status</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Label</th>
+                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((it, idx) => (
+                      <>
+                        <tr key={`${it.id}-row`}>
+                          <td className="px-2 py-2 border-b-4 align-top" style={{ borderColor: 'var(--panel-border)' }}>
+                            <button onClick={() => toggleExpand(it.id)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '2px 2px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }} aria-label="Toggle episodes">
+                              {expanded.has(it.id) ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                            </button>
+                          </td>
+                          <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.nama_anime}</td>
+                          <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.rating_anime}</td>
+                          <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.status_anime}</td>
+                          <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.label_anime}</td>
+                          <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => onEdit(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
+                                <Pencil className="size-4" />
+                              </button>
+                              <button onClick={() => onRequestDelete(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>
+                                <Trash2 className="size-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        {expanded.has(it.id) && (
+                          <tr key={`${it.id}-episodes`}>
+                            <td className="px-3 py-2 border-b-4" colSpan={6} style={{ borderColor: 'var(--panel-border)' }}>
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-2 font-extrabold">
+                                  <div className="flex items-center gap-2"><Film className="size-4" /> Episodes</div>
+                                  <button type="button" onClick={() => startCreateEpisode(it.id)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>+ Tambah Episode</button>
+                                </div>
+                                {creatingForAnime === it.id && newEpisode && (
+                                  <form onSubmit={onSubmitCreateEpisode} className="p-3 border-4 rounded-lg space-y-2" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                                    <div className="font-extrabold">Tambah Episode</div>
+                                    <div className="grid gap-1">
+                                      <div className="text-xs font-extrabold">Video Player</div>
+                                      <video
+                                        key={getEpisodeVideoSrc(newEpisode) || 'no-src'}
+                                        ref={episodeVideoRef}
+                                        controls
+                                        src={getEpisodeVideoSrc(newEpisode) || undefined}
+                                        className="w-full border-4 rounded-lg"
+                                        style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}
+                                      />
+                                    </div>
+                                    <div className="grid sm:grid-cols-2 gap-2">
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Judul Episode</div>
+                                        <input type="text" value={newEpisode.judul_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Nomor Episode</div>
+                                        <input type="number" value={newEpisode.nomor_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Thumbnail (URL)</div>
+                                        <input type="url" value={newEpisode.thumbnail_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Durasi Episode (detik)</div>
+                                        <input type="number" value={newEpisode.durasi_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Intro Start (detik)</div>
+                                        <input type="number" value={newEpisode.intro_start_seconds ?? 0} onChange={(e) => setNewEpisode((s) => ({ ...s, intro_start_seconds: Number(e.target.value) }))} placeholder="Intro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const t = Math.floor(Number(episodeVideoRef.current?.currentTime) || 0);
+                                            setNewEpisode((s) => ({ ...s, intro_start_seconds: t }));
+                                          }}
+                                          className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                                          style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                                        >
+                                          Track
+                                        </button>
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Intro Durasi (detik)</div>
+                                        <input type="number" value={newEpisode.intro_duration_seconds ?? 90} onChange={(e) => setNewEpisode((s) => ({ ...s, intro_duration_seconds: Number(e.target.value) }))} placeholder="Intro durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Outro Start (detik)</div>
+                                        <input type="number" value={newEpisode.outro_start_seconds ?? 0} onChange={(e) => setNewEpisode((s) => ({ ...s, outro_start_seconds: Number(e.target.value) }))} placeholder="Outro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const t = Math.floor(Number(episodeVideoRef.current?.currentTime) || 0);
+                                            setNewEpisode((s) => ({ ...s, outro_start_seconds: t }));
+                                          }}
+                                          className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                                          style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                                        >
+                                          Track
+                                        </button>
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Outro Durasi (detik)</div>
+                                        <input type="number" value={newEpisode.outro_duration_seconds ?? 90} onChange={(e) => setNewEpisode((s) => ({ ...s, outro_duration_seconds: Number(e.target.value) }))} placeholder="Outro durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Tanggal Rilis</div>
+                                        <input type="datetime-local" value={newEpisode.tanggal_rilis_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      </div>
+                                    </div>
+                                    <div className="pt-1">
+                                      <div className="font-extrabold mb-2">Qualities</div>
+                                      <div className="space-y-2">
+                                        {(newEpisode.qualities || []).map((q, idx) => (
+                                          <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto_auto_auto] gap-2">
+                                            <div className="grid gap-1">
+                                              <div className="text-xs font-extrabold">Nama Quality</div>
+                                              <input type="text" value={q.nama_quality} onChange={(e) => updateNewQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                            </div>
+                                            <div className="grid gap-1">
+                                              <div className="text-xs font-extrabold">Source URL</div>
+                                              <input type="url" value={q.source_quality} onChange={(e) => updateNewQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                            </div>
+                                            <button type="button" onClick={() => moveNewQuality(idx, -1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === 0} aria-label="Naikkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                                              <ChevronUp className="size-4" />
+                                            </button>
+                                            <button type="button" onClick={() => moveNewQuality(idx, 1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === (newEpisode?.qualities?.length || 0) - 1} aria-label="Turunkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                                              <ChevronDown className="size-4" />
+                                            </button>
+                                            <button type="button" onClick={() => removeNewQuality(idx)} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Hapus</button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                        <button type="button" onClick={addNewQuality} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>+ Tambah Quality</button>
+                                      </div>
+                                    </div>
+                                    <div className="grid gap-1">
+                                      <div className="text-xs font-extrabold">Deskripsi Episode</div>
+                                      <textarea rows={3} value={newEpisode.deskripsi_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <button type="button" disabled={submittingNewEpisode} onClick={cancelCreateEpisode} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Batal</button>
+                                      <button type="submit" disabled={submittingNewEpisode} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>{submittingNewEpisode ? 'Menyimpan...' : 'Simpan'}</button>
+                                    </div>
+                                  </form>
+                                )}
+                                {editingEpisode && editingEpisode.animeId === it.id && (
+                                  <form onSubmit={onSubmitEpisode} className="p-3 border-4 rounded-lg space-y-2" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                                    <div className="font-extrabold">Edit Episode (Mockup)</div>
+                                    <div className="grid gap-1">
+                                      <div className="text-xs font-extrabold">Video Player</div>
+                                      <video
+                                        key={getEpisodeVideoSrc(editingEpisode) || 'no-src'}
+                                        ref={episodeVideoRef}
+                                        controls
+                                        src={getEpisodeVideoSrc(editingEpisode) || undefined}
+                                        className="w-full border-4 rounded-lg"
+                                        style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}
+                                      />
+                                    </div>
+                                    <div className="grid sm:grid-cols-2 gap-2">
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Judul Episode</div>
+                                        <input type="text" value={editingEpisode.judul_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Nomor Episode</div>
+                                        <input type="number" value={editingEpisode.nomor_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Thumbnail (URL)</div>
+                                        <input type="url" value={editingEpisode.thumbnail_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Durasi Episode (detik)</div>
+                                        <input type="number" value={editingEpisode.durasi_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Intro Start (detik)</div>
+                                        <input type="number" value={editingEpisode.intro_start_seconds ?? 0} onChange={(e) => setEditingEpisode((s) => ({ ...s, intro_start_seconds: Number(e.target.value) }))} placeholder="Intro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const t = Math.floor(Number(episodeVideoRef.current?.currentTime) || 0);
+                                            setEditingEpisode((s) => ({ ...s, intro_start_seconds: t }));
+                                          }}
+                                          className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                                          style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                                        >
+                                          Track
+                                        </button>
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Intro Durasi (detik)</div>
+                                        <input type="number" value={editingEpisode.intro_duration_seconds ?? 90} onChange={(e) => setEditingEpisode((s) => ({ ...s, intro_duration_seconds: Number(e.target.value) }))} placeholder="Intro durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Outro Start (detik)</div>
+                                        <input type="number" value={editingEpisode.outro_start_seconds ?? 0} onChange={(e) => setEditingEpisode((s) => ({ ...s, outro_start_seconds: Number(e.target.value) }))} placeholder="Outro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const t = Math.floor(Number(episodeVideoRef.current?.currentTime) || 0);
+                                            setEditingEpisode((s) => ({ ...s, outro_start_seconds: t }));
+                                          }}
+                                          className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                                          style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                                        >
+                                          Track
+                                        </button>
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Outro Durasi (detik)</div>
+                                        <input type="number" value={editingEpisode.outro_duration_seconds ?? 90} onChange={(e) => setEditingEpisode((s) => ({ ...s, outro_duration_seconds: Number(e.target.value) }))} placeholder="Outro durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      </div>
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">Tanggal Rilis</div>
+                                        <input type="datetime-local" value={editingEpisode.tanggal_rilis_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      </div>
+                                    </div>
+                                    <div className="pt-1">
+                                      <div className="font-extrabold mb-2">Qualities</div>
+                                      <div className="space-y-2">
+                                        {(editingEpisode.qualities || []).map((q, idx) => (
+                                          <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto] gap-2">
+                                            <div className="grid gap-1">
+                                              <div className="text-xs font-extrabold">Nama Quality</div>
+                                              <input type="text" value={q.nama_quality} onChange={(e) => updateQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                            </div>
+                                            <div className="grid gap-1">
+                                              <div className="text-xs font-extrabold">Source URL</div>
+                                              <input type="url" value={q.source_quality} onChange={(e) => updateQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                            </div>
+                                            <button type="button" onClick={() => removeQuality(idx)} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Hapus</button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <div className="mt-2">
+                                        <button type="button" onClick={addQuality} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>+ Tambah Quality</button>
+                                      </div>
+                                    </div>
+                                    <div className="grid gap-1">
+                                      <div className="text-xs font-extrabold">Deskripsi Episode</div>
+                                      <textarea rows={3} value={editingEpisode.deskripsi_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, deskripsi_episode: e.target.value }))} placeholder="Deskripsi episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <button type="button" disabled={submittingEditEpisode} onClick={onCancelEditEpisode} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Batal</button>
+                                      <button type="submit" disabled={submittingEditEpisode} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>{submittingEditEpisode ? 'Menyimpan...' : 'Simpan'}</button>
+                                    </div>
+                                  </form>
+                                )}
+                                {(it.episodes && it.episodes.length > 0) ? (
+                                  <div
+                                    className="space-y-2 max-h-[480px] overflow-auto no-scrollbar"
+                                    onScroll={(e) => {
+                                      const el = e.currentTarget;
+                                      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) {
+                                        maybeLoadMoreEpisodes(it.id);
+                                      }
+                                    }}
+                                  >
+                                    {it.episodes.map((ep) => (
+                                      <div key={ep.id} className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div className="font-extrabold">Ep {ep.nomor_episode}: {ep.judul_episode}</div>
+                                          <div className="flex items-center gap-2">
+                                            <button onClick={() => onEditEpisode(it.id, ep)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>
+                                              <Pencil className="size-4" />
+                                            </button>
+                                            <button onClick={() => onRequestDeleteEpisode(ep)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                                              <Trash2 className="size-4" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                        <div className="text-xs opacity-80">Durasi: {ep.durasi_episode} detik • Rilis: {ep.tanggal_rilis_episode ? new Date(ep.tanggal_rilis_episode).toLocaleString() : '-'}</div>
+                                        {Array.isArray(ep.qualities) && ep.qualities.length > 0 && (
+                                          <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                                            {ep.qualities.map((q) => (
+                                              <span key={q.id} className="px-2 py-0.5 border-2 rounded font-extrabold" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--foreground)' }}>{q.nama_quality}</span>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-sm opacity-70">Belum ada episode.</div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    ))}
+                    {items.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="px-3 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Belum ada konten.'}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <div className="flex items-center gap-2">
+                <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Prev</button>
+                <div className="text-sm font-extrabold">Page {page} / {Math.max(1, Math.ceil(total / limit))}</div>
+                <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Next</button>
+              </div>
+            </>
+          )}
 
           {/* Confirm Delete Modal */}
           {confirmOpen && (

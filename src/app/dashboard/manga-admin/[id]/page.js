@@ -60,7 +60,7 @@ export default function MangaDetailPage() {
       }
     };
     load();
-  }, [id, isAllowed]);
+  }, [id]);
 
   const onUploadCover = async (e) => {
     e.preventDefault();

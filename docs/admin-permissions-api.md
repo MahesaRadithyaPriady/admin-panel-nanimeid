@@ -25,6 +25,17 @@ Sistem permission-based access control untuk admin panel yang memungkinkan kontr
   - `DELETE /admin/users/:id` - Delete user
 - **Default Roles:** `superadmin`
 
+#### Sign-In Event Configs
+- **Permission:** `signin-event-configs`
+- **Routes:**
+  - `GET /admin/signin-event-configs` - List configs
+  - `GET /admin/signin-event-configs/:id` - Get config
+  - `POST /admin/signin-event-configs` - Create config
+  - `PUT /admin/signin-event-configs/:id` - Update config
+  - `PATCH /admin/signin-event-configs/:id/toggle` - Toggle config
+  - `DELETE /admin/signin-event-configs/:id` - Delete config
+- **Default Roles:** `superadmin`
+
 #### Kelola Admin
 - **Permission:** `kelola-admin`
 - **Routes:**
@@ -96,6 +107,27 @@ Sistem permission-based access control untuk admin panel yang memungkinkan kontr
   - `PUT /admin/vip-plans/:id` - Update VIP plan
   - `PATCH /admin/vip-plans/:id/toggle` - Toggle VIP plan
   - `DELETE /admin/vip-plans/:id` - Delete VIP plan
+- **Default Roles:** `superadmin`
+
+#### VIP Tiers
+- **Permission:** `vip-tiers`
+- **Routes:**
+  - `GET /admin/vip-tiers` - List VIP tiers
+  - `GET /admin/vip-tiers/:id` - Get VIP tier
+  - `POST /admin/vip-tiers` - Create VIP tier
+  - `PUT /admin/vip-tiers/:id` - Update VIP tier
+  - `PATCH /admin/vip-tiers/:id/toggle` - Toggle VIP tier
+  - `DELETE /admin/vip-tiers/:id` - Delete VIP tier
+- **Default Roles:** `superadmin`
+
+#### VIP Feature Requirements
+- **Permission:** `vip-feature-requirements`
+- **Routes:**
+  - `GET /admin/vip-feature-requirements` - List VIP feature requirements
+  - `GET /admin/vip-feature-requirements/:id` - Get VIP feature requirement
+  - `PUT /admin/vip-feature-requirements/:id` - Update VIP feature requirement
+  - `PUT /admin/vip-feature-requirements/by-feature/:feature` - Upsert VIP feature requirement by feature
+  - `PATCH /admin/vip-feature-requirements/:id/toggle` - Toggle VIP feature requirement
 - **Default Roles:** `superadmin`
 
 #### Admin VIP

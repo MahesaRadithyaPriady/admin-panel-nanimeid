@@ -40,6 +40,10 @@ Response 200:
       "thumbnail_episode": "https://img/ep1.jpg",
       "deskripsi_episode": "Pembuka",
       "durasi_episode": 1420,
+      "intro_start_seconds": 0,
+      "intro_duration_seconds": 90,
+      "outro_start_seconds": 1330,
+      "outro_duration_seconds": 90,
       "tanggal_rilis_episode": "2025-08-31T12:00:00.000Z",
       "qualities": [
         { "id": 1, "episode_id": 10, "nama_quality": "720p", "source_quality": "https://cdn/video720.mp4" },
@@ -72,6 +76,10 @@ Body:
   "thumbnail_episode": "https://img/ep1.jpg",
   "deskripsi_episode": "Pembuka",
   "durasi_episode": 1420,
+  "intro_start_seconds": 0,
+  "intro_duration_seconds": 90,
+  "outro_start_seconds": 1330,
+  "outro_duration_seconds": 90,
   "tanggal_rilis_episode": "2025-08-31T12:00:00.000Z",
   "qualities": [
     { "nama_quality": "720p", "source_quality": "https://cdn/video720.mp4" },
@@ -92,6 +100,10 @@ Response 201:
     "thumbnail_episode": "https://img/ep1.jpg",
     "deskripsi_episode": "Pembuka",
     "durasi_episode": 1420,
+    "intro_start_seconds": 0,
+    "intro_duration_seconds": 90,
+    "outro_start_seconds": 1330,
+    "outro_duration_seconds": 90,
     "tanggal_rilis_episode": "2025-08-31T12:00:00.000Z",
     "qualities": [
       { "id": 1, "episode_id": 10, "nama_quality": "720p", "source_quality": "https://cdn/video720.mp4" },
@@ -100,6 +112,13 @@ Response 201:
   }
 }
 ```
+
+Catatan:
+- Jika field intro/outro tidak dikirim, akan menggunakan default dari database:
+  - `intro_start_seconds`: 0
+  - `intro_duration_seconds`: 90
+  - `outro_start_seconds`: 0
+  - `outro_duration_seconds`: 90
 
 Error codes:
 - 400 BAD_REQUEST: field wajib kosong (`judul_episode`, `nomor_episode`, `thumbnail_episode`) atau `animeId` tidak valid
@@ -125,6 +144,10 @@ Response 200:
     "thumbnail_episode": "https://img/ep1.jpg",
     "deskripsi_episode": "Pembuka",
     "durasi_episode": 1420,
+    "intro_start_seconds": 0,
+    "intro_duration_seconds": 90,
+    "outro_start_seconds": 1330,
+    "outro_duration_seconds": 90,
     "tanggal_rilis_episode": "2025-08-31T12:00:00.000Z",
     "qualities": [
       { "id": 1, "episode_id": 10, "nama_quality": "720p", "source_quality": "https://cdn/video720.mp4" }
@@ -157,6 +180,10 @@ Body (partial allowed):
   "thumbnail_episode": "https://img/ep1-new.jpg",
   "deskripsi_episode": null,
   "durasi_episode": 1400,
+  "intro_start_seconds": 0,
+  "intro_duration_seconds": 90,
+  "outro_start_seconds": 1310,
+  "outro_duration_seconds": 90,
   "tanggal_rilis_episode": "2025-09-01T12:00:00.000Z",
   "qualities": [
     { "nama_quality": "480p", "source_quality": "https://cdn/video480.mp4" }
