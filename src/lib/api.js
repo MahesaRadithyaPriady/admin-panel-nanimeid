@@ -621,7 +621,8 @@ export async function createAnime({ token, payload }) {
   // payload should include required fields and `image` (File) per docs
   if (!token) throw new Error('Token tidak tersedia');
   const p0 = payload || {};
-  if (p0?.gambar_anime && !(p0?.image instanceof File)) {
+  const hasImageFile = p0?.image instanceof File;
+  if (!hasImageFile) {
     const { image: _image, ...rest } = p0;
     const res = await fetch(`${animeBase()}`, {
       method: 'POST',
@@ -651,7 +652,8 @@ export async function createAnime({ token, payload }) {
 export async function updateAnime({ token, id, payload }) {
   if (!token) throw new Error('Token tidak tersedia');
   const p0 = payload || {};
-  if (p0?.gambar_anime && !(p0?.image instanceof File)) {
+  const hasImageFile = p0?.image instanceof File;
+  if (!hasImageFile) {
     const { image: _image, ...rest } = p0;
     const res = await fetch(`${animeBase()}/${id}`, {
       method: 'PUT',
