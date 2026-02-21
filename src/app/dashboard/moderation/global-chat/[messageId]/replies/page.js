@@ -84,6 +84,42 @@ function StickerPreview({ sticker }) {
   );
 }
 
+function getImageUrlFromMessage(it) {
+  if (!it) return '';
+  const candidates = [
+    it?.image_url,
+    it?.media_url,
+    it?.imageUrl,
+    it?.mediaUrl,
+    it?.attachment_url,
+    it?.file_url,
+    it?.url,
+    it?.content,
+  ];
+  for (const c of candidates) {
+    if (!c) continue;
+    const s = String(c).trim();
+    if (/^https?:\/\//i.test(s)) return s;
+  }
+  return '';
+}
+
+function ImagePreview({ url }) {
+  if (!url) return null;
+  return (
+    <div
+      className="mt-3 border-4 rounded-xl p-2 inline-block max-w-full"
+      style={{
+        boxShadow: '4px 4px 0 #000',
+        background: 'var(--panel-bg)',
+        borderColor: 'var(--panel-border)',
+      }}
+    >
+      <img src={url} alt="image" className="max-w-full w-[320px] h-auto object-contain rounded" />
+    </div>
+  );
+}
+
 function ActionButton({ disabled, onClick, children }) {
   return (
     <button
@@ -244,6 +280,9 @@ export default function ModerationGlobalChatRepliesPage() {
   if (loading || !user) return <div className="text-sm">Memuat...</div>;
 
   const parentIsSticker = String(parent?.kind || '').toUpperCase() === 'STICKER';
+  const parentMsgType = String(parent?.type || parent?.kind || '').toUpperCase();
+  const parentIsImage = parentMsgType === 'IMAGE';
+  const parentImageUrl = parentIsImage ? getImageUrlFromMessage(parent) : '';
 
   return (
     <div className="space-y-4">
@@ -283,6 +322,7 @@ export default function ModerationGlobalChatRepliesPage() {
             <div className="text-xs text-zinc-500 font-bold">{formatDateTime(parent?.createdAt)}</div>
             <div className="whitespace-pre-wrap font-bold text-sm">{String(parent?.content ?? '') || '-'}</div>
             {parentIsSticker ? <StickerPreview sticker={parent?.sticker} /> : null}
+            {parentIsImage ? <ImagePreview url={parentImageUrl} /> : null}
           </div>
         </Panel>
       ) : null}
@@ -361,6 +401,9 @@ export default function ModerationGlobalChatRepliesPage() {
                 const u = it?.user;
                 const displayName = u?.profile?.full_name || u?.username || '-';
                 const isSticker = String(it?.kind || '').toUpperCase() === 'STICKER';
+                const msgType = String(it?.type || it?.kind || '').toUpperCase();
+                const isImage = msgType === 'IMAGE';
+                const imageUrl = isImage ? getImageUrlFromMessage(it) : '';
                 return (
                   <div
                     key={String(it?.id)}
@@ -391,6 +434,7 @@ export default function ModerationGlobalChatRepliesPage() {
 
                     <div className="mt-3 whitespace-pre-wrap font-bold text-sm">{String(it?.content ?? '') || '-'}</div>
                     {isSticker ? <StickerPreview sticker={it?.sticker} /> : null}
+                    {isImage ? <ImagePreview url={imageUrl} /> : null}
 
                     {parentIsSticker ? (
                       <div className="mt-3">

@@ -7,7 +7,24 @@ import { toast } from 'react-hot-toast';
 import { List, Plus, Pencil, Trash2, Image as ImageIcon, ArrowRight } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listStickers, createSticker, updateSticker, deleteSticker } from '@/lib/api';
+import { listStickers, createSticker, updateSticker, deleteSticker, uploadFileViaPresignedPut } from '@/lib/api';
+
+function safeKeySegment(input) {
+  return String(input || '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_\-]/g, '')
+    .slice(0, 80);
+}
+
+function guessExtFromFile(file) {
+  const name = String(file?.name || '');
+  const idx = name.lastIndexOf('.');
+  if (idx === -1) return '';
+  const ext = name.slice(idx + 1).toLowerCase();
+  if (!ext || ext.length > 10) return '';
+  return ext;
+}
 
 export default function StickersPage() {
   const router = useRouter();
@@ -26,6 +43,7 @@ export default function StickersPage() {
     code: '',
     name: '',
     description: '',
+    poin_collection: '50',
     is_active: true,
     sort_order: '',
     file: null,
@@ -77,6 +95,7 @@ export default function StickersPage() {
       code: '',
       name: '',
       description: '',
+      poin_collection: '500',
       is_active: true,
       sort_order: '',
       file: null,
@@ -105,16 +124,28 @@ export default function StickersPage() {
     const token = getSession()?.token;
     if (!token) return toast.error('Token tidak tersedia');
 
-    const payloadForm = {
-      code: form.code,
-      name: form.name,
-      description: form.description,
-      is_active: !!form.is_active,
-      sort_order: form.sort_order === '' ? '' : Number(form.sort_order) || 0,
-      file: form.file || undefined,
-    };
-
+    let uploadedImageUrl = '';
     try {
+      if (form.file instanceof File) {
+        const codeSeg = safeKeySegment(form.code);
+        const ext = guessExtFromFile(form.file);
+        const key = `static/uploads/stikers/${codeSeg || 'sticker'}_${Date.now()}${ext ? `.${ext}` : ''}`;
+        const up = await uploadFileViaPresignedPut({ token, key, file: form.file });
+        uploadedImageUrl = up?.publicUrl || '';
+        if (!uploadedImageUrl) throw new Error('URL stiker hasil upload tidak tersedia');
+      }
+
+      const payloadForm = {
+        code: form.code,
+        name: form.name,
+        description: form.description,
+        poin_collection: form.poin_collection === '' ? '' : Number(form.poin_collection) || 500,
+        is_active: !!form.is_active,
+        sort_order: form.sort_order === '' ? '' : Number(form.sort_order) || 0,
+        image_url: uploadedImageUrl || undefined,
+        file: uploadedImageUrl ? undefined : (form.file || undefined),
+      };
+
       setSubmitting(true);
       if (mode === 'add') {
         const res = await createSticker({ token, form: payloadForm });
@@ -140,6 +171,10 @@ export default function StickersPage() {
       code: it.code || '',
       name: it.name || '',
       description: it.description || '',
+      poin_collection:
+        it.poin_collection === null || it.poin_collection === undefined
+          ? '500'
+          : String(it.poin_collection),
       is_active: !!it.is_active,
       sort_order: typeof it.sort_order === 'number' ? String(it.sort_order) : (it.sort_order || ''),
       file: null,
@@ -207,53 +242,81 @@ export default function StickersPage() {
       <div className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
         <form onSubmit={onSubmit} className="grid gap-3">
           <div className="grid sm:grid-cols-2 gap-3">
-            <input
-              type="text"
-              value={form.code}
-              onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
-              placeholder="Code (wajib, unik)"
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Code</div>
+              <input
+                type="text"
+                value={form.code}
+                onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
+                placeholder="Code (wajib, unik)"
+                className="px-3 py-2 border-4 rounded-lg font-semibold"
+                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              />
+            </div>
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Name</div>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Name (wajib)"
+                className="px-3 py-2 border-4 rounded-lg font-semibold"
+                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Description</div>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              placeholder="Description (opsional)"
+              rows={2}
               className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-            />
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Name (wajib)"
-              className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             />
           </div>
 
-          <textarea
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Description (opsional)"
-            rows={2}
-            className="px-3 py-2 border-4 rounded-lg font-semibold"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-          />
-
           <div className="grid sm:grid-cols-2 gap-3 items-start">
             <div className="space-y-2">
-              <input
-                type="number"
-                value={form.sort_order}
-                onChange={(e) => setForm((f) => ({ ...f, sort_order: e.target.value }))}
-                placeholder="Sort order (opsional)"
-                className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              />
-              <label className="flex items-center gap-2 text-sm font-semibold">
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Poin Collection</div>
                 <input
-                  type="checkbox"
-                  checked={!!form.is_active}
-                  onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
+                  type="number"
+                  value={form.poin_collection}
+                  onChange={(e) => setForm((f) => ({ ...f, poin_collection: e.target.value }))}
+                  placeholder="Poin collection (default 500)"
+                  className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
+                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 />
-                <span>Aktif</span>
-              </label>
+              </div>
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Sort Order</div>
+                <input
+                  type="number"
+                  value={form.sort_order}
+                  onChange={(e) => setForm((f) => ({ ...f, sort_order: e.target.value }))}
+                  placeholder="Sort order (opsional)"
+                  className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
+                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                />
+              </div>
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Status</div>
+                <label className="flex items-center gap-2 text-sm font-semibold px-3 py-2 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!form.is_active}
+                    onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
+                  />
+                  <span>Aktif</span>
+                </label>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Gambar</div>
+              <div className="flex items-center gap-2">
               <label className="px-3 py-2 border-4 rounded-lg font-extrabold cursor-pointer" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                 <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
                 <span className="flex items-center gap-2"><ImageIcon className="size-4" /> Pilih Gambar</span>
@@ -269,6 +332,7 @@ export default function StickersPage() {
                   />
                 </div>
               )}
+            </div>
             </div>
           </div>
 
@@ -306,6 +370,7 @@ export default function StickersPage() {
               <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Preview</th>
               <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Code</th>
               <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Name</th>
+              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Poin</th>
               <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Active</th>
               <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Sort</th>
               <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
@@ -329,6 +394,7 @@ export default function StickersPage() {
                 </td>
                 <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.code}</td>
                 <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.name}</td>
+                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.poin_collection ?? 500}</td>
                 <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.is_active ? 'Ya' : 'Tidak'}</td>
                 <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.sort_order ?? '-'}</td>
                 <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
@@ -363,7 +429,7 @@ export default function StickersPage() {
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Belum ada stiker.'}</td>
+                <td colSpan={8} className="px-3 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Belum ada stiker.'}</td>
               </tr>
             )}
           </tbody>

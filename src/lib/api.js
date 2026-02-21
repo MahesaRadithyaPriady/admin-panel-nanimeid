@@ -2,6 +2,74 @@ export function getApiBase() {
   return process.env.NEXT_PUBLIC_API_BASE_URL || '';
 }
 
+export function getStoragePublicBaseUrl() {
+  return process.env.NEXT_PUBLIC_CDN_BASE_URL_STORAGE || process.env.NEXT_PUBLIC_STORAGE_PUBLIC_BASE_URL || '';
+}
+
+export function buildStoragePublicUrl(key) {
+  const base = (getStoragePublicBaseUrl() || '').replace(/\/$/, '');
+  const k = String(key || '').replace(/^\//, '');
+  if (!k) return '';
+  if (!base) return `/${k}`;
+  return `${base}/${k}`;
+}
+
+function guessFileExtension(filename) {
+  const name = String(filename || '');
+  const idx = name.lastIndexOf('.');
+  if (idx === -1) return '';
+  const ext = name.slice(idx + 1).toLowerCase();
+  if (!ext || ext.length > 10) return '';
+  return ext;
+}
+
+export async function createPresignedPutUrl({ token, key, contentType, expiresInSeconds = 600, useStorage = true }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!key) throw new Error('key wajib diisi');
+  if (!contentType) throw new Error('contentType wajib diisi');
+  const res = await fetch(`${getApiBase()}/upload/admin/presigned-put`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, contentType, expiresInSeconds, useStorage }),
+  });
+  const data = await handleJson(res, 'Gagal membuat presigned PUT URL');
+  const d = data?.data ?? data;
+  if (!d?.url) throw new Error('Presigned PUT URL tidak tersedia');
+  return d;
+}
+
+export async function putFileToPresignedUrl({ url, file, contentType }) {
+  if (!url) throw new Error('url tidak valid');
+  if (!(file instanceof File)) throw new Error('File tidak valid');
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType || file.type || 'application/octet-stream' },
+    body: file,
+  });
+  if (!res.ok) throw new Error(`Gagal upload ke storage (${res.status})`);
+  return true;
+}
+
+export async function uploadFileViaPresignedPut({ token, folder, file, key }) {
+  if (!(file instanceof File)) throw new Error('File tidak valid');
+  const ext = guessFileExtension(file.name);
+  const safeFolder = String(folder || '').replace(/^\/+|\/+$/g, '');
+  const computedKey = key || `${safeFolder ? `${safeFolder}/` : ''}${Date.now()}_${Math.random().toString(16).slice(2)}${ext ? `.${ext}` : ''}`;
+  const presigned = await createPresignedPutUrl({
+    token,
+    key: computedKey,
+    contentType: file.type || 'application/octet-stream',
+    expiresInSeconds: 600,
+    useStorage: true,
+  });
+  await putFileToPresignedUrl({ url: presigned.url, file, contentType: file.type });
+  return {
+    key: presigned.key || computedKey,
+    bucket: presigned.bucket,
+    publicUrl: buildStoragePublicUrl(presigned.key || computedKey),
+  };
+}
+
 // Back-compat name used by UI: delegates to Komiku grab
 export async function grabMangaChapter({ token, mangaId, chapterNumber, url, title }) {
   return await grabKomikuChapter({ token, url, manga_id: mangaId, chapter_number: chapterNumber, title });
@@ -550,22 +618,62 @@ export async function getAnimeDetail({ token, id }) {
 }
 
 export async function createAnime({ token, payload }) {
-  // payload should include: nama_anime, gambar_anime, rating_anime, status_anime, sinopsis_anime, label_anime, and optional fields as per docs
+  // payload should include required fields and `image` (File) per docs
   if (!token) throw new Error('Token tidak tersedia');
+  const p0 = payload || {};
+  if (p0?.gambar_anime && !(p0?.image instanceof File)) {
+    const { image: _image, ...rest } = p0;
+    const res = await fetch(`${animeBase()}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(Object.entries(rest).filter(([_, v]) => v !== undefined))),
+    });
+    return await handleJson(res, 'Gagal membuat anime');
+  }
+  const fd = new FormData();
+  const p = p0;
+  if (p?.image instanceof File) fd.set('image', p.image);
+  Object.entries(p).forEach(([k, v]) => {
+    if (k === 'image') return;
+    if (v === undefined) return;
+    if (v === null) return;
+    if (Array.isArray(v) || (v && typeof v === 'object')) fd.set(k, JSON.stringify(v));
+    else fd.set(k, String(v));
+  });
   const res = await fetch(`${animeBase()}`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload || {}),
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
   });
   return await handleJson(res, 'Gagal membuat anime');
 }
 
 export async function updateAnime({ token, id, payload }) {
   if (!token) throw new Error('Token tidak tersedia');
+  const p0 = payload || {};
+  if (p0?.gambar_anime && !(p0?.image instanceof File)) {
+    const { image: _image, ...rest } = p0;
+    const res = await fetch(`${animeBase()}/${id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(Object.entries(rest).filter(([_, v]) => v !== undefined))),
+    });
+    return await handleJson(res, 'Gagal memperbarui anime');
+  }
+  const fd = new FormData();
+  const p = p0;
+  if (p?.image instanceof File) fd.set('image', p.image);
+  Object.entries(p).forEach(([k, v]) => {
+    if (k === 'image') return;
+    if (v === undefined) return;
+    if (v === null) return;
+    if (Array.isArray(v) || (v && typeof v === 'object')) fd.set(k, JSON.stringify(v));
+    else fd.set(k, String(v));
+  });
   const res = await fetch(`${animeBase()}/${id}`, {
     method: 'PUT',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload || {}),
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
   });
   return await handleJson(res, 'Gagal memperbarui anime');
 }
@@ -605,10 +713,30 @@ export async function listEpisodes({ token, animeId, page = 1, limit = 50 }) {
 export async function createEpisode({ token, animeId, payload }) {
   if (!token) throw new Error('Token tidak tersedia');
   if (!animeId && animeId !== 0) throw new Error('animeId tidak valid');
+  const p0 = payload || {};
+  if (p0?.thumbnail_episode && !(p0?.image instanceof File)) {
+    const { image: _image, ...rest } = p0;
+    const res = await fetch(`${animeBase()}/${animeId}/episodes`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(Object.entries(rest).filter(([_, v]) => v !== undefined))),
+    });
+    return await handleJson(res, 'Gagal membuat episode');
+  }
+  const fd = new FormData();
+  const p = p0;
+  if (p?.image instanceof File) fd.set('image', p.image);
+  Object.entries(p).forEach(([k, v]) => {
+    if (k === 'image') return;
+    if (v === undefined) return;
+    if (v === null) return;
+    if (Array.isArray(v) || (v && typeof v === 'object')) fd.set(k, JSON.stringify(v));
+    else fd.set(k, String(v));
+  });
   const res = await fetch(`${animeBase()}/${animeId}/episodes`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload || {}),
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
   });
   return await handleJson(res, 'Gagal membuat episode');
 }
@@ -623,10 +751,30 @@ export async function getEpisodeDetail({ token, id }) {
 // Update episode (replace qualities if provided)
 export async function updateEpisode({ token, id, payload }) {
   if (!token) throw new Error('Token tidak tersedia');
+  const p0 = payload || {};
+  if (p0?.thumbnail_episode && !(p0?.image instanceof File)) {
+    const { image: _image, ...rest } = p0;
+    const res = await fetch(`${episodesBase()}/${id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(Object.entries(rest).filter(([_, v]) => v !== undefined))),
+    });
+    return await handleJson(res, 'Gagal memperbarui episode');
+  }
+  const fd = new FormData();
+  const p = p0;
+  if (p?.image instanceof File) fd.set('image', p.image);
+  Object.entries(p).forEach(([k, v]) => {
+    if (k === 'image') return;
+    if (v === undefined) return;
+    if (v === null) return;
+    if (Array.isArray(v) || (v && typeof v === 'object')) fd.set(k, JSON.stringify(v));
+    else fd.set(k, String(v));
+  });
   const res = await fetch(`${episodesBase()}/${id}`, {
     method: 'PUT',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload || {}),
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
   });
   return await handleJson(res, 'Gagal memperbarui episode');
 }
@@ -1020,11 +1168,28 @@ export async function getBadge({ token, id }) {
 
 export async function createBadge({ token, form }) {
   if (!token) throw new Error('Token tidak tersedia');
+  if (form?.badge_url && !(form?.file instanceof File)) {
+    const payload = {
+      code: form?.code,
+      name: form?.name,
+      description: form?.description,
+      badge_url: form?.badge_url,
+      poin_collection: form?.poin_collection,
+      is_active: form?.is_active,
+      sort_order: form?.sort_order,
+    };
+    const res = await fetch(badgesBase(), {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== undefined))),
+    });
+    return await handleJson(res, 'Gagal membuat badge');
+  }
   const fd = new FormData();
   if (form?.code) fd.set('code', form.code);
   if (form?.name) fd.set('name', form.name);
   if (form?.description) fd.set('description', form.description);
-  if (form?.badge_url) fd.set('badge_url', form.badge_url);
+  if (form?.poin_collection !== undefined && form.poin_collection !== null && form.poin_collection !== '') fd.set('poin_collection', String(form.poin_collection));
   if (form?.is_active !== undefined) fd.set('is_active', String(!!form.is_active));
   if (form?.sort_order !== undefined && form.sort_order !== null && form.sort_order !== '') fd.set('sort_order', String(form.sort_order));
   if (form?.file instanceof File) fd.set('image', form.file);
@@ -1039,11 +1204,28 @@ export async function createBadge({ token, form }) {
 
 export async function updateBadge({ token, id, form }) {
   if (!token) throw new Error('Token tidak tersedia');
+  if (form?.badge_url && !(form?.file instanceof File)) {
+    const payload = {
+      code: form?.code,
+      name: form?.name,
+      description: form?.description,
+      badge_url: form?.badge_url,
+      poin_collection: form?.poin_collection,
+      is_active: form?.is_active,
+      sort_order: form?.sort_order,
+    };
+    const res = await fetch(`${badgesBase()}/${id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== undefined))),
+    });
+    return await handleJson(res, 'Gagal memperbarui badge');
+  }
   const fd = new FormData();
   if (form?.code !== undefined) fd.set('code', form.code);
   if (form?.name !== undefined) fd.set('name', form.name);
   if (form?.description !== undefined) fd.set('description', form.description ?? '');
-  if (form?.badge_url !== undefined) fd.set('badge_url', form.badge_url ?? '');
+  if (form?.poin_collection !== undefined) fd.set('poin_collection', form.poin_collection === null || form.poin_collection === '' ? '' : String(form.poin_collection));
   if (form?.is_active !== undefined) fd.set('is_active', String(!!form.is_active));
   if (form?.sort_order !== undefined)
     fd.set('sort_order', form.sort_order === null || form.sort_order === '' ? '' : String(form.sort_order));
@@ -1066,8 +1248,23 @@ export async function deleteBadge({ token, id }) {
   return await handleJson(res, 'Gagal menghapus badge');
 }
 
+export async function refreshBadgeDimensions({ token, id, badge_url } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id && id !== 0) throw new Error('id badge tidak valid');
+
+  const payload = {};
+  if (badge_url) payload.badge_url = badge_url;
+
+  const res = await fetch(`${badgesBase()}/${id}/refresh-dimensions`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return await handleJson(res, 'Gagal refresh dimensi badge');
+}
+
 // Badge Ownership (SUPERADMIN only)
-export async function listBadgeOwners({ token, badgeId, page = 1, limit = 50, q = '', active = '' }) {
+export async function listBadgeOwners({ token, badgeId, page = 1, limit = 50, q = '', active = '' } = {}) {
   if (!token) throw new Error('Token tidak tersedia');
   if (!badgeId && badgeId !== 0) throw new Error('badgeId tidak valid');
   const params = new URLSearchParams();
@@ -1154,10 +1351,28 @@ export async function getSticker({ token, id }) {
 
 export async function createSticker({ token, form }) {
   if (!token) throw new Error('Token tidak tersedia');
+  if (form?.image_url && !(form?.file instanceof File)) {
+    const payload = {
+      code: form?.code,
+      name: form?.name,
+      description: form?.description,
+      image_url: form?.image_url,
+      poin_collection: form?.poin_collection,
+      is_active: form?.is_active,
+      sort_order: form?.sort_order,
+    };
+    const res = await fetch(stickersBase(), {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== undefined))),
+    });
+    return await handleJson(res, 'Gagal membuat stiker');
+  }
   const fd = new FormData();
   if (form?.code) fd.set('code', form.code);
   if (form?.name) fd.set('name', form.name);
   if (form?.description) fd.set('description', form.description);
+  if (form?.poin_collection !== undefined && form.poin_collection !== null && form.poin_collection !== '') fd.set('poin_collection', String(form.poin_collection));
   if (form?.is_active !== undefined) fd.set('is_active', String(!!form.is_active));
   if (form?.sort_order !== undefined && form.sort_order !== null && form.sort_order !== '') fd.set('sort_order', String(form.sort_order));
   if (form?.file instanceof File) fd.set('image', form.file);
@@ -1172,10 +1387,28 @@ export async function createSticker({ token, form }) {
 
 export async function updateSticker({ token, id, form }) {
   if (!token) throw new Error('Token tidak tersedia');
+  if (form?.image_url && !(form?.file instanceof File)) {
+    const payload = {
+      code: form?.code,
+      name: form?.name,
+      description: form?.description,
+      image_url: form?.image_url,
+      poin_collection: form?.poin_collection,
+      is_active: form?.is_active,
+      sort_order: form?.sort_order,
+    };
+    const res = await fetch(`${stickersBase()}/${id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== undefined))),
+    });
+    return await handleJson(res, 'Gagal memperbarui stiker');
+  }
   const fd = new FormData();
   if (form?.code !== undefined) fd.set('code', form.code);
   if (form?.name !== undefined) fd.set('name', form.name);
   if (form?.description !== undefined) fd.set('description', form.description);
+  if (form?.poin_collection !== undefined) fd.set('poin_collection', form.poin_collection === null || form.poin_collection === '' ? '' : String(form.poin_collection));
   if (form?.is_active !== undefined) fd.set('is_active', String(!!form.is_active));
   if (form?.sort_order !== undefined) fd.set('sort_order', form.sort_order === null || form.sort_order === '' ? '' : String(form.sort_order));
   if (form?.file instanceof File) fd.set('image', form.file);
@@ -2105,10 +2338,30 @@ export async function listManga({ token, q = '', page = 1, limit = 20 }) {
 
 export async function createManga({ token, payload }) {
   if (!token) throw new Error('Token tidak tersedia');
+  const p0 = payload || {};
+  if (p0?.cover_manga && !(p0?.cover instanceof File)) {
+    const { cover: _cover, ...rest } = p0;
+    const res = await fetch(`${mangaBase()}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(Object.entries(rest).filter(([_, v]) => v !== undefined))),
+    });
+    return await handleJson(res, 'Gagal membuat manga');
+  }
+  const fd = new FormData();
+  const p = p0;
+  if (p?.cover instanceof File) fd.set('cover', p.cover);
+  Object.entries(p).forEach(([k, v]) => {
+    if (k === 'cover') return;
+    if (v === undefined) return;
+    if (v === null) return;
+    if (Array.isArray(v) || (v && typeof v === 'object')) fd.set(k, JSON.stringify(v));
+    else fd.set(k, String(v));
+  });
   const res = await fetch(`${mangaBase()}`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload || {}),
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
   });
   return await handleJson(res, 'Gagal membuat manga');
 }
@@ -2134,10 +2387,30 @@ export async function getManga({ token, id }) {
 
 export async function updateManga({ token, id, payload }) {
   if (!token) throw new Error('Token tidak tersedia');
+  const p0 = payload || {};
+  if (p0?.cover_manga && !(p0?.cover instanceof File)) {
+    const { cover: _cover, ...rest } = p0;
+    const res = await fetch(`${mangaBase()}/${id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(Object.entries(rest).filter(([_, v]) => v !== undefined))),
+    });
+    return await handleJson(res, 'Gagal memperbarui manga');
+  }
+  const fd = new FormData();
+  const p = p0;
+  if (p?.cover instanceof File) fd.set('cover', p.cover);
+  Object.entries(p).forEach(([k, v]) => {
+    if (k === 'cover') return;
+    if (v === undefined) return;
+    if (v === null) return;
+    if (Array.isArray(v) || (v && typeof v === 'object')) fd.set(k, JSON.stringify(v));
+    else fd.set(k, String(v));
+  });
   const res = await fetch(`${mangaBase()}/${id}`, {
     method: 'PUT',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload || {}),
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
   });
   return await handleJson(res, 'Gagal memperbarui manga');
 }
@@ -2263,6 +2536,44 @@ export async function deletePageByNumber({ token, mangaId, chapterNumber, pageNu
   return await handleJson(res, 'Gagal menghapus halaman');
 }
 
+export async function commitMangaChapterPages({ token, mangaId, chapterNumber, replace = false, title, pages }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!mangaId && mangaId !== 0) throw new Error('mangaId tidak valid');
+  if (chapterNumber === undefined || chapterNumber === null || chapterNumber === '') throw new Error('chapterNumber tidak valid');
+  if (!Array.isArray(pages) || pages.length === 0) throw new Error('pages wajib diisi');
+
+  const payload = { replace: !!replace, pages };
+  if (title !== undefined) payload.title = title;
+  const res = await fetch(`${mangaBase()}/${mangaId}/chapters/${chapterNumber}/pages`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return await handleJson(res, 'Gagal commit pages chapter');
+}
+
+export async function refreshMangaChapterDimensions({ token, mangaId, chapterNumber, only_missing = true }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!mangaId && mangaId !== 0) throw new Error('mangaId tidak valid');
+  if (chapterNumber === undefined || chapterNumber === null || chapterNumber === '') throw new Error('chapterNumber tidak valid');
+  const res = await fetch(`${mangaBase()}/${mangaId}/chapters/${chapterNumber}/refresh-dimensions`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ only_missing: only_missing !== undefined ? !!only_missing : true }),
+  });
+  return await handleJson(res, 'Gagal refresh dimensi chapter');
+}
+
+export async function refreshPageDimensions({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id && id !== 0) throw new Error('id page tidak valid');
+  const res = await fetch(`${getApiBase()}/admin/pages/${id}/refresh-dimensions`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal refresh dimensi page');
+}
+
 // ===== Komiku Grab (SUPERADMIN) =====
 export async function grabKomikuChapter({ token, url, manga_id, chapter_number, title }) {
   if (!token) throw new Error('Token tidak tersedia');
@@ -2274,12 +2585,35 @@ export async function grabKomikuChapter({ token, url, manga_id, chapter_number, 
   return await handleJson(res, 'Gagal grab Komiku');
 }
 
+export async function grabMangaChapterPlan({ token, mangaId, chapterNumber, url, title, plan_only = true }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!mangaId && mangaId !== 0) throw new Error('mangaId tidak valid');
+  if (chapterNumber === undefined || chapterNumber === null || chapterNumber === '') throw new Error('chapterNumber tidak valid');
+  if (!url) throw new Error('url wajib diisi');
+  const res = await fetch(`${mangaBase()}/${mangaId}/chapters/${chapterNumber}/grab`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ url, title, plan_only: plan_only !== undefined ? !!plan_only : true }),
+  });
+  return await handleJson(res, 'Gagal grab chapter (plan)');
+}
+
 export async function grabKomikuRange({ token, mangaId, sample_url, start, end, title_prefix }) {
   if (!token) throw new Error('Token tidak tersedia');
   const res = await fetch(`${mangaBase()}/${mangaId}/komiku/grab-range`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ sample_url, start, end, title_prefix }),
+  });
+  return await handleJson(res, 'Gagal grab Komiku range');
+}
+
+export async function grabKomikuRangePlan({ token, mangaId, sample_url, start, end, title_prefix, plan_only = true }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${mangaBase()}/${mangaId}/komiku/grab-range`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ sample_url, start, end, title_prefix, plan_only: plan_only !== undefined ? !!plan_only : true }),
   });
   return await handleJson(res, 'Gagal grab Komiku range');
 }

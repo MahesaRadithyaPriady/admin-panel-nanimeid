@@ -6,7 +6,24 @@ import { toast } from 'react-hot-toast';
 import { Gift, Settings2, Plus, Save, RefreshCw, Trash2 } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listGachaConfigs, upsertGachaConfig, listGachaPrizes, createGachaPrize, updateGachaPrize, deleteGachaPrize, listAvatarBorders, listBadges, listStickers, listGachaShopItems, createGachaShopItem, updateGachaShopItem, deleteGachaShopItem, uploadGachaBanner } from '@/lib/api';
+import { listGachaConfigs, upsertGachaConfig, listGachaPrizes, createGachaPrize, updateGachaPrize, deleteGachaPrize, listAvatarBorders, listBadges, listStickers, listGachaShopItems, createGachaShopItem, updateGachaShopItem, deleteGachaShopItem, uploadFileViaPresignedPut } from '@/lib/api';
+
+function safeKeySegment(input) {
+  return String(input || '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_\-]/g, '')
+    .slice(0, 80);
+}
+
+function guessExtFromFile(file) {
+  const name = String(file?.name || '');
+  const idx = name.lastIndexOf('.');
+  if (idx === -1) return '';
+  const ext = name.slice(idx + 1).toLowerCase();
+  if (!ext || ext.length > 10) return '';
+  return ext;
+}
 
 export default function GachaAdminPage() {
   const router = useRouter();
@@ -103,14 +120,15 @@ export default function GachaAdminPage() {
     if (!file) return;
     const token = getSession()?.token;
     try {
-      const res = await uploadGachaBanner({ token, file });
-      const url = res?.url || res?.image_url || '';
-      if (url) {
-        setConfigForm((f) => ({ ...f, special_image_url: url }));
-        toast.success('Banner diupload');
-      } else {
-        toast.error('Upload berhasil tapi URL tidak ditemukan');
-      }
+      if (!token) throw new Error('Token tidak tersedia');
+      const eventSeg = safeKeySegment(configForm.event_code || selectedEvent || 'event');
+      const ext = guessExtFromFile(file);
+      const key = `static/uploads/gacha-banners/${eventSeg}_${Date.now()}${ext ? `.${ext}` : ''}`;
+      const up = await uploadFileViaPresignedPut({ token, key, file });
+      const url = up?.publicUrl || '';
+      if (!url) throw new Error('Upload berhasil tapi URL tidak ditemukan');
+      setConfigForm((f) => ({ ...f, special_image_url: url }));
+      toast.success('Banner diupload');
     } catch (err) {
       toast.error(err?.message || 'Gagal mengupload banner');
     } finally {

@@ -5,42 +5,49 @@ Endpoint admin untuk membuat anime baru. Hanya role SUPERADMIN dan UPLOADER.
 - Base URL: `/admin`
 - Auth: `Authorization: Bearer <ADMIN_JWT>`
 
+Catatan upload:
+- Endpoint admin anime saat ini menggunakan `multipart/form-data` untuk upload cover.
+- Untuk flow upload yang lebih cepat (direct-to-B2), lihat `Admin Uploads API` bagian **Direct Upload ke B2 (Presigned PUT URL)**.
+
 ## Buat Anime (SUPERADMIN | UPLOADER)
 - Method: POST
 - Path: `/anime`
-- Header: `Content-Type: application/json`
-- Body (JSON):
-```json
-{
-  "nama_anime": "Naruto",
-  "gambar_anime": "https://cdn.example.com/naruto.jpg",
-  "tags_anime": ["shounen","action"],
-  "rating_anime": "8.6",
-  "view_anime": 1000,
-  "tanggal_rilis_anime": "2024-05-01T00:00:00.000Z",
-  "status_anime": "ongoing",
-  "genre_anime": ["Action","Adventure"],
-  "sinopsis_anime": "Seorang ninja...",
-  "label_anime": "TV",
-  "studio_anime": ["Pierrot"],
-  "fakta_menarik": ["Diadaptasi dari manga"],
-  "aliases": [
-    "ナルト",
-    { "alias": "Naruto Shippuden", "language": "EN", "type": "AKA", "priority": 2 },
-    { "alias": "Naruto", "language": "EN", "type": "ORIGINAL", "priority": 1 }
-  ]
-  "schedule": {                // wajib jika status_anime = "ongoing" dan tidak memakai "schedules"
-    "hari": "Senin",         // string: nama hari
-    "jam": "20:30",          // string: jam tayang (HH:mm)
-    "is_active": true          // opsional, default true
-  },
-  "schedules": [               // alternatif: beberapa jadwal sekaligus
-    { "hari": "Senin", "jam": "20:30" },
-    { "hari": "Kamis", "jam": "21:00", "is_active": true }
-  ]
-}
+- Header: `Content-Type: multipart/form-data`
+
+Body (multipart form):
+
+- `image` (file, opsional) — cover anime (hanya file gambar)
+- Alternatif (tanpa upload file): kirim `gambar_anime` berisi URL cover (mis. URL CDN/B2 hasil presigned upload)
+- Field lain mengikuti JSON, dikirim sebagai text:
+  - `nama_anime`, `rating_anime`, `status_anime`, `sinopsis_anime`, `label_anime`
+  - `type` / `content_type`, `is_21_plus`
+  - `tags_anime`, `genre_anime`, `studio_anime`, `fakta_menarik`
+  - `aliases`, `schedule`, `schedules`
+
+Contoh request (multipart/form-data):
+
+```http
+POST /admin/anime
+Authorization: Bearer <ADMIN_JWT>
+Content-Type: multipart/form-data
+
+body:
+  nama_anime: Naruto
+  rating_anime: 8.6
+  status_anime: ongoing
+  type: ANIME
+  is_21_plus: false
+  sinopsis_anime: Seorang ninja...
+  label_anime: TV
+  tags_anime: shounen,action
+  genre_anime: Action,Adventure
+  image: <file image/jpeg>
 ```
-- Field wajib: `nama_anime`, `gambar_anime`, `rating_anime`, `status_anime`, `sinopsis_anime`, `label_anime`
+
+- Field wajib: `nama_anime`, `rating_anime`, `status_anime`, `sinopsis_anime`, `label_anime`
+- Cover wajib dikirim melalui **salah satu**:
+  - `image` (file)
+  - `gambar_anime` (URL)
 - **Khusus `status_anime = "ongoing"`**:
   - Wajib mengirim **minimal satu jadwal** melalui field `schedule` *atau* `schedules`.
   - Jika tidak ada jadwal yang valid (`hari` & `jam` kosong), server akan mengembalikan **400** dengan pesan bahwa jadwal wajib diisi.
@@ -66,6 +73,8 @@ Endpoint admin untuk membuat anime baru. Hanya role SUPERADMIN dan UPLOADER.
     "genre_anime": ["Action","Adventure"],
     "sinopsis_anime": "Seorang ninja...",
     "label_anime": "TV",
+    "content_type": "ANIME",
+    "is_21_plus": false,
     "studio_anime": ["Pierrot"],
     "fakta_menarik": ["Diadaptasi dari manga"]
   }
@@ -240,8 +249,18 @@ Contoh Response (200):
 ## Update Anime (SUPERADMIN | UPLOADER)
 - Method: PUT
 - Path: `/anime/:id`
-- Body (opsional): field yang ingin diubah
-  - String: `nama_anime`, `gambar_anime`, `rating_anime`, `status_anime`, `sinopsis_anime`, `label_anime`
+- Header: `Content-Type: multipart/form-data`
+
+Body (opsional): field yang ingin diubah. Untuk mengganti cover bisa:
+
+- Upload file pada field `image`, atau
+- Kirim `gambar_anime` (URL)
+
+  - `image` (file gambar, opsional) — cover anime baru
+  - `gambar_anime` (string URL, opsional) — cover anime baru (alternatif tanpa upload file)
+  - String: `nama_anime`, `rating_anime`, `status_anime`, `sinopsis_anime`, `label_anime`
+  - Enum: `type` atau `content_type` (opsional): salah satu dari `ANIME|FILM|DONGHUA` (tersimpan ke field `content_type`)
+  - Boolean: `is_21_plus` (opsional)
   - Number: `view_anime`
   - Date ISO: `tanggal_rilis_anime` (null untuk hapus tanggal)
   - Array/String-koma: `tags_anime`, `genre_anime`, `studio_anime`, `fakta_menarik`

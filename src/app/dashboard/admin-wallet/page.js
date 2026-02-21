@@ -167,7 +167,10 @@ export default function AdminWalletPage() {
 
       {/* Search by User ID */}
       <form onSubmit={onSearch} className="grid sm:grid-cols-[1fr_140px] gap-3">
-        <input type="number" min="1" placeholder="Masukkan User ID" value={userId} onChange={(e) => setUserId(e.target.value)} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+        <div className="grid gap-1">
+          <div className="text-xs font-extrabold">User ID</div>
+          <input type="number" min="1" placeholder="Masukkan User ID" value={userId} onChange={(e) => setUserId(e.target.value)} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+        </div>
         <button type="submit" className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
           <Search className="size-4 inline-block mr-1" /> Cari
         </button>
@@ -197,17 +200,35 @@ export default function AdminWalletPage() {
       <div className="grid md:grid-cols-2 gap-4">
         <form onSubmit={onCreditGlobal} className="grid gap-2 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
           <div className="font-extrabold flex items-center gap-2"><PlusCircle className="size-4" /> Kredit Koin (Global)</div>
-          <input name="userId" type="number" placeholder="User ID" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
-          <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
-          <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">User ID</div>
+            <input name="userId" type="number" placeholder="User ID" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+          </div>
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Jumlah Koin</div>
+            <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+          </div>
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Catatan</div>
+            <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          </div>
           <button type="submit" disabled={submitting} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>Kreditkan</button>
         </form>
 
         <form onSubmit={onDebitGlobal} className="grid gap-2 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
           <div className="font-extrabold flex items-center gap-2"><MinusCircle className="size-4" /> Debit Koin (Global)</div>
-          <input name="userId" type="number" placeholder="User ID" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
-          <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
-          <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">User ID</div>
+            <input name="userId" type="number" placeholder="User ID" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+          </div>
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Jumlah Koin</div>
+            <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+          </div>
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Catatan</div>
+            <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          </div>
           <button type="submit" disabled={submitting} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>Debetkan</button>
         </form>
       </div>
@@ -216,15 +237,27 @@ export default function AdminWalletPage() {
       <div className="grid md:grid-cols-2 gap-4">
         <form onSubmit={onCreditUser} className="grid gap-2 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
           <div className="font-extrabold">Kredit Koin (User saat ini)</div>
-          <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
-          <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Jumlah Koin</div>
+            <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+          </div>
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Catatan</div>
+            <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          </div>
           <button type="submit" disabled={submitting || !userId} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>Kreditkan</button>
         </form>
 
         <form onSubmit={onDebitUser} className="grid gap-2 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
           <div className="font-extrabold">Debit Koin (User saat ini)</div>
-          <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
-          <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Jumlah Koin</div>
+            <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+          </div>
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Catatan</div>
+            <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          </div>
           <button type="submit" disabled={submitting || !userId} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>Debetkan</button>
         </form>
       </div>

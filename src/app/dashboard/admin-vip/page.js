@@ -160,7 +160,10 @@ export default function AdminVipPage() {
 
       {/* Search by User ID */}
       <form onSubmit={onSearch} className="grid sm:grid-cols-[1fr_140px] gap-3">
-        <input type="number" min="1" placeholder="Masukkan User ID" value={userId} onChange={(e) => setUserId(e.target.value)} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+        <div className="grid gap-1">
+          <div className="text-xs font-extrabold">User ID</div>
+          <input type="number" min="1" placeholder="Masukkan User ID" value={userId} onChange={(e) => setUserId(e.target.value)} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+        </div>
         <button type="submit" className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
           <Search className="size-4 inline-block mr-1" /> Cari
         </button>
@@ -197,14 +200,26 @@ export default function AdminVipPage() {
         {/* Activate */}
         <form onSubmit={onActivate} className="grid gap-2 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
           <div className="font-extrabold flex items-center gap-2"><Check className="size-4" /> Activate VIP</div>
-          <input name="vip_level" placeholder="VIP Level (Diamond)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-          <input name="durationDays" type="number" placeholder="Durasi (hari) default 30" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">VIP Level</div>
+            <input name="vip_level" placeholder="VIP Level (Diamond)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          </div>
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Durasi (hari)</div>
+            <input name="durationDays" type="number" placeholder="Durasi (hari) default 30" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          </div>
           <div className="flex items-center gap-2">
             <input id="act-autorenew" name="auto_renew" type="checkbox" className="size-4" />
             <label htmlFor="act-autorenew" className="text-sm">Auto renew</label>
           </div>
-          <input name="payment_method" placeholder="Metode Pembayaran (GOPAY/OVO/...)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-          <textarea name="notes" rows={2} placeholder="Catatan" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Metode Pembayaran</div>
+            <input name="payment_method" placeholder="Metode Pembayaran (GOPAY/OVO/...)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          </div>
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Catatan</div>
+            <textarea name="notes" rows={2} placeholder="Catatan" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          </div>
           <button type="submit" disabled={submitting || !userId} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>Aktifkan</button>
         </form>
 
@@ -212,9 +227,18 @@ export default function AdminVipPage() {
         <div className="grid gap-4">
           <form onSubmit={onRenew} className="grid gap-2 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <div className="font-extrabold flex items-center gap-2"><CreditCard className="size-4" /> Renew VIP</div>
-            <input name="durationDays" type="number" placeholder="Durasi (hari) default 30" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-            <input name="payment_method" placeholder="Metode Pembayaran (BANK_TRANSFER/...)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-            <textarea name="notes" rows={2} placeholder="Catatan" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Durasi (hari)</div>
+              <input name="durationDays" type="number" placeholder="Durasi (hari) default 30" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+            </div>
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Metode Pembayaran</div>
+              <input name="payment_method" placeholder="Metode Pembayaran (BANK_TRANSFER/...)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+            </div>
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Catatan</div>
+              <textarea name="notes" rows={2} placeholder="Catatan" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+            </div>
             <button type="submit" disabled={submitting || !userId} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>Perpanjang</button>
           </form>
 

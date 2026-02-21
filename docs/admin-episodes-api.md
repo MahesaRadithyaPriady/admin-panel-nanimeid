@@ -66,26 +66,29 @@ Error codes:
 POST /admin/anime/:animeId/episodes
 
 Headers:
-- Content-Type: application/json
+- Content-Type: multipart/form-data
 
-Body:
-```json
-{
-  "judul_episode": "Episode 1",
-  "nomor_episode": 1,
-  "thumbnail_episode": "https://img/ep1.jpg",
-  "deskripsi_episode": "Pembuka",
-  "durasi_episode": 1420,
-  "intro_start_seconds": 0,
-  "intro_duration_seconds": 90,
-  "outro_start_seconds": 1330,
-  "outro_duration_seconds": 90,
-  "tanggal_rilis_episode": "2025-08-31T12:00:00.000Z",
-  "qualities": [
-    { "nama_quality": "720p", "source_quality": "https://cdn/video720.mp4" },
-    { "nama_quality": "1080p", "source_quality": "https://cdn/video1080.mp4" }
-  ]
-}
+Body (multipart form):
+
+- `image` (file, opsional) — thumbnail episode (hanya file gambar)
+- Alternatif (tanpa upload file): kirim `thumbnail_episode` berisi URL thumbnail (mis. URL CDN/B2 hasil presigned upload)
+- Field lain dikirim sebagai text:
+  - `judul_episode`, `nomor_episode`
+  - `deskripsi_episode`, `durasi_episode`, `intro_start_seconds`, `intro_duration_seconds`, `outro_start_seconds`, `outro_duration_seconds`, `tanggal_rilis_episode`
+  - `qualities` (opsional; JSON string array)
+
+Contoh request (multipart/form-data):
+
+```http
+POST /admin/anime/1/episodes
+Authorization: Bearer <ADMIN_JWT>
+Content-Type: multipart/form-data
+
+body:
+  judul_episode: Episode 1
+  nomor_episode: 1
+  deskripsi_episode: Pembuka
+  image: <file image/jpeg>
 ```
 
 Response 201:
@@ -117,11 +120,11 @@ Catatan:
 - Jika field intro/outro tidak dikirim, akan menggunakan default dari database:
   - `intro_start_seconds`: 0
   - `intro_duration_seconds`: 90
-  - `outro_start_seconds`: 0
+  - `outro_start_seconds`: null
   - `outro_duration_seconds`: 90
 
 Error codes:
-- 400 BAD_REQUEST: field wajib kosong (`judul_episode`, `nomor_episode`, `thumbnail_episode`) atau `animeId` tidak valid
+- 400 BAD_REQUEST: field wajib kosong (`judul_episode`, `nomor_episode`, `image`) atau `animeId` tidak valid
 - 401 UNAUTHORIZED, 403 FORBIDDEN
 - 409 CONFLICT: duplikasi kombinasi unik `[anime_id, nomor_episode]`
 - 500 ERROR
@@ -170,26 +173,12 @@ Error codes:
 PUT /admin/episodes/:id
 
 Headers:
-- Content-Type: application/json
+- Content-Type: multipart/form-data
 
-Body (partial allowed):
-```json
-{
-  "judul_episode": "Episode 1 (Revisi)",
-  "nomor_episode": 1,
-  "thumbnail_episode": "https://img/ep1-new.jpg",
-  "deskripsi_episode": null,
-  "durasi_episode": 1400,
-  "intro_start_seconds": 0,
-  "intro_duration_seconds": 90,
-  "outro_start_seconds": 1310,
-  "outro_duration_seconds": 90,
-  "tanggal_rilis_episode": "2025-09-01T12:00:00.000Z",
-  "qualities": [
-    { "nama_quality": "480p", "source_quality": "https://cdn/video480.mp4" }
-  ]
-}
-```
+Body (multipart form, partial allowed):
+
+- `image` (file gambar, opsional) — thumbnail episode baru
+- Field lain sama seperti create, semua opsional
 
 Catatan:
 - Jika properti `qualities` disertakan (array), maka semua kualitas lama episode akan dihapus lalu dibuat ulang sesuai isi array.
@@ -235,3 +224,4 @@ Error codes:
 - `tanggal_rilis_episode` mengikuti format ISO 8601 (UTC) bila dikirim.
 - Untuk performa, gunakan pagination saat mengambil daftar episode.
 - Kualitas video (720p/1080p, dll) didefinisikan di model `EpisodeQuality` dan dikelola via body `qualities` pada create/update episode.
+perbaiaki

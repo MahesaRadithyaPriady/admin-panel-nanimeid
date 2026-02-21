@@ -6,7 +6,24 @@ import { toast } from 'react-hot-toast';
 import { Plus, Pencil, Trash2, List, ChevronDown, ChevronRight, ChevronUp, Film } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listAnime, createAnime, updateAnime, deleteAnime, listEpisodes, createEpisode, updateEpisode, deleteEpisode, searchAnime, getAnimeDetail, listAnimeRequests, createAnimeRequest, updateAnimeRequest, deleteAnimeRequest, takeAnimeRequest } from '@/lib/api';
+import { listAnime, createAnime, updateAnime, deleteAnime, listEpisodes, createEpisode, updateEpisode, deleteEpisode, searchAnime, getAnimeDetail, listAnimeRequests, createAnimeRequest, updateAnimeRequest, deleteAnimeRequest, takeAnimeRequest, uploadFileViaPresignedPut } from '@/lib/api';
+
+function safeKeySegment(input) {
+  return String(input || '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_\-]/g, '')
+    .slice(0, 80);
+}
+
+function guessExtFromFile(file) {
+  const name = String(file?.name || '');
+  const idx = name.lastIndexOf('.');
+  if (idx === -1) return '';
+  const ext = name.slice(idx + 1).toLowerCase();
+  if (!ext || ext.length > 10) return '';
+  return ext;
+}
 
 export default function DaftarKontenPage() {
   const router = useRouter();
@@ -29,8 +46,12 @@ export default function DaftarKontenPage() {
   const [form, setForm] = useState({
     id: null,
     nama_anime: '',
-    gambar_anime: '',
+    image: null,
+    previewUrl: '',
+    existingImageUrl: '',
     rating_anime: '',
+    content_type: 'ANIME',
+    is_21_plus: false,
     status_anime: '',
     sinopsis_anime: '',
     label_anime: '',
@@ -45,6 +66,16 @@ export default function DaftarKontenPage() {
     schedule_jam: '',
     schedule_is_active: true,
   });
+
+  const onChangeAnimeImage = (e) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) {
+      setForm((f) => ({ ...f, image: null, previewUrl: '' }));
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setForm((f) => ({ ...f, image: file, previewUrl: url }));
+  };
   // (HAPUS) Bulk Sync state dan fitur dihilangkan
   const [submittingTabEpisode, setSubmittingTabEpisode] = useState(false);
 
@@ -195,8 +226,12 @@ export default function DaftarKontenPage() {
   const resetForm = () => setForm({
     id: null,
     nama_anime: '',
-    gambar_anime: '',
+    image: null,
+    previewUrl: '',
+    existingImageUrl: '',
     rating_anime: '',
+    content_type: 'ANIME',
+    is_21_plus: false,
     status_anime: '',
     sinopsis_anime: '',
     label_anime: '',
@@ -283,7 +318,8 @@ export default function DaftarKontenPage() {
     animeId: '',
     judul_episode: '',
     nomor_episode: 1,
-    thumbnail_episode: '',
+    image: null,
+    previewUrl: '',
     deskripsi_episode: '',
     durasi_episode: 0,
     intro_start_seconds: '',
@@ -345,7 +381,8 @@ export default function DaftarKontenPage() {
       ...s,
       judul_episode: '',
       nomor_episode: hasEpisodes ? ((Number(latest?.nomor_episode) || 0) + 1) : 1,
-      thumbnail_episode: latest?.thumbnail_episode || '',
+      image: null,
+      previewUrl: '',
       deskripsi_episode: latest?.deskripsi_episode || '',
       durasi_episode: Number(latest?.durasi_episode) || 0,
       intro_start_seconds: latest?.intro_start_seconds ?? 0,
@@ -570,16 +607,33 @@ export default function DaftarKontenPage() {
       toast.error('Pilih anime terlebih dahulu');
       return;
     }
+    if (!tabEpisode?.image) {
+      toast.error('Thumbnail episode wajib diupload');
+      return;
+    }
     const token = getSession()?.token;
+    if (!token) return toast.error('Token tidak tersedia');
+
+    let thumbnail_episode;
+    if (tabEpisode.image instanceof File) {
+      const parent = items.find((a) => a.id === tabEpisode.animeId);
+      const animeSeg = safeKeySegment(parent?.nama_anime || parent?.id || tabEpisode.animeId);
+      const ext = guessExtFromFile(tabEpisode.image);
+      const epNo = Number(tabEpisode.nomor_episode) || 0;
+      const key = `static/uploads/episodes/${animeSeg || 'anime'}_ep${epNo}_${Date.now()}${ext ? `.${ext}` : ''}`;
+      const up = await uploadFileViaPresignedPut({ token, key, file: tabEpisode.image });
+      thumbnail_episode = up?.publicUrl || '';
+      if (!thumbnail_episode) throw new Error('URL thumbnail episode hasil upload tidak tersedia');
+    }
     const payload = {
       judul_episode: tabEpisode.judul_episode,
       nomor_episode: Number(tabEpisode.nomor_episode),
-      thumbnail_episode: tabEpisode.thumbnail_episode,
+      ...(thumbnail_episode ? { thumbnail_episode } : {}),
       deskripsi_episode: tabEpisode.deskripsi_episode || null,
       durasi_episode: Number(tabEpisode.durasi_episode) || 0,
       intro_start_seconds: Number(tabEpisode.intro_start_seconds) || 0,
       intro_duration_seconds: Number(tabEpisode.intro_duration_seconds) || 90,
-      outro_start_seconds: Number(tabEpisode.outro_start_seconds) || 0,
+      outro_start_seconds: tabEpisode.outro_start_seconds === '' || tabEpisode.outro_start_seconds === null || tabEpisode.outro_start_seconds === undefined ? null : Number(tabEpisode.outro_start_seconds) || 0,
       outro_duration_seconds: Number(tabEpisode.outro_duration_seconds) || 90,
       tanggal_rilis_episode: tabEpisode.tanggal_rilis_episode ? new Date(tabEpisode.tanggal_rilis_episode).toISOString() : undefined,
     };
@@ -604,12 +658,13 @@ export default function DaftarKontenPage() {
         ...s,
         judul_episode: '',
         nomor_episode: 1,
-        thumbnail_episode: '',
+        image: null,
+        previewUrl: '',
         deskripsi_episode: '',
         durasi_episode: 0,
         intro_start_seconds: 0,
         intro_duration_seconds: 90,
-        outro_start_seconds: 0,
+        outro_start_seconds: '',
         outro_duration_seconds: 90,
         tanggal_rilis_episode: '',
         qualities: defaultQualities,
@@ -694,7 +749,9 @@ export default function DaftarKontenPage() {
       id: ep.id,
       judul_episode: ep.judul_episode || '',
       nomor_episode: ep.nomor_episode || 0,
-      thumbnail_episode: ep.thumbnail_episode || '',
+      image: null,
+      previewUrl: '',
+      existingImageUrl: ep.thumbnail_episode || '',
       deskripsi_episode: ep.deskripsi_episode || '',
       durasi_episode: ep.durasi_episode || 0,
       intro_start_seconds: ep.intro_start_seconds ?? 0,
@@ -712,15 +769,28 @@ export default function DaftarKontenPage() {
     e.preventDefault();
     if (!editingEpisode) return;
     const token = getSession()?.token;
+    if (!token) return toast.error('Token tidak tersedia');
+
+    let thumbnail_episode;
+    if (editingEpisode.image instanceof File) {
+      const parent = items.find((a) => a.id === editingEpisode.animeId);
+      const animeSeg = safeKeySegment(parent?.nama_anime || parent?.id || editingEpisode.animeId);
+      const ext = guessExtFromFile(editingEpisode.image);
+      const epNo = Number(editingEpisode.nomor_episode) || 0;
+      const key = `static/uploads/episodes/${animeSeg || 'anime'}_ep${epNo}_${Date.now()}${ext ? `.${ext}` : ''}`;
+      const up = await uploadFileViaPresignedPut({ token, key, file: editingEpisode.image });
+      thumbnail_episode = up?.publicUrl || '';
+      if (!thumbnail_episode) return toast.error('URL thumbnail episode hasil upload tidak tersedia');
+    }
     const payload = {
       judul_episode: editingEpisode.judul_episode,
       nomor_episode: editingEpisode.nomor_episode,
-      thumbnail_episode: editingEpisode.thumbnail_episode,
-      deskripsi_episode: editingEpisode.deskripsi_episode ?? null,
-      durasi_episode: editingEpisode.durasi_episode,
+      ...(thumbnail_episode ? { thumbnail_episode } : {}),
+      deskripsi_episode: editingEpisode.deskripsi_episode === '' ? null : editingEpisode.deskripsi_episode,
+      durasi_episode: Number(editingEpisode.durasi_episode) || 0,
       intro_start_seconds: Number(editingEpisode.intro_start_seconds) || 0,
       intro_duration_seconds: Number(editingEpisode.intro_duration_seconds) || 90,
-      outro_start_seconds: Number(editingEpisode.outro_start_seconds) || 0,
+      outro_start_seconds: editingEpisode.outro_start_seconds === '' || editingEpisode.outro_start_seconds === null || editingEpisode.outro_start_seconds === undefined ? null : Number(editingEpisode.outro_start_seconds) || 0,
       outro_duration_seconds: Number(editingEpisode.outro_duration_seconds) || 90,
       tanggal_rilis_episode: editingEpisode.tanggal_rilis_episode ? new Date(editingEpisode.tanggal_rilis_episode).toISOString() : undefined,
     };
@@ -806,12 +876,14 @@ export default function DaftarKontenPage() {
     setNewEpisode({
       judul_episode: '',
       nomor_episode: nextNumber,
-      thumbnail_episode: latest?.thumbnail_episode || '',
+      image: null,
+      previewUrl: '',
+      existingImageUrl: latest?.thumbnail_episode || '',
       deskripsi_episode: latest?.deskripsi_episode || '',
       durasi_episode: Number(latest?.durasi_episode) || 0,
       intro_start_seconds: latest?.intro_start_seconds ?? 0,
       intro_duration_seconds: latest?.intro_duration_seconds ?? 90,
-      outro_start_seconds: latest?.outro_start_seconds ?? 0,
+      outro_start_seconds: latest?.outro_start_seconds ?? null,
       outro_duration_seconds: latest?.outro_duration_seconds ?? 90,
       tanggal_rilis_episode: '', // yyyy-mm-ddThh:mm
       qualities: defaultQualities,
@@ -840,16 +912,33 @@ export default function DaftarKontenPage() {
   const onSubmitCreateEpisode = async (e) => {
     e.preventDefault();
     if (!creatingForAnime || !newEpisode) return;
+    if (!newEpisode?.image) {
+      toast.error('Thumbnail episode wajib diupload');
+      return;
+    }
     const token = getSession()?.token;
+    if (!token) return toast.error('Token tidak tersedia');
+
+    let thumbnail_episode;
+    if (newEpisode.image instanceof File) {
+      const parent = items.find((a) => a.id === creatingForAnime);
+      const animeSeg = safeKeySegment(parent?.nama_anime || parent?.id || creatingForAnime);
+      const ext = guessExtFromFile(newEpisode.image);
+      const epNo = Number(newEpisode.nomor_episode) || 0;
+      const key = `static/uploads/episodes/${animeSeg || 'anime'}_ep${epNo}_${Date.now()}${ext ? `.${ext}` : ''}`;
+      const up = await uploadFileViaPresignedPut({ token, key, file: newEpisode.image });
+      thumbnail_episode = up?.publicUrl || '';
+      if (!thumbnail_episode) return toast.error('URL thumbnail episode hasil upload tidak tersedia');
+    }
     const payload = {
       judul_episode: newEpisode.judul_episode,
       nomor_episode: Number(newEpisode.nomor_episode),
-      thumbnail_episode: newEpisode.thumbnail_episode,
-      deskripsi_episode: newEpisode.deskripsi_episode ?? null,
+      ...(thumbnail_episode ? { thumbnail_episode } : {}),
+      deskripsi_episode: newEpisode.deskripsi_episode || null,
       durasi_episode: Number(newEpisode.durasi_episode) || 0,
       intro_start_seconds: Number(newEpisode.intro_start_seconds) || 0,
       intro_duration_seconds: Number(newEpisode.intro_duration_seconds) || 90,
-      outro_start_seconds: Number(newEpisode.outro_start_seconds) || 0,
+      outro_start_seconds: newEpisode.outro_start_seconds === '' || newEpisode.outro_start_seconds === null || newEpisode.outro_start_seconds === undefined ? null : Number(newEpisode.outro_start_seconds) || 0,
       outro_duration_seconds: Number(newEpisode.outro_duration_seconds) || 90,
       tanggal_rilis_episode: newEpisode.tanggal_rilis_episode ? new Date(newEpisode.tanggal_rilis_episode).toISOString() : undefined,
     };
@@ -907,13 +996,15 @@ export default function DaftarKontenPage() {
     const normalizedStatus = normalizeStatus(form.status_anime);
     const payload = {
       nama_anime: form.nama_anime,
-      gambar_anime: form.gambar_anime,
+      image: form.image || undefined,
       rating_anime: form.rating_anime,
       status_anime: normalizedStatus,
       sinopsis_anime: form.sinopsis_anime,
       label_anime: form.label_anime,
     };
     const optional = {
+      content_type: (form.content_type || '').trim() || undefined,
+      is_21_plus: form.is_21_plus !== undefined ? !!form.is_21_plus : undefined,
       tags_anime: parseMaybeArray(form.tags_anime),
       genre_anime: parseMaybeArray(form.genre_anime),
       studio_anime: parseMaybeArray(form.studio_anime),
@@ -965,8 +1056,11 @@ export default function DaftarKontenPage() {
   const [submittingAnime, setSubmittingAnime] = useState(false);
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!form.nama_anime || !form.gambar_anime || !form.rating_anime || !form.status_anime || !form.sinopsis_anime || !form.label_anime) {
+    if (!form.nama_anime || !form.rating_anime || !form.status_anime || !form.sinopsis_anime || !form.label_anime) {
       return toast.error('Field wajib belum lengkap');
+    }
+    if (mode === 'add' && !(form.image instanceof File) && !form.existingImageUrl) {
+      return toast.error('Cover anime wajib diupload');
     }
     if (normalizeStatus(form.status_anime).toLowerCase() === 'ongoing') {
       const hari = (form.schedule_hari || '').trim();
@@ -976,16 +1070,32 @@ export default function DaftarKontenPage() {
       }
     }
     const token = getSession()?.token;
+    if (!token) return toast.error('Token tidak tersedia');
     try {
       setSubmittingAnime(true);
+      let gambar_anime;
+      if (form.image instanceof File) {
+        const animeSeg = safeKeySegment(form.nama_anime);
+        const ext = guessExtFromFile(form.image);
+        const key = `static/uploads/anime/${animeSeg || 'anime'}_${Date.now()}${ext ? `.${ext}` : ''}`;
+        const up = await uploadFileViaPresignedPut({ token, key, file: form.image });
+        gambar_anime = up?.publicUrl || '';
+        if (!gambar_anime) throw new Error('URL cover anime hasil upload tidak tersedia');
+      }
+
+      const payload = buildPayload();
+      if (gambar_anime) {
+        payload.gambar_anime = gambar_anime;
+        delete payload.image;
+      }
       if (mode === 'add') {
-        const res = await createAnime({ token, payload: buildPayload() });
+        const res = await createAnime({ token, payload });
         toast.success(res?.message || 'Anime dibuat');
         resetForm();
         setPage(1);
         await loadList({ page: 1 });
       } else {
-        const res = await updateAnime({ token, id: form.id, payload: buildPayload() });
+        const res = await updateAnime({ token, id: form.id, payload });
         toast.success(res?.message || 'Anime diperbarui');
         setMode('add');
         resetForm();
@@ -1003,8 +1113,12 @@ export default function DaftarKontenPage() {
     setForm({
       id: it.id,
       nama_anime: it.nama_anime || '',
-      gambar_anime: it.gambar_anime || '',
+      image: null,
+      previewUrl: '',
+      existingImageUrl: it.gambar_anime || '',
       rating_anime: it.rating_anime || '',
+      content_type: it.content_type || it.type || 'ANIME',
+      is_21_plus: it.is_21_plus !== undefined ? !!it.is_21_plus : false,
       status_anime: normalizeStatus(it.status_anime || ''),
       sinopsis_anime: it.sinopsis_anime || '',
       label_anime: it.label_anime || '',
@@ -1219,12 +1333,26 @@ export default function DaftarKontenPage() {
                 <input type="text" value={form.nama_anime} onChange={(e) => setForm((f) => ({ ...f, nama_anime: e.target.value }))} placeholder="Nama anime (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               </div>
               <div className="grid gap-1">
-                <div className="text-xs font-extrabold">Gambar Anime (URL)</div>
-                <input type="url" value={form.gambar_anime} onChange={(e) => setForm((f) => ({ ...f, gambar_anime: e.target.value }))} placeholder="URL gambar (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <div className="text-xs font-extrabold">Cover Anime (Upload)</div>
+                <input type="file" accept="image/*" onChange={onChangeAnimeImage} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                {(form.previewUrl || form.existingImageUrl) && (
+                  <div className="flex items-center gap-2 text-xs mt-1">
+                    <span>Preview:</span>
+                    <img src={form.previewUrl || form.existingImageUrl} alt="cover" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                  </div>
+                )}
               </div>
               <div className="grid gap-1">
                 <div className="text-xs font-extrabold">Rating</div>
                 <input type="text" value={form.rating_anime} onChange={(e) => setForm((f) => ({ ...f, rating_anime: e.target.value }))} placeholder="Rating (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              </div>
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Type</div>
+                <select value={form.content_type} onChange={(e) => setForm((f) => ({ ...f, content_type: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <option value="ANIME">ANIME</option>
+                  <option value="FILM">FILM</option>
+                  <option value="DONGHUA">DONGHUA</option>
+                </select>
               </div>
               <div className="grid gap-1">
                 <div className="text-xs font-extrabold">Status</div>
@@ -1247,6 +1375,13 @@ export default function DaftarKontenPage() {
                   <option value="Donghua">Donghua</option>
                   <option value="Special">Special</option>
                 </select>
+              </div>
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">21+</div>
+                <label className="flex items-center gap-2 text-sm font-semibold px-3 py-2 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <input type="checkbox" checked={!!form.is_21_plus} onChange={(e) => setForm((f) => ({ ...f, is_21_plus: e.target.checked }))} />
+                  <span>is_21_plus</span>
+                </label>
               </div>
               <div className="grid gap-1">
                 <div className="text-xs font-extrabold">Tanggal Rilis</div>
@@ -1566,8 +1701,25 @@ export default function DaftarKontenPage() {
                   <input type="number" value={tabEpisode?.nomor_episode || 1} onChange={(e) => setTabEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                 </div>
                 <div className="grid gap-1">
-                  <div className="text-xs font-extrabold">Thumbnail (URL)</div>
-                  <input type="url" value={tabEpisode?.thumbnail_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  <div className="text-xs font-extrabold">Thumbnail Episode (Upload)</div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      if (!file) return setTabEpisode((s) => ({ ...s, image: null, previewUrl: '' }));
+                      const url = URL.createObjectURL(file);
+                      setTabEpisode((s) => ({ ...s, image: file, previewUrl: url }));
+                    }}
+                    className="px-3 py-2 border-4 rounded-lg font-semibold"
+                    style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  />
+                  {tabEpisode?.previewUrl && (
+                    <div className="flex items-center gap-2 text-xs mt-1">
+                      <span>Preview:</span>
+                      <img src={tabEpisode.previewUrl} alt="thumb" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                    </div>
+                  )}
                 </div>
                 <div className="grid gap-1">
                   <div className="text-xs font-extrabold">Durasi Episode (detik)</div>
@@ -1583,7 +1735,7 @@ export default function DaftarKontenPage() {
                 </div>
                 <div className="grid gap-1">
                   <div className="text-xs font-extrabold">Outro Start (detik)</div>
-                  <input type="number" value={tabEpisode?.outro_start_seconds ?? 0} onChange={(e) => setTabEpisode((s) => ({ ...s, outro_start_seconds: Number(e.target.value) }))} placeholder="Outro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  <input type="number" value={tabEpisode?.outro_start_seconds ?? ''} onChange={(e) => setTabEpisode((s) => ({ ...s, outro_start_seconds: e.target.value === '' ? '' : Number(e.target.value) }))} placeholder="Outro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                 </div>
                 <div className="grid gap-1">
                   <div className="text-xs font-extrabold">Outro Durasi (detik)</div>
@@ -1824,8 +1976,25 @@ export default function DaftarKontenPage() {
                                         <input type="number" value={newEpisode.nomor_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                       </div>
                                       <div className="grid gap-1">
-                                        <div className="text-xs font-extrabold">Thumbnail (URL)</div>
-                                        <input type="url" value={newEpisode.thumbnail_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        <div className="text-xs font-extrabold">Thumbnail Episode (Upload)</div>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0] || null;
+                                            if (!file) return setNewEpisode((s) => ({ ...s, image: null, previewUrl: '' }));
+                                            const url = URL.createObjectURL(file);
+                                            setNewEpisode((s) => ({ ...s, image: file, previewUrl: url }));
+                                          }}
+                                          className="px-3 py-2 border-4 rounded-lg font-semibold"
+                                          style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                                        />
+                                        {(newEpisode.previewUrl || newEpisode.existingImageUrl) && (
+                                          <div className="flex items-center gap-2 text-xs mt-1">
+                                            <span>Preview:</span>
+                                            <img src={newEpisode.previewUrl || newEpisode.existingImageUrl} alt="thumb" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                                          </div>
+                                        )}
                                       </div>
                                       <div className="grid gap-1">
                                         <div className="text-xs font-extrabold">Durasi Episode (detik)</div>
@@ -1852,7 +2021,7 @@ export default function DaftarKontenPage() {
                                       </div>
                                       <div className="grid gap-1">
                                         <div className="text-xs font-extrabold">Outro Start (detik)</div>
-                                        <input type="number" value={newEpisode.outro_start_seconds ?? 0} onChange={(e) => setNewEpisode((s) => ({ ...s, outro_start_seconds: Number(e.target.value) }))} placeholder="Outro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        <input type="number" value={newEpisode.outro_start_seconds ?? ''} onChange={(e) => setNewEpisode((s) => ({ ...s, outro_start_seconds: e.target.value === '' ? '' : Number(e.target.value) }))} placeholder="Outro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -1935,8 +2104,25 @@ export default function DaftarKontenPage() {
                                         <input type="number" value={editingEpisode.nomor_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                       </div>
                                       <div className="grid gap-1">
-                                        <div className="text-xs font-extrabold">Thumbnail (URL)</div>
-                                        <input type="url" value={editingEpisode.thumbnail_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, thumbnail_episode: e.target.value }))} placeholder="URL thumbnail" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        <div className="text-xs font-extrabold">Thumbnail Episode (Upload)</div>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0] || null;
+                                            if (!file) return setEditingEpisode((s) => ({ ...s, image: null, previewUrl: '' }));
+                                            const url = URL.createObjectURL(file);
+                                            setEditingEpisode((s) => ({ ...s, image: file, previewUrl: url }));
+                                          }}
+                                          className="px-3 py-2 border-4 rounded-lg font-semibold"
+                                          style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                                        />
+                                        {(editingEpisode.previewUrl || editingEpisode.existingImageUrl) && (
+                                          <div className="flex items-center gap-2 text-xs mt-1">
+                                            <span>Preview:</span>
+                                            <img src={editingEpisode.previewUrl || editingEpisode.existingImageUrl} alt="thumb" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                                          </div>
+                                        )}
                                       </div>
                                       <div className="grid gap-1">
                                         <div className="text-xs font-extrabold">Durasi Episode (detik)</div>
@@ -1963,7 +2149,7 @@ export default function DaftarKontenPage() {
                                       </div>
                                       <div className="grid gap-1">
                                         <div className="text-xs font-extrabold">Outro Start (detik)</div>
-                                        <input type="number" value={editingEpisode.outro_start_seconds ?? 0} onChange={(e) => setEditingEpisode((s) => ({ ...s, outro_start_seconds: Number(e.target.value) }))} placeholder="Outro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        <input type="number" value={editingEpisode.outro_start_seconds ?? ''} onChange={(e) => setEditingEpisode((s) => ({ ...s, outro_start_seconds: e.target.value === '' ? '' : Number(e.target.value) }))} placeholder="Outro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -2029,7 +2215,17 @@ export default function DaftarKontenPage() {
                                     {it.episodes.map((ep) => (
                                       <div key={ep.id} className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                                         <div className="flex items-start justify-between gap-3">
-                                          <div className="font-extrabold">Ep {ep.nomor_episode}: {ep.judul_episode}</div>
+                                          <div className="flex items-start gap-2">
+                                            {ep.thumbnail_episode ? (
+                                              <img
+                                                src={ep.thumbnail_episode}
+                                                alt="thumb"
+                                                className="w-10 h-10 object-contain border-2 rounded"
+                                                style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
+                                              />
+                                            ) : null}
+                                            <div className="font-extrabold">Ep {ep.nomor_episode}: {ep.judul_episode}</div>
+                                          </div>
                                           <div className="flex items-center gap-2">
                                             <button onClick={() => onEditEpisode(it.id, ep)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>
                                               <Pencil className="size-4" />

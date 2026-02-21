@@ -7,7 +7,24 @@ import { toast } from 'react-hot-toast';
 import { List, Plus, Pencil, Trash2, Image as ImageIcon, Info, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listBadges, createBadge, updateBadge, deleteBadge } from '@/lib/api';
+import { listBadges, createBadge, updateBadge, deleteBadge, uploadFileViaPresignedPut, refreshBadgeDimensions } from '@/lib/api';
+
+function safeKeySegment(input) {
+  return String(input || '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_\-]/g, '')
+    .slice(0, 80);
+}
+
+function guessExtFromFile(file) {
+  const name = String(file?.name || '');
+  const idx = name.lastIndexOf('.');
+  if (idx === -1) return '';
+  const ext = name.slice(idx + 1).toLowerCase();
+  if (!ext || ext.length > 10) return '';
+  return ext;
+}
 
 export default function BadgesPage() {
   const router = useRouter();
@@ -27,7 +44,7 @@ export default function BadgesPage() {
     code: '',
     name: '',
     description: '',
-    badge_url: '',
+    poin_collection: '500',
     is_active: true,
     sort_order: '',
     file: null,
@@ -79,7 +96,7 @@ export default function BadgesPage() {
       code: '',
       name: '',
       description: '',
-      badge_url: '',
+      poin_collection: '500',
       is_active: true,
       sort_order: '',
       file: null,
@@ -102,30 +119,60 @@ export default function BadgesPage() {
     if (!form.code || !form.name) {
       return toast.error('Code dan name wajib diisi');
     }
-    if (mode === 'add' && !form.file && !form.badge_url) {
-      return toast.error('URL gambar atau file gambar wajib diisi saat membuat badge baru');
+    if (mode === 'add' && !form.file) {
+      return toast.error('File gambar wajib diisi saat membuat badge baru');
     }
 
     const token = getSession()?.token;
     if (!token) return toast.error('Token tidak tersedia');
 
-    const payloadForm = {
-      code: form.code,
-      name: form.name,
-      description: form.description,
-      badge_url: form.badge_url,
-      is_active: !!form.is_active,
-      sort_order: form.sort_order === '' ? '' : Number(form.sort_order) || 0,
-      file: form.file || undefined,
-    };
-
+    let uploadedBadgeUrl = '';
     try {
+      if (form.file instanceof File) {
+        const codeSeg = safeKeySegment(form.code);
+        const ext = guessExtFromFile(form.file);
+        const key = `static/uploads/badges/${codeSeg || 'badge'}_${Date.now()}${ext ? `.${ext}` : ''}`;
+        const up = await uploadFileViaPresignedPut({
+          token,
+          key,
+          file: form.file,
+        });
+        uploadedBadgeUrl = up?.publicUrl || '';
+        if (!uploadedBadgeUrl) throw new Error('URL badge hasil upload tidak tersedia');
+      }
+
+      const payloadForm = {
+        code: form.code,
+        name: form.name,
+        description: form.description,
+        poin_collection: form.poin_collection === '' ? '' : Number(form.poin_collection) || 500,
+        is_active: !!form.is_active,
+        sort_order: form.sort_order === '' ? '' : Number(form.sort_order) || 0,
+        badge_url: uploadedBadgeUrl || undefined,
+        file: uploadedBadgeUrl ? undefined : (form.file || undefined),
+      };
+
       setSubmitting(true);
       if (mode === 'add') {
         const res = await createBadge({ token, form: payloadForm });
+        const createdId = res?.data?.id ?? res?.data?.badge?.id ?? res?.badge?.id ?? res?.id;
+        if (uploadedBadgeUrl && createdId != null) {
+          try {
+            await refreshBadgeDimensions({ token, id: createdId, badge_url: uploadedBadgeUrl });
+          } catch (e) {
+            toast.error(e?.message || 'Gagal refresh dimensi badge');
+          }
+        }
         toast.success(res?.message || 'Badge dibuat');
       } else {
         const res = await updateBadge({ token, id: form.id, form: payloadForm });
+        if (uploadedBadgeUrl && form.id != null) {
+          try {
+            await refreshBadgeDimensions({ token, id: form.id, badge_url: uploadedBadgeUrl });
+          } catch (e) {
+            toast.error(e?.message || 'Gagal refresh dimensi badge');
+          }
+        }
         toast.success(res?.message || 'Badge diperbarui');
       }
       resetForm();
@@ -145,7 +192,10 @@ export default function BadgesPage() {
       code: it.code || '',
       name: it.name || '',
       description: it.description || '',
-      badge_url: it.badge_url || '',
+      poin_collection:
+        it.poin_collection === null || it.poin_collection === undefined
+          ? '500'
+          : String(it.poin_collection),
       is_active: !!it.is_active,
       sort_order: typeof it.sort_order === 'number' ? String(it.sort_order) : it.sort_order || '',
       file: null,
@@ -245,44 +295,56 @@ export default function BadgesPage() {
       >
         <form onSubmit={onSubmit} className="grid gap-3">
           <div className="grid sm:grid-cols-2 gap-3">
-            <input
-              type="text"
-              value={form.code}
-              onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
-              placeholder="Code (wajib, unik)"
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Code</div>
+              <input
+                type="text"
+                value={form.code}
+                onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
+                placeholder="Code (wajib, unik)"
+                className="px-3 py-2 border-4 rounded-lg font-semibold"
+                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              />
+            </div>
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Name</div>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Name (wajib)"
+                className="px-3 py-2 border-4 rounded-lg font-semibold"
+                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Description</div>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              placeholder="Description (opsional)"
+              rows={2}
               className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-            />
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Name (wajib)"
-              className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             />
           </div>
 
-          <textarea
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Description (opsional)"
-            rows={2}
-            className="px-3 py-2 border-4 rounded-lg font-semibold"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-          />
-
-          <input
-            type="text"
-            value={form.badge_url}
-            onChange={(e) => setForm((f) => ({ ...f, badge_url: e.target.value }))}
-            placeholder="Badge URL (opsional jika upload file)"
-            className="px-3 py-2 border-4 rounded-lg font-semibold"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-          />
-
-          <div className="grid sm:grid-cols-2 gap-3 items-start">
-            <div className="space-y-2">
+          <div className="grid sm:grid-cols-3 gap-3 items-start">
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Poin Collection</div>
+              <input
+                type="number"
+                value={form.poin_collection}
+                onChange={(e) => setForm((f) => ({ ...f, poin_collection: e.target.value }))}
+                placeholder="Poin collection (default 500)"
+                className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
+                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              />
+            </div>
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Sort Order</div>
               <input
                 type="number"
                 value={form.sort_order}
@@ -291,7 +353,10 @@ export default function BadgesPage() {
                 className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
                 style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               />
-              <label className="flex items-center gap-2 text-sm font-semibold">
+            </div>
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Status</div>
+              <label className="flex items-center gap-2 text-sm font-semibold px-3 py-2 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                 <input
                   type="checkbox"
                   checked={!!form.is_active}
@@ -300,35 +365,37 @@ export default function BadgesPage() {
                 <span>Aktif</span>
               </label>
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <label
-                  className="px-3 py-2 border-4 rounded-lg font-extrabold cursor-pointer"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                >
-                  <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                  <span className="flex items-center gap-2">
-                    <ImageIcon className="size-4" /> Pilih Gambar
-                  </span>
-                </label>
-                {(form.previewUrl || form.existingImageUrl) && (
-                  <div className="flex items-center gap-2 text-xs">
-                    <span>Preview:</span>
-                    <img
-                      src={form.previewUrl || form.existingImageUrl}
-                      alt="preview"
-                      className="w-10 h-10 object-contain border-2 rounded"
-                      style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
-                    />
-                  </div>
-                )}
-              </div>
-              <div className="flex items-start gap-2 text-xs sm:text-[11px] font-semibold opacity-90">
-                <Info className="size-4 flex-shrink-0" />
-                <span>
-                  Gambar badge <strong>WAJIB</strong> sudah di-remove background (PNG transparan) sebelum diupload.
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-xs font-extrabold">Gambar</div>
+            <div className="flex items-center gap-2">
+              <label
+                className="px-3 py-2 border-4 rounded-lg font-extrabold cursor-pointer"
+                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              >
+                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                <span className="flex items-center gap-2">
+                  <ImageIcon className="size-4" /> Pilih Gambar
                 </span>
-              </div>
+              </label>
+              {(form.previewUrl || form.existingImageUrl) && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span>Preview:</span>
+                  <img
+                    src={form.previewUrl || form.existingImageUrl}
+                    alt="preview"
+                    className="w-10 h-10 object-contain border-2 rounded"
+                    style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="flex items-start gap-2 text-xs sm:text-[11px] font-semibold opacity-90">
+              <Info className="size-4 flex-shrink-0" />
+              <span>
+                Gambar badge <strong>WAJIB</strong> sudah di-remove background (PNG transparan) sebelum diupload.
+              </span>
             </div>
           </div>
 
@@ -386,6 +453,9 @@ export default function BadgesPage() {
                 Name
               </th>
               <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
+                Poin
+              </th>
+              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
                 Active
               </th>
               <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
@@ -422,6 +492,9 @@ export default function BadgesPage() {
                 </td>
                 <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>
                   {it.name}
+                </td>
+                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>
+                  {it.poin_collection ?? 500}
                 </td>
                 <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>
                   {it.is_active ? 'Ya' : 'Tidak'}
@@ -465,7 +538,7 @@ export default function BadgesPage() {
             {items.length === 0 && (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   className="px-3 py-6 text-center text-sm opacity-70"
                 >
                   {loadingList ? 'Memuat...' : 'Belum ada badge.'}

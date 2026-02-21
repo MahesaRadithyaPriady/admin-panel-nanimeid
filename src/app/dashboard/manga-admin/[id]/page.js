@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { BookOpen, Save, Trash2, ArrowLeft, Plus, Download } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { getManga, updateManga, deleteManga, listMangaChapters, createMangaChapter, deleteChapter, grabMangaChapter, uploadMangaChapterImages, getMangaChapterPages, uploadMangaCover } from '@/lib/api';
+import { getManga, updateManga, deleteManga, listMangaChapters, createMangaChapter, deleteChapter, uploadFileViaPresignedPut, grabMangaChapterPlan, commitMangaChapterPages, refreshMangaChapterDimensions } from '@/lib/api';
 
 export default function MangaDetailPage() {
   const router = useRouter();
@@ -16,7 +16,7 @@ export default function MangaDetailPage() {
 
   const [loadingItem, setLoadingItem] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ judul_manga: '', sinopsis_manga: '', cover_manga: '', genre_manga: '', type_manga: 'MANGA', author: '', artist: '', label_manga: '', tanggal_rilis_manga: '', rating_manga: '' });
+  const [form, setForm] = useState({ judul_manga: '', sinopsis_manga: '', genre_manga: '', type_manga: 'MANGA', author: '', artist: '', label_manga: '', tanggal_rilis_manga: '', rating_manga: '' });
 
   const [chapters, setChapters] = useState([]);
   const [loadingChapters, setLoadingChapters] = useState(false);
@@ -28,7 +28,8 @@ export default function MangaDetailPage() {
   const [upload, setUpload] = useState({ chapter_number: '', title: '', files: null });
   const [uploading, setUploading] = useState(false);
   const [coverFile, setCoverFile] = useState(null);
-  const [uploadingCover, setUploadingCover] = useState(false);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState('');
+  const [existingCoverUrl, setExistingCoverUrl] = useState('');
   // pages viewer moved to dedicated page per chapter
 
   useEffect(() => { if (!loading && !user) router.replace('/'); }, [loading, user, router]);
@@ -44,7 +45,6 @@ export default function MangaDetailPage() {
         setForm({
           judul_manga: it?.judul_manga || '',
           sinopsis_manga: it?.sinopsis_manga || '',
-          cover_manga: it?.cover_manga || '',
           genre_manga: Array.isArray(it?.genre_manga) ? it.genre_manga.join(',') : (it?.genre_manga || ''),
           type_manga: (it?.type_manga || 'MANGA').toUpperCase(),
           author: it?.author || '',
@@ -53,6 +53,9 @@ export default function MangaDetailPage() {
           tanggal_rilis_manga: it?.tanggal_rilis_manga ? String(it.tanggal_rilis_manga).slice(0,10) : '',
           rating_manga: (it?.rating_manga ?? it?.rating) !== undefined && (it?.rating_manga ?? it?.rating) !== null ? String(it?.rating_manga ?? it?.rating) : '',
         });
+        setExistingCoverUrl(it?.cover_manga || '');
+        setCoverFile(null);
+        setCoverPreviewUrl('');
       } catch (err) {
         toast.error(err?.message || 'Gagal memuat manga');
       } finally {
@@ -61,24 +64,6 @@ export default function MangaDetailPage() {
     };
     load();
   }, [id]);
-
-  const onUploadCover = async (e) => {
-    e.preventDefault();
-    const token = getSession()?.token;
-    try {
-      if (!(coverFile instanceof File)) throw new Error('Pilih file cover');
-      setUploadingCover(true);
-      const res = await uploadMangaCover({ token, id, file: coverFile });
-      const url = res?.cover_url || res?.url || res?.cover || '';
-      if (url) updateField('cover_manga', url);
-      toast.success('Cover berhasil diupload');
-      setCoverFile(null);
-    } catch (err) {
-      toast.error(err?.message || 'Gagal upload cover');
-    } finally {
-      setUploadingCover(false);
-    }
-  };
 
   const loadChapters = async () => {
     setLoadingChapters(true);
@@ -104,8 +89,22 @@ export default function MangaDetailPage() {
     try {
       setSaving(true);
       const payload = buildMangaUpdate(form);
+      if (coverFile instanceof File) {
+        const safeTitle = String(payload?.judul_manga || form?.judul_manga || 'manga')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '_')
+          .replace(/^_+|_+$/g, '')
+          .slice(0, 80);
+        const ext = String(coverFile?.name || '').split('.').pop()?.toLowerCase() || '';
+        const key = `static/uploads/manga/covers/${safeTitle || 'manga'}_${Date.now()}${ext ? `.${ext}` : ''}`;
+        const uploaded = await uploadFileViaPresignedPut({ token, file: coverFile, key });
+        payload.cover_manga = uploaded.publicUrl;
+      }
       await updateManga({ token, id, payload });
       toast.success('Manga disimpan');
+      setCoverFile(null);
+      setCoverPreviewUrl('');
+      if (payload?.cover_manga) setExistingCoverUrl(payload.cover_manga);
     } catch (err) {
       toast.error(err?.message || 'Gagal menyimpan manga');
     } finally {
@@ -156,8 +155,37 @@ export default function MangaDetailPage() {
       setGrabbing(true);
       const num = Number(grab.chapter_number);
       if (!Number.isFinite(num)) throw new Error('chapter_number tidak valid');
-      await grabMangaChapter({ token, mangaId: id, chapterNumber: num, url: grab.url, title: grab.title || undefined });
-      toast.success('Grab berhasil');
+
+      const planRes = await grabMangaChapterPlan({ token, mangaId: id, chapterNumber: num, url: grab.url, title: grab.title || undefined, plan_only: true });
+      const uploads = planRes?.uploads || planRes?.data?.uploads || planRes?.plan?.uploads || [];
+      if (!Array.isArray(uploads) || uploads.length === 0) throw new Error('Upload plan tidak tersedia');
+
+      const pages = [];
+      for (const u of uploads) {
+        const page_number = u?.page_number;
+        const source_url = u?.source_url;
+        const key = u?.key;
+        if (!Number.isFinite(Number(page_number))) throw new Error('page_number tidak valid di plan');
+        if (!source_url) throw new Error('source_url tidak valid di plan');
+        if (!key) throw new Error('key tidak valid di plan');
+
+        const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(source_url)}`;
+        const imgRes = await fetch(proxyUrl);
+        if (!imgRes.ok) throw new Error(`Gagal download source_url (${imgRes.status})`);
+        const blob = await imgRes.blob();
+
+        const ext = String(key).split('.').pop()?.toLowerCase() || '';
+        const fileName = `page_${page_number}${ext ? `.${ext}` : ''}`;
+        const file = new File([blob], fileName, { type: blob.type || 'application/octet-stream' });
+
+        const uploaded = await uploadFileViaPresignedPut({ token, file, key });
+        pages.push({ page_number: Number(page_number), image_url: uploaded.publicUrl });
+      }
+
+      await commitMangaChapterPages({ token, mangaId: id, chapterNumber: num, replace: true, title: grab.title || undefined, pages });
+      await refreshMangaChapterDimensions({ token, mangaId: id, chapterNumber: num, only_missing: true });
+
+      toast.success('Grab berhasil (uploaded & committed)');
       await loadChapters();
     } catch (err) {
       toast.error(err?.message || 'Gagal grab chapter');
@@ -171,14 +199,7 @@ export default function MangaDetailPage() {
     const token = getSession()?.token;
     try {
       setUploading(true);
-      const num = Number(upload.chapter_number);
-      if (!Number.isFinite(num)) throw new Error('chapter_number tidak valid');
-      if (!upload.files || (upload.files instanceof FileList && upload.files.length === 0)) throw new Error('Pilih file gambar');
-      await uploadMangaChapterImages({ token, mangaId: id, chapterNumber: num, files: upload.files, title: upload.title || undefined });
-      toast.success('Upload halaman berhasil');
-      await loadChapters();
-    } catch (err) {
-      toast.error(err?.message || 'Gagal upload halaman');
+      toast.error('Upload manual dipindahkan ke halaman chapter');
     } finally {
       setUploading(false);
     }
@@ -203,8 +224,28 @@ export default function MangaDetailPage() {
             <form onSubmit={onSave} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
               <div className="grid sm:grid-cols-2 gap-3">
                 <L label="Judul"><input value={form.judul_manga} onChange={(e)=>updateField('judul_manga', e.target.value)} required className="inp" /></L>
-                <L label="Cover URL"><input value={form.cover_manga} onChange={(e)=>updateField('cover_manga', e.target.value)} className="inp" placeholder="https://..." /></L>
-                <L label="Cover File"><input type="file" accept="image/*" onChange={(e)=>setCoverFile(e.target.files?.[0] || null)} className="inp" /></L>
+                <L label="Cover (Upload)">
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setCoverFile(file);
+                        if (!file) return setCoverPreviewUrl('');
+                        const url = URL.createObjectURL(file);
+                        setCoverPreviewUrl(url);
+                      }}
+                      className="inp"
+                    />
+                    {(coverPreviewUrl || existingCoverUrl) && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span>Preview:</span>
+                        <img src={coverPreviewUrl || existingCoverUrl} alt="cover" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                      </div>
+                    )}
+                  </div>
+                </L>
                 <L label="Sinopsis"><input value={form.sinopsis_manga} onChange={(e)=>updateField('sinopsis_manga', e.target.value)} className="inp" /></L>
                 <L label="Genre (comma)"><input value={form.genre_manga} onChange={(e)=>updateField('genre_manga', e.target.value)} className="inp" placeholder="Action,Comedy" /></L>
                 <L label="Type">
@@ -220,9 +261,6 @@ export default function MangaDetailPage() {
                 <L label="Label"><input value={form.label_manga} onChange={(e)=>updateField('label_manga', e.target.value)} className="inp" /></L>
                 <L label="Rilis"><input type="date" value={form.tanggal_rilis_manga} onChange={(e)=>updateField('tanggal_rilis_manga', e.target.value)} className="inp" /></L>
                 <L label="Rating"><input type="number" step="0.1" min="0" max="10" value={form.rating_manga} onChange={(e)=>updateField('rating_manga', e.target.value)} className="inp" /></L>
-              </div>
-              <div>
-                <button onClick={onUploadCover} disabled={uploadingCover || !(coverFile instanceof File)} type="button" className="btn-add flex items-center gap-2">{uploadingCover ? 'Mengupload Cover...' : 'Upload Cover'}</button>
               </div>
               <div className="flex items-center gap-2">
                 <button disabled={saving} type="submit" className="btn-add flex items-center gap-2">{saving ? 'Menyimpan...' : (<><Save className="size-4" /> Simpan</>)}</button>
@@ -308,12 +346,12 @@ function Td({ children, className='' }) { return <td className={`td ${className}
 function buildMangaUpdate(form) {
   const out = {};
   const str = (k) => { const v = form?.[k]; if (v === undefined || v === null) return; const s = String(v).trim(); if (s !== '') out[k] = s; };
-  str('judul_manga'); str('sinopsis_manga'); str('cover_manga');
+  str('judul_manga'); str('sinopsis_manga');
   if (typeof form?.genre_manga === 'string') { const arr = form.genre_manga.split(',').map(s=>s.trim()).filter(Boolean); out.genre_manga = arr; }
   if (form?.type_manga) out.type_manga = String(form.type_manga).toUpperCase();
   str('author'); str('artist'); str('label_manga');
   if (form?.tanggal_rilis_manga) out.tanggal_rilis_manga = form.tanggal_rilis_manga;
-  if (form?.rating_manga !== undefined && form.rating_manga !== '') { const n = Number(form.rating_manga); if (Number.isFinite(n)) out.rating_manga = n; }
+  str('rating_manga');
   return out;
 }
 function buildChapterPayload(ch) {

@@ -41,6 +41,7 @@ function getDefaultPermissionsForRole(role) {
       'stickers',
       'daftar-konten',
       'manga-admin',
+      'uploader',
       'waifu-vote',
       'settings',
     ];
@@ -51,7 +52,7 @@ function getDefaultPermissionsForRole(role) {
   }
   if (r === 'uploader') {
     // Sesuai docs: ['overview', 'daftar-konten', 'manga-admin']
-    return ['overview', 'daftar-konten', 'manga-admin'];
+    return ['overview', 'daftar-konten', 'manga-admin', 'uploader'];
   }
   return [];
 }

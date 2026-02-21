@@ -104,6 +104,7 @@ export default function DashboardLayout({ children }) {
         children: [
           { key: 'daftar-konten', label: 'Daftar Konten', icon: List, roles: ['superadmin', 'uploader'], href: '/dashboard/daftar-konten' },
           { key: 'manga-admin', label: 'Manga Admin', icon: BookOpen, roles: ['superadmin', 'uploader'], href: '/dashboard/manga-admin' },
+          { key: 'uploader-legacy', label: 'Upload Episode (Legacy)', icon: Upload, roles: ['superadmin', 'uploader'], href: '/dashboard/uploader' },
         ]
       },
 

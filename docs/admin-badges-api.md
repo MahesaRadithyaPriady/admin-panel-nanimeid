@@ -4,6 +4,9 @@ Dokumentasi endpoint admin untuk mengelola master `Badge`.
 
 Semua endpoint di bawah berada di bawah prefix: `/admin` dan **wajib** menggunakan autentikasi admin (`Authorization: Bearer <admin_jwt>`), serta role `SUPERADMIN`.
 
+Catatan upload:
+- Untuk flow upload asset yang lebih cepat (direct-to-B2), gunakan presigned PUT URL: lihat `Admin Uploads API` bagian **Direct Upload ke B2 (Presigned PUT URL)**.
+
 ## Model `Badge`
 
 Field utama di tabel `Badge`:
@@ -13,6 +16,7 @@ Field utama di tabel `Badge`:
 - `name: string` — nama badge.
 - `description: string | null` — deskripsi opsional.
 - `badge_url: string` — URL icon/gambar badge (PNG/GIF/SVG, dll).
+- `poin_collection: number` — poin collection untuk badge (default: `500`).
 - `is_active: boolean` — apakah badge aktif di katalog.
 - `sort_order: number` — urutan tampilan (semakin kecil semakin atas).
 - `width: number | null` — lebar gambar dalam piksel (jika diketahui dari upload).
@@ -53,6 +57,7 @@ Response 200:
       "name": "VIP Gold",
       "description": "Badge untuk member VIP Gold",
       "badge_url": "https://cdn.nanime.id/static/badges/vip_gold.png",
+      "poin_collection": 500,
       "is_active": true,
       "sort_order": 10,
       "createdAt": "2025-12-01T10:00:00.000Z",
@@ -91,6 +96,7 @@ Response 200:
     "name": "VIP Gold",
     "description": "Badge untuk member VIP Gold",
     "badge_url": "https://cdn.nanime.id/static/badges/vip_gold.png",
+    "poin_collection": 500,
     "is_active": true,
     "sort_order": 10,
     "createdAt": "2025-12-01T10:00:00.000Z",
@@ -123,6 +129,7 @@ Body (JSON, tanpa file):
 - `name` (string, wajib)
 - `description` (string, opsional)
 - `badge_url` (string, wajib jika tidak upload file) — URL icon badge
+- `poin_collection` (number, opsional, default: `500`)
 - `is_active` (boolean, opsional, default: true)
 - `sort_order` (number, opsional, default: 0)
 
@@ -138,6 +145,7 @@ Content-Type: application/json
   "name": "VIP Platinum",
   "description": "Badge khusus VIP Platinum",
   "badge_url": "https://cdn.nanime.id/static/badges/vip_platinum.png",
+  "poin_collection": 500,
   "is_active": true,
   "sort_order": 20
 }
@@ -171,6 +179,7 @@ Response 201:
     "name": "VIP Platinum",
     "description": "Badge khusus VIP Platinum",
     "badge_url": "https://cdn.nanime.id/static/uploads/badges/vip_platinum.png",
+    "poin_collection": 500,
     "is_active": true,
     "sort_order": 20,
     "width": 256,
@@ -198,6 +207,7 @@ Body (JSON) — semua field opsional, hanya yang dikirim yang akan diupdate:
 - `name` (string)
 - `description` (string atau null)
 - `badge_url` (string)
+- `poin_collection` (number)
 - `is_active` (boolean)
 - `sort_order` (number)
 
@@ -215,6 +225,7 @@ Content-Type: application/json
 
 {
   "name": "VIP Platinum+",
+  "poin_collection": 500,
   "is_active": false
 }
 ```
@@ -231,6 +242,7 @@ Response 200:
     "name": "VIP Platinum+",
     "description": "Badge khusus VIP Platinum",
     "badge_url": "https://cdn.nanime.id/static/badges/vip_platinum.png",
+    "poin_collection": 500,
     "is_active": false,
     "sort_order": 20,
     "createdAt": "2025-12-01T10:05:00.000Z",
@@ -246,6 +258,35 @@ Error:
 - 409: `code` bentrok dengan badge lain
 
 ---
+
+## POST /admin/badges/:id/refresh-dimensions
+
+Gunakan endpoint ini sebagai **callback** setelah melakukan upload gambar via presigned PUT URL untuk mengisi ulang `width` dan `height` pada master `Badge`.
+
+Body (JSON) opsional:
+```json
+{ "badge_url": "https://..." }
+```
+
+Jika `badge_url` tidak dikirim, server akan memakai `Badge.badge_url` yang ada di DB.
+
+Response 200:
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": {
+    "id": 1,
+    "badge_url": "https://...",
+    "width": 256,
+    "height": 256
+  }
+}
+```
+
+Error:
+- 400: badge_url tidak valid / gagal fetch / file terlalu besar / bukan gambar
+- 404: badge tidak ditemukan
 
 ## DELETE /admin/badges/:id
 
@@ -276,9 +317,9 @@ Error:
 
 ---
 
-# Badge Ownership (UserBadge)
+# Badge Ownership (UserSuperBadge)
 
-Admin bisa mengelola kepemilikan badge per user melalui endpoint di bawah. Semua endpoint memerlukan autentikasi admin (`Authorization: Bearer <admin_jwt>`) dan role **SUPERADMIN**.
+Admin bisa mengelola kepemilikan **super badge** per user melalui endpoint di bawah. Data disimpan di tabel `UserSuperBadge` yang terhubung langsung ke master `Badge` lewat `badge_id`. Semua endpoint memerlukan autentikasi admin (`Authorization: Bearer <admin_jwt>`) dan role **SUPERADMIN**.
 
 ## GET /admin/badges/:badgeId/owners
 
@@ -311,9 +352,9 @@ Response 200:
       "badge_id": 1,
       "badge_name": "VIP Gold",
       "badge_icon": "https://cdn.nanime.id/static/uploads/badges/vip_gold.png",
-      "active": true,
+      "is_active": true,
       "expires_at": "2026-12-31T23:59:59.000Z",
-      "created_at": "2025-12-01T10:00:00.000Z",
+      "obtained_at": "2025-12-01T10:00:00.000Z",
       "user": {
         "id": 12,
         "username": "testuser",
@@ -346,7 +387,7 @@ Body (JSON):
 - `user_id` (number, wajib) — ID user
 - `badge_name` (string, opsional) — nama badge (default: nama dari master `Badge`)
 - `badge_icon` (string, opsional) — URL icon badge (default: `badge_url` dari master `Badge`)
-- `active` (boolean, opsional, default: true)
+- `active` (boolean, opsional, default: true) — akan disimpan ke kolom `is_active`
 - `expires_at` (string ISO datetime, opsional) — kapan badge kadaluarsa (null = tidak kadaluarsa)
 
 Contoh request:
@@ -377,9 +418,9 @@ Response 201:
     "badge_id": 1,
     "badge_name": "VIP Gold",
     "badge_icon": "https://cdn.nanome.id/static/uploads/badges/vip_gold.png",
-    "active": true,
+    "is_active": true,
     "expires_at": "2026-12-31T23:59:59.000Z",
-    "created_at": "2025-12-01T10:05:00.000Z"
+    "obtained_at": "2025-12-01T10:05:00.000Z"
   }
 }
 ```
@@ -399,7 +440,7 @@ Body (JSON) — semua field opsional:
 
 - `badge_name` (string)
 - `badge_icon` (string)
-- `active` (boolean)
+- `active` (boolean) — akan disimpan ke `is_active`
 - `expires_at` (string ISO datetime atau null)
 
 Contoh request:
@@ -426,8 +467,8 @@ Response 200:
     "user_id": 12,
     "badge_id": 1,
     "badge_name": "VIP Gold",
-    "badge_icon": "https://cdn.nanome.id/static/uploads/badges/vip_gold.png",
-    "active": false,
+    "badge_icon": "https://cdn.nanime.id/static/uploads/badges/vip_gold.png",
+    "is_active": false,
     "expires_at": "2025-12-31T23:59:59.000Z",
     "created_at": "2025-12-01T10:05:00.000Z"
   }
@@ -464,7 +505,8 @@ Error:
 ## Catatan Ownership
 
 - `badgeId` di URL merujuk ke ID master `Badge`.
-- `ownerId` di URL adalah ID record di tabel `UserBadge` (bukan user_id).
+- `ownerId` di URL adalah ID record di tabel `UserSuperBadge` (bukan user_id).
 - Saat menambah owner, jika `badge_name`/`badge_icon` tidak dikirim, akan diisi otomatis dari master `Badge`.
 - `expires_at` opsional; jika `null` atau tidak dikirim, badge tidak akan kadaluarsa.
+- Kolom status aktif di DB bernama `is_active`.
 - Endpoint ini hanya untuk **SUPERADMIN**.

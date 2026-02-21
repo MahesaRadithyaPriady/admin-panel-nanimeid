@@ -7,7 +7,24 @@ import { toast } from 'react-hot-toast';
 import { Image as ImageIcon, Pencil, Trash2, Plus, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { createAvatarBorder, createAvatarBorderWithFile, listAvatarBorders, updateAvatarBorder, updateAvatarBorderWithFile, deleteAvatarBorder } from '@/lib/api';
+import { createAvatarBorder, listAvatarBorders, updateAvatarBorder, deleteAvatarBorder, uploadFileViaPresignedPut } from '@/lib/api';
+
+function safeKeySegment(input) {
+  return String(input || '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_\-]/g, '')
+    .slice(0, 80);
+}
+
+function guessExtFromFile(file) {
+  const name = String(file?.name || '');
+  const idx = name.lastIndexOf('.');
+  if (idx === -1) return '';
+  const ext = name.slice(idx + 1).toLowerCase();
+  if (!ext || ext.length > 10) return '';
+  return ext;
+}
 
 export default function AvatarBordersPage() {
   const router = useRouter();
@@ -110,63 +127,41 @@ export default function AvatarBordersPage() {
     try {
       setSubmitting(true);
       const token = getSession()?.token;
+      if (!token) throw new Error('Token tidak tersedia');
+
+      let image_url;
+      if (form.file instanceof File) {
+        const codeSeg = safeKeySegment(form.code);
+        const ext = guessExtFromFile(form.file);
+        const key = `static/uploads/borders/${codeSeg || 'border'}_${Date.now()}${ext ? `.${ext}` : ''}`;
+        const up = await uploadFileViaPresignedPut({ token, key, file: form.file });
+        image_url = up?.publicUrl || '';
+        if (!image_url) throw new Error('URL hasil upload tidak tersedia');
+      }
+
+      const payload = {
+        code: form.code.trim(),
+        title: form.title.trim(),
+        coin_price: form.coin_price === '' ? null : Number(form.coin_price),
+        is_active: !!form.is_active,
+        starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
+        ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
+        is_limited: !!form.is_limited,
+        total_supply: form.total_supply === '' ? null : Number(form.total_supply),
+        per_user_limit: Number(form.per_user_limit || 1),
+        tier: form.tier,
+        ...(image_url ? { image_url } : {}),
+      };
+
       if (mode === 'add') {
-        const res = await createAvatarBorderWithFile({
-          token,
-          form: {
-            code: form.code.trim(),
-            title: form.title.trim(),
-            coin_price: form.coin_price === '' ? null : Number(form.coin_price),
-            is_active: !!form.is_active,
-            starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : '',
-            ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : '',
-            is_limited: !!form.is_limited,
-            total_supply: form.total_supply === '' ? '' : Number(form.total_supply),
-            per_user_limit: Number(form.per_user_limit || 1),
-            tier: form.tier,
-            file: form.file,
-          },
-        });
+        const res = await createAvatarBorder({ token, payload });
         toast.success(res?.message || 'Avatar border dibuat');
         resetForm();
         setPage(1);
         await loadList({ page: 1 });
       } else {
-        if (form.file) {
-          const res = await updateAvatarBorderWithFile({
-            token,
-            id: editingId,
-            form: {
-              code: form.code.trim(),
-              title: form.title.trim(),
-              coin_price: form.coin_price === '' ? '' : Number(form.coin_price),
-              is_active: !!form.is_active,
-              starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : '',
-              ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : '',
-              is_limited: !!form.is_limited,
-              total_supply: form.total_supply === '' ? '' : Number(form.total_supply),
-              per_user_limit: form.per_user_limit === '' ? '' : Number(form.per_user_limit || 1),
-              tier: form.tier,
-              file: form.file,
-            },
-          });
-          toast.success(res?.message || 'Avatar border diupdate');
-        } else {
-          const payload = {
-            code: form.code.trim(),
-            title: form.title.trim(),
-            coin_price: form.coin_price === '' ? null : Number(form.coin_price),
-            is_active: !!form.is_active,
-            starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
-            ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
-            is_limited: !!form.is_limited,
-            total_supply: form.total_supply === '' ? null : Number(form.total_supply),
-            per_user_limit: Number(form.per_user_limit || 1),
-            tier: form.tier,
-          };
-          const res = await updateAvatarBorder({ token, id: editingId, payload });
-          toast.success(res?.message || 'Avatar border diupdate');
-        }
+        const res = await updateAvatarBorder({ token, id: editingId, payload });
+        toast.success(res?.message || 'Avatar border diupdate');
         setMode('add');
         setEditingId(null);
         resetForm();

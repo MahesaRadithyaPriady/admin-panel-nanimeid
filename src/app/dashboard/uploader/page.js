@@ -3,11 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Upload, CheckCircle2, Clock, XCircle, HardDrive, RefreshCw, ListPlus, Trash2, Plus } from 'lucide-react';
+import { Upload, ListPlus, Trash2, Plus } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
-import { formatShort } from '@/lib/numberFormat';
 import { getSession } from '@/lib/auth';
-import { listAnime, createEpisode, getMyUploadStats, listUploadHistory } from '@/lib/api';
+import { listAnime, createEpisode } from '@/lib/api';
 
 export default function UploaderOverviewPage() {
   const router = useRouter();
@@ -19,10 +18,6 @@ export default function UploaderOverviewPage() {
 
   const allowed = useMemo(() => ['superadmin', 'uploader'], []);
 
-  // Upload stats + latest (from API)
-  const [stats, setStats] = useState({ totalUploads: 0, pending: 0, approved: 0, rejected: 0, storageGB: 0 });
-  const [latest, setLatest] = useState([]);
-
   // Anime list (from API) and episode form state
   const [animeItems, setAnimeItems] = useState([]);
   const [loadingAnime, setLoadingAnime] = useState(false);
@@ -31,7 +26,8 @@ export default function UploaderOverviewPage() {
     animeId: '',
     number: '',
     title: '',
-    thumbnail: '',
+    image: null,
+    previewUrl: '',
     sources: [
       { quality: '720p', url: '' },
     ],
@@ -54,50 +50,6 @@ export default function UploaderOverviewPage() {
     loadAnime();
   }, []);
 
-  // Load upload stats and latest history (must be before early returns)
-  useEffect(() => {
-    const loadUploadsData = async () => {
-      try {
-        const token = getSession()?.token;
-        // Stats
-        const s = await getMyUploadStats({ token });
-        const storageGB = s?.storage?.used_bytes ? +(s.storage.used_bytes / 1_000_000_000).toFixed(1) : 0;
-        setStats({
-          totalUploads: s.total_upload || 0,
-          pending: s.pending || 0,
-          approved: s.approved || 0,
-          rejected: s.rejected || 0,
-          storageGB,
-        });
-        // Latest history (recent first)
-        const hist = await listUploadHistory({ token, page: 1, limit: 10 });
-        const items = (hist.items || []).map((it) => {
-          let title = `${it.target_type} #${it.target_id}`;
-          const t = it.target || {};
-          if (it.target_type === 'EPISODE') {
-            const animeName = t.anime?.nama_anime || 'Anime';
-            const epNo = t.nomor_episode != null ? `Ep ${t.nomor_episode}` : '';
-            const epTitle = t.judul_episode || '';
-            title = `${animeName}${epNo ? ' - ' + epNo : ''}${epTitle ? ': ' + epTitle : ''}`;
-          } else if (it.target_type === 'ANIME') {
-            title = t.nama_anime || title;
-          }
-          if (it.note) title += ` - ${it.note}`;
-          return {
-            id: it.id,
-            title,
-            status: (it.status || 'pending').toLowerCase(),
-            ts: it.createdAt ? Date.parse(it.createdAt) : Date.now(),
-          };
-        });
-        setLatest(items);
-      } catch (err) {
-        toast.error(err?.message || 'Gagal memuat statistik upload');
-      }
-    };
-    loadUploadsData();
-  }, []);
-
   // Early returns after hooks
   if (loading || !user) return null;
   if (!allowed.includes(user.role)) {
@@ -108,50 +60,10 @@ export default function UploaderOverviewPage() {
     );
   }
 
-  const refresh = async () => {
-    try {
-      const token = getSession()?.token;
-      const s = await getMyUploadStats({ token });
-      const storageGB = s?.storage?.used_bytes ? +(s.storage.used_bytes / 1_000_000_000).toFixed(1) : 0;
-      setStats({
-        totalUploads: s.total_upload || 0,
-        pending: s.pending || 0,
-        approved: s.approved || 0,
-        rejected: s.rejected || 0,
-        storageGB,
-      });
-      const hist = await listUploadHistory({ token, page: 1, limit: 10 });
-      const items = (hist.items || []).map((it) => {
-        let title = `${it.target_type} #${it.target_id}`;
-        const t = it.target || {};
-        if (it.target_type === 'EPISODE') {
-          const animeName = t.anime?.nama_anime || 'Anime';
-          const epNo = t.nomor_episode != null ? `Ep ${t.nomor_episode}` : '';
-          const epTitle = t.judul_episode || '';
-          title = `${animeName}${epNo ? ' - ' + epNo : ''}${epTitle ? ': ' + epTitle : ''}`;
-        } else if (it.target_type === 'ANIME') {
-          title = t.nama_anime || title;
-        }
-        if (it.note) title += ` - ${it.note}`;
-        return {
-          id: it.id,
-          title,
-          status: (it.status || 'pending').toLowerCase(),
-          ts: it.createdAt ? Date.parse(it.createdAt) : Date.now(),
-        };
-      });
-      setLatest(items);
-      toast.success('Overview uploader diperbarui');
-    } catch (err) {
-      toast.error(err?.message || 'Gagal memuat overview');
-    }
-  };
-
-
   const onAddEpisode = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    const { animeId, number, title, thumbnail, sources } = formEpisode;
-    if (!animeId || !number || !title || !thumbnail) {
+    const { animeId, number, title, image, sources } = formEpisode;
+    if (!animeId || !number || !title || !image) {
       toast.error('Pilih anime dan isi nomor, judul, dan thumbnail episode');
       return;
     }
@@ -166,12 +78,12 @@ export default function UploaderOverviewPage() {
       const payload = {
         judul_episode: title,
         nomor_episode: Number(number),
-        thumbnail_episode: thumbnail,
+        image,
         qualities: validPairs.map((s) => ({ nama_quality: s.quality, source_quality: s.url })),
       };
       const res = await createEpisode({ token, animeId: Number(animeId), payload });
       toast.success(res?.message || 'Episode berhasil diupload');
-      setFormEpisode({ animeId: '', number: '', title: '', thumbnail: '', sources: [{ quality: '720p', url: '' }] });
+      setFormEpisode({ animeId: '', number: '', title: '', image: null, previewUrl: '', sources: [{ quality: '720p', url: '' }] });
     } catch (err) {
       toast.error(err?.message || 'Gagal mengupload episode');
     } finally {
@@ -183,74 +95,7 @@ export default function UploaderOverviewPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-extrabold flex items-center gap-2"><Upload className="size-5" /> Upload Konten</h2>
-        {user.role !== 'uploader' && (
-          <button onClick={refresh} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
-            <RefreshCw className="inline size-4" /> Refresh
-          </button>
-        )}
       </div>
-
-      {/* Overview cards (hidden for uploader) */}
-      {user.role !== 'uploader' && (
-        <div className="grid sm:grid-cols-5 gap-4">
-          <div className="p-4 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-            <div className="flex items-center gap-2 text-xs font-bold mb-1"><Upload className="size-4" /> Total Upload</div>
-            <div className="text-2xl font-extrabold">{formatShort(stats.totalUploads)}</div>
-          </div>
-          <div className="p-4 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-            <div className="flex items-center gap-2 text-xs font-bold mb-1"><Clock className="size-4" /> Pending</div>
-            <div className="text-2xl font-extrabold">{formatShort(stats.pending)}</div>
-          </div>
-          <div className="p-4 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-            <div className="flex items-center gap-2 text-xs font-bold mb-1"><CheckCircle2 className="size-4" /> Approved</div>
-            <div className="text-2xl font-extrabold">{formatShort(stats.approved)}</div>
-          </div>
-          <div className="p-4 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-            <div className="flex items-center gap-2 text-xs font-bold mb-1"><XCircle className="size-4" /> Rejected</div>
-            <div className="text-2xl font-extrabold">{formatShort(stats.rejected)}</div>
-          </div>
-          <div className="p-4 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-            <div className="flex items-center gap-2 text-xs font-bold mb-1"><HardDrive className="size-4" /> Storage</div>
-            <div className="text-2xl font-extrabold">{stats.storageGB} GB</div>
-          </div>
-        </div>
-      )}
-
-      {/* Latest uploads (hidden for uploader) */}
-      {user.role !== 'uploader' && (
-        <div>
-          <h3 className="text-lg font-extrabold mb-3">Unggahan Terbaru</h3>
-          <div className="overflow-auto">
-            <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-              <thead style={{ background: 'var(--panel-bg)' }}>
-                <tr>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Waktu</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Judul</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {latest.map((it) => (
-                  <tr key={it.id}>
-                    <td className="px-3 py-2 border-b-4 text-sm opacity-80" style={{ borderColor: 'var(--panel-border)' }}>{new Date(it.ts).toLocaleString('id-ID')}</td>
-                    <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>{it.title}</td>
-                    <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                      <span className="px-2 py-1 border-2 rounded text-xs font-extrabold" style={{ borderColor: 'var(--panel-border)', background: it.status==='approved' ? 'var(--accent-add)' : it.status==='pending' ? 'var(--accent-primary)' : 'var(--panel-bg)', color: it.status==='approved' ? 'var(--accent-add-foreground)' : it.status==='pending' ? 'var(--accent-primary-foreground)' : 'var(--foreground)' }}>
-                        {it.status.toUpperCase()}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-                {latest.length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="px-3 py-6 text-center text-sm opacity-70">Belum ada unggahan.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* Form Data Episode (Full Width) */}
       <div className="p-4 border-4 rounded-lg space-y-3" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
@@ -298,15 +143,25 @@ export default function UploaderOverviewPage() {
             </div>
           </div>
           <div>
-            <label className="text-xs font-bold">Thumbnail (URL) - Wajib</label>
+            <label className="text-xs font-bold">Thumbnail Episode (Upload)</label>
             <input
-              type="url"
-              value={formEpisode.thumbnail}
-              onChange={(e) => setFormEpisode((f) => ({ ...f, thumbnail: e.target.value }))}
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                if (!file) return setFormEpisode((f) => ({ ...f, image: null, previewUrl: '' }));
+                const url = URL.createObjectURL(file);
+                setFormEpisode((f) => ({ ...f, image: file, previewUrl: url }));
+              }}
               className="w-full mt-1 px-3 py-2 border-4 rounded-lg"
               style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              placeholder="https://..."
             />
+            {formEpisode.previewUrl && (
+              <div className="flex items-center gap-2 text-xs mt-1" style={{ color: 'var(--foreground)' }}>
+                <span>Preview:</span>
+                <img src={formEpisode.previewUrl} alt="thumb" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+              </div>
+            )}
           </div>
       </div>
 
@@ -377,7 +232,6 @@ export default function UploaderOverviewPage() {
       <button onClick={onAddEpisode} disabled={uploading} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>
         {uploading ? 'Mengupload...' : (<><Upload className="inline size-4" /> Upload Episode</>)}
       </button>
-      <div className="text-xs opacity-70">Episode akan masuk status pending untuk validasi.</div>
     </div>
   );
 }

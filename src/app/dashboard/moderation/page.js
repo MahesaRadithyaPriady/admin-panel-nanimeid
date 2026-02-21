@@ -68,6 +68,42 @@ function StickerPreview({ sticker }) {
   );
 }
 
+function getImageUrlFromMessage(it) {
+  if (!it) return '';
+  const candidates = [
+    it?.image_url,
+    it?.media_url,
+    it?.imageUrl,
+    it?.mediaUrl,
+    it?.attachment_url,
+    it?.file_url,
+    it?.url,
+    it?.content,
+  ];
+  for (const c of candidates) {
+    if (!c) continue;
+    const s = String(c).trim();
+    if (/^https?:\/\//i.test(s)) return s;
+  }
+  return '';
+}
+
+function ImagePreview({ url }) {
+  if (!url) return null;
+  return (
+    <div
+      className="mt-3 border-4 rounded-xl p-2 inline-block max-w-full"
+      style={{
+        boxShadow: '4px 4px 0 #000',
+        background: 'var(--panel-bg)',
+        borderColor: 'var(--panel-border)',
+      }}
+    >
+      <img src={url} alt="image" className="max-w-full w-[320px] h-auto object-contain rounded" />
+    </div>
+  );
+}
+
 function ActionButton({ disabled, onClick, children, tone = 'danger' }) {
   const bg = tone === 'neutral' ? 'var(--panel-bg)' : '#FF4D4D';
   const fg = tone === 'neutral' ? 'var(--foreground)' : '#111';
@@ -524,6 +560,9 @@ export default function ModerationPage() {
                   const u = it?.user;
                   const displayName = u?.profile?.full_name || u?.username || '-';
                   const isReply = it?.parent_id !== null && it?.parent_id !== undefined;
+                  const msgType = String(it?.type || it?.kind || '').toUpperCase();
+                  const isImage = msgType === 'IMAGE';
+                  const imageUrl = isImage ? getImageUrlFromMessage(it) : '';
                   return (
                     <div
                       key={String(it?.id)}
@@ -562,6 +601,8 @@ export default function ModerationPage() {
                       </div>
 
                       {String(it?.kind || '').toUpperCase() === 'STICKER' ? <StickerPreview sticker={it?.sticker} /> : null}
+
+                      {isImage ? <ImagePreview url={imageUrl} /> : null}
 
                       {isReply && String(it?.parent?.kind || '').toUpperCase() === 'STICKER' ? (
                         <div className="mt-3">

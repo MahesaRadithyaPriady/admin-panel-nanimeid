@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { BookOpen, Plus, ExternalLink, Trash2 } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listManga, createManga, deleteManga, grabKomikuRange, uploadMangaCover } from '@/lib/api';
+import { listManga, createManga, deleteManga, grabKomikuRange, uploadFileViaPresignedPut } from '@/lib/api';
 
 export default function MangaAdminPage() {
   const router = useRouter();
@@ -25,7 +25,6 @@ export default function MangaAdminPage() {
   const [form, setForm] = useState({
     judul_manga: '',
     sinopsis_manga: '',
-    cover_manga: '',
     genre_manga: '',
     type_manga: 'MANGA',
     author: '',
@@ -36,6 +35,7 @@ export default function MangaAdminPage() {
   });
   const [creating, setCreating] = useState(false);
   const [coverFile, setCoverFile] = useState(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState('');
   const [grabRange, setGrabRange] = useState({ mangaId: '', sample_url: '', start: '', end: '', title_prefix: '' });
   const [grabbingRange, setGrabbingRange] = useState(false);
 
@@ -93,20 +93,23 @@ export default function MangaAdminPage() {
     const token = getSession()?.token;
     try {
       setCreating(true);
+      if (!(coverFile instanceof File)) throw new Error('Cover manga wajib diupload');
       const payload = buildMangaPayload(form);
-      const created = await createManga({ token, payload });
-      const newId = created?.item?.id || created?.id;
-      // Optional cover upload from file
-      if (newId && coverFile instanceof File) {
-        try {
-          await uploadMangaCover({ token, id: newId, file: coverFile });
-        } catch (err) {
-          toast.error(err?.message || 'Gagal mengupload cover');
-        }
-      }
+
+      const safeTitle = String(payload?.judul_manga || 'manga')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 80);
+      const ext = String(coverFile?.name || '').split('.').pop()?.toLowerCase() || '';
+      const key = `static/uploads/manga/covers/${safeTitle || 'manga'}_${Date.now()}${ext ? `.${ext}` : ''}`;
+      const uploaded = await uploadFileViaPresignedPut({ token, file: coverFile, key });
+
+      await createManga({ token, payload: { ...payload, cover_manga: uploaded.publicUrl } });
       toast.success('Manga dibuat');
-      setForm({ judul_manga: '', sinopsis_manga: '', cover_manga: '', genre_manga: '', type_manga: 'MANGA', author: '', artist: '', label_manga: '', tanggal_rilis_manga: '', rating_manga: '' });
+      setForm({ judul_manga: '', sinopsis_manga: '', genre_manga: '', type_manga: 'MANGA', author: '', artist: '', label_manga: '', tanggal_rilis_manga: '', rating_manga: '' });
       setCoverFile(null);
+      setCoverPreviewUrl('');
       await loadList();
     } catch (err) {
       toast.error(err?.message || 'Gagal membuat manga');
@@ -142,8 +145,28 @@ export default function MangaAdminPage() {
           <form onSubmit={onCreate} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <div className="grid sm:grid-cols-2 gap-3">
               <L label="Judul"><input value={form.judul_manga} onChange={(e)=>updateForm('judul_manga', e.target.value)} required className="inp" /></L>
-              <L label="Cover URL"><input value={form.cover_manga} onChange={(e)=>updateForm('cover_manga', e.target.value)} className="inp" placeholder="https://..." /></L>
-              <L label="atau File"><input type="file" accept="image/*" onChange={(e)=>setCoverFile(e.target.files?.[0] || null)} className="inp" /></L>
+              <L label="Cover (Upload)">
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setCoverFile(file);
+                      if (!file) return setCoverPreviewUrl('');
+                      const url = URL.createObjectURL(file);
+                      setCoverPreviewUrl(url);
+                    }}
+                    className="inp"
+                  />
+                  {coverPreviewUrl && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span>Preview:</span>
+                      <img src={coverPreviewUrl} alt="cover" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                    </div>
+                  )}
+                </div>
+              </L>
               <L label="Sinopsis"><input value={form.sinopsis_manga} onChange={(e)=>updateForm('sinopsis_manga', e.target.value)} className="inp" /></L>
               <L label="Genre (comma)"><input value={form.genre_manga} onChange={(e)=>updateForm('genre_manga', e.target.value)} className="inp" placeholder="Action,Comedy" /></L>
               <L label="Type">
@@ -235,7 +258,6 @@ function buildMangaPayload(form) {
   };
   str('judul_manga');
   str('sinopsis_manga');
-  str('cover_manga');
   if (typeof form?.genre_manga === 'string') {
     const arr = form.genre_manga.split(',').map(s=>s.trim()).filter(Boolean);
     if (arr.length) out.genre_manga = arr;
@@ -245,10 +267,7 @@ function buildMangaPayload(form) {
   str('artist');
   str('label_manga');
   if (form?.tanggal_rilis_manga) out.tanggal_rilis_manga = form.tanggal_rilis_manga;
-  if (form?.rating_manga !== undefined && form.rating_manga !== '') {
-    const n = Number(form.rating_manga);
-    if (Number.isFinite(n)) out.rating_manga = n;
-  }
+  str('rating_manga');
   return out;
 }
 

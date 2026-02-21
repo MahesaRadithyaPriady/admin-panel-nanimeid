@@ -2,7 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { List, Plus, Pencil, Trash2, RefreshCcw, Search, RotateCcw } from "lucide-react";
-import { listWaifu, createWaifu, updateWaifu, deleteWaifu, resetWaifuVotes, createWaifuWithFile, updateWaifuWithFile } from "@/lib/api";
+import { listWaifu, createWaifu, updateWaifu, deleteWaifu, resetWaifuVotes, uploadFileViaPresignedPut } from "@/lib/api";
+
+function safeKeySegment(input) {
+  return String(input || '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_\-]/g, '')
+    .slice(0, 80);
+}
+
+function guessExtFromFile(file) {
+  const name = String(file?.name || '');
+  const idx = name.lastIndexOf('.');
+  if (idx === -1) return '';
+  const ext = name.slice(idx + 1).toLowerCase();
+  if (!ext || ext.length > 10) return '';
+  return ext;
+}
 
 export default function WaifuVotePage() {
   // list state
@@ -91,20 +108,22 @@ export default function WaifuVotePage() {
         setSubmitting(false);
         return;
       }
+
+      let image_url = form.image_url;
+      if (form.file instanceof File) {
+        const nameSeg = safeKeySegment(form.name);
+        const ext = guessExtFromFile(form.file);
+        const key = `static/uploads/waifu/${nameSeg || 'waifu'}_${Date.now()}${ext ? `.${ext}` : ''}`;
+        const up = await uploadFileViaPresignedPut({ token, key, file: form.file });
+        image_url = up?.publicUrl || '';
+        if (!image_url) throw new Error('Upload berhasil tapi URL tidak ditemukan');
+      }
+
+      const payload = { name: form.name, anime_title: form.anime_title, image_url, description: form.description };
       if (mode === "add") {
-        if (form.file) {
-          await createWaifuWithFile({ token, form: { name: form.name, anime_title: form.anime_title, description: form.description, file: form.file } });
-        } else {
-          const payload = { name: form.name, anime_title: form.anime_title, image_url: form.image_url, description: form.description };
-          await createWaifu({ token, payload });
-        }
+        await createWaifu({ token, payload });
       } else {
-        if (form.file) {
-          await updateWaifuWithFile({ token, id: form.id, form: { name: form.name, anime_title: form.anime_title, description: form.description, file: form.file } });
-        } else {
-          const payload = { name: form.name, anime_title: form.anime_title, image_url: form.image_url, description: form.description };
-          await updateWaifu({ token, id: form.id, payload });
-        }
+        await updateWaifu({ token, id: form.id, payload });
       }
       setFormOpen(false);
       await loadList();

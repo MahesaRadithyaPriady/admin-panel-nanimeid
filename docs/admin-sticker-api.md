@@ -8,15 +8,42 @@ Role: hanya **SUPERADMIN**.
 
 - Gambar stiker dikirim lewat multipart form field `image`.
 - File fisik akan disimpan ke folder `static/uploads/stikers`.
-- Aplikasi akan membangun URL penuh menggunakan environment `URL_BASE_UPLOAD`.
+- Aplikasi akan membangun URL penuh menggunakan environment `CDN_BASE_URL_STORAGE` (fallback ke `URL_BASE_UPLOAD`).
 - Nilai yang disimpan di `image_url` adalah **full URL**, misalnya (contoh):
-  - `URL_BASE_UPLOAD=https://cdn.nanimeid.com`
+  - `CDN_BASE_URL_STORAGE=https://cdn.nanimeid.com`
   - File: `static/uploads/stikers/happy_1701400000000.png`
   - `image_url`: `https://cdn.nanimeid.com/static/uploads/stikers/happy_1701400000000.png`
 
 > Catatan:
-> - Jika `URL_BASE_UPLOAD` tidak diset, fallback `image_url` akan berupa path relatif: `/static/uploads/stikers/..`.
+> - Jika `CDN_BASE_URL_STORAGE` dan `URL_BASE_UPLOAD` tidak diset, fallback `image_url` akan berupa path relatif: `/static/uploads/stikers/..`.
 > - Endpoint HTTP final biasanya: `API_PREFIX + image_url`, misal `https://api.nanimeid.com/api/v1/static/uploads/stikers/...` bila API di-deploy terpisah dari CDN.
+> - Pastikan base URL tidak mengandung versi API (misal `.../1.0.10` atau `.../v1`) agar URL asset tidak ikut ter-versioning.
+
+Rekomendasi:
+- Untuk upload asset yang lebih cepat (direct-to-B2) gunakan presigned PUT URL: lihat `Admin Uploads API` bagian **Direct Upload ke B2 (Presigned PUT URL)**.
+
+## Migrasi Asset Sticker ke Storage B2
+
+Jika `Sticker.image_url` kamu masih menunjuk ke path/URL lama (misal `static/uploads/stikers/...`) dan ingin dipindahkan ke storage B2, gunakan script:
+
+`src/scripts/migrateStickersToB2.js`
+
+Dry-run (default):
+
+```bash
+node src/scripts/migrateStickersToB2.js --dry-run
+```
+
+Apply:
+
+```bash
+node src/scripts/migrateStickersToB2.js --apply
+```
+
+Opsi umum:
+
+- `--limit=100`
+- `--only-legacy` (skip yang sudah di B2)
 
 ---
 
@@ -41,6 +68,7 @@ Response 200:
       "name": "Happy Emote",
       "description": "Stiker wajah senang",
       "image_url": "https://cdn.nanimeid.com/static/uploads/stikers/happy_1701400000000.png",
+      "poin_collection": 50,
       "is_active": true,
       "sort_order": 0,
       "createdAt": "2024-01-01T00:00:00.000Z",
@@ -71,6 +99,7 @@ Response 200:
     "name": "Happy Emote",
     "description": "Stiker wajah senang",
     "image_url": "https://cdn.nanimeid.com/static/uploads/stikers/happy_1701400000000.png",
+    "poin_collection": 50,
     "is_active": true,
     "sort_order": 0,
     "createdAt": "2024-01-01T00:00:00.000Z",
@@ -188,6 +217,7 @@ Body (multipart form):
 - `code` (text, wajib, unik)
 - `name` (text, wajib)
 - `description` (text, opsional)
+- `poin_collection` (text angka, opsional, default `50`)
 - `is_active` (text `true`/`false`, opsional, default `true`)
 - `sort_order` (text angka, opsional, default `0`)
 - `image` (file, wajib) – gambar stiker (png/jpg/webp, max ~4MB)
@@ -203,6 +233,7 @@ Response 201:
     "name": "Sad Emote",
     "description": "Stiker wajah sedih",
     "image_url": "https://cdn.nanimeid.com/static/uploads/stikers/sad_1701400100000.png",
+    "poin_collection": 50,
     "is_active": true,
     "sort_order": 10,
     "createdAt": "2024-01-01T00:10:00.000Z",
@@ -232,6 +263,7 @@ Body (multipart form – semua opsional):
 - `code` (text)
 - `name` (text)
 - `description` (text)
+- `poin_collection` (text angka)
 - `is_active` (text `true`/`false`)
 - `sort_order` (text angka)
 - `image` (file) – jika dikirim, gambar stiker akan diganti dan `image_url` diupdate
@@ -247,6 +279,7 @@ Response 200:
     "name": "Happy Emote (Updated)",
     "description": "Deskripsi baru",
     "image_url": "https://cdn.nanimeid.com/static/uploads/stikers/happy_1701400200000.png",
+    "poin_collection": 50,
     "is_active": true,
     "sort_order": 5,
     "createdAt": "2024-01-01T00:00:00.000Z",

@@ -221,84 +221,102 @@ export default function VipPlansPage() {
       >
         <form onSubmit={onSubmit} className="grid gap-3">
           <div className="grid sm:grid-cols-2 gap-3">
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Nama paket (wajib, unik)"
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Name</div>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Nama paket (wajib, unik)"
+                className="px-3 py-2 border-4 rounded-lg font-semibold"
+                style={{
+                  boxShadow: "4px 4px 0 #000",
+                  background: "var(--panel-bg)",
+                  borderColor: "var(--panel-border)",
+                  color: "var(--foreground)",
+                }}
+              />
+            </div>
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Price (coins)</div>
+              <input
+                type="number"
+                value={form.price_coins}
+                onChange={(e) => setForm((f) => ({ ...f, price_coins: e.target.value }))}
+                placeholder="Harga koin (wajib)"
+                className="px-3 py-2 border-4 rounded-lg font-semibold"
+                style={{
+                  boxShadow: "4px 4px 0 #000",
+                  background: "var(--panel-bg)",
+                  borderColor: "var(--panel-border)",
+                  color: "var(--foreground)",
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Description</div>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              placeholder="Deskripsi (opsional)"
+              rows={2}
               className="px-3 py-2 border-4 rounded-lg font-semibold"
               style={{
                 boxShadow: "4px 4px 0 #000",
-                background: "var(--panel-bg)",
-                borderColor: "var(--panel-border)",
-                color: "var(--foreground)",
-              }}
-            />
-            <input
-              type="number"
-              value={form.price_coins}
-              onChange={(e) => setForm((f) => ({ ...f, price_coins: e.target.value }))}
-              placeholder="Harga koin (wajib)"
-              className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{
-                boxShadow: "4px 4px 0 #000",
-                background: "var(--panel-bg)",
+                background: "var(--background)",
                 borderColor: "var(--panel-border)",
                 color: "var(--foreground)",
               }}
             />
           </div>
 
-          <textarea
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Deskripsi (opsional)"
-            rows={2}
-            className="px-3 py-2 border-4 rounded-lg font-semibold"
-            style={{
-              boxShadow: "4px 4px 0 #000",
-              background: "var(--background)",
-              borderColor: "var(--panel-border)",
-              color: "var(--foreground)",
-            }}
-          />
-
-          <textarea
-            value={form.benefits}
-            onChange={(e) => setForm((f) => ({ ...f, benefits: e.target.value }))}
-            placeholder={"Benefits, satu per baris (misal: \nNo ads\n1080p\nEarly access)"}
-            rows={3}
-            className="px-3 py-2 border-4 rounded-lg font-semibold text-sm"
-            style={{
-              boxShadow: "4px 4px 0 #000",
-              background: "var(--background)",
-              borderColor: "var(--panel-border)",
-              color: "var(--foreground)",
-            }}
-          />
-
-          <div className="grid sm:grid-cols-2 gap-3 items-center">
-            <input
-              type="text"
-              value={form.color}
-              onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
-              placeholder="Warna hex, contoh #FFD700 (wajib)"
-              className="px-3 py-2 border-4 rounded-lg font-semibold"
+          <div className="grid gap-1">
+            <div className="text-xs font-extrabold">Benefits</div>
+            <textarea
+              value={form.benefits}
+              onChange={(e) => setForm((f) => ({ ...f, benefits: e.target.value }))}
+              placeholder={"Benefits, satu per baris (misal: \nNo ads\n1080p\nEarly access)"}
+              rows={3}
+              className="px-3 py-2 border-4 rounded-lg font-semibold text-sm"
               style={{
                 boxShadow: "4px 4px 0 #000",
-                background: "var(--panel-bg)",
+                background: "var(--background)",
                 borderColor: "var(--panel-border)",
                 color: "var(--foreground)",
               }}
             />
-            <label className="flex items-center gap-2 text-sm font-semibold">
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-3 items-center">
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Color</div>
               <input
-                type="checkbox"
-                checked={!!form.is_active}
-                onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
+                type="text"
+                value={form.color}
+                onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
+                placeholder="Warna hex, contoh #FFD700 (wajib)"
+                className="px-3 py-2 border-4 rounded-lg font-semibold"
+                style={{
+                  boxShadow: "4px 4px 0 #000",
+                  background: "var(--panel-bg)",
+                  borderColor: "var(--panel-border)",
+                  color: "var(--foreground)",
+                }}
               />
-              <span>Aktif</span>
-            </label>
+            </div>
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Status</div>
+              <label className="flex items-center gap-2 text-sm font-semibold px-3 py-2 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                <input
+                  type="checkbox"
+                  checked={!!form.is_active}
+                  onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
+                />
+                <span>Aktif</span>
+              </label>
+            </div>
           </div>
 
           <div className="grid sm:grid-cols-[160px_auto] gap-3 items-center">

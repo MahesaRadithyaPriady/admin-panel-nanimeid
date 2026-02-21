@@ -15,6 +15,46 @@ Catatan:
 
 ---
 
+## Direct Upload ke B2 (Presigned PUT URL)
+
+Untuk upload file besar (mis. video) atau untuk mempercepat upload asset dari client, gunakan endpoint presigned PUT URL berikut:
+
+POST /upload/presigned-put
+
+Auth:
+- User JWT (endpoint ini berada di group `uploadRoutes` non-admin dan menggunakan middleware `authenticate`)
+
+Body JSON:
+```json
+{
+  "key": "assets/example/file.mp4",
+  "contentType": "video/mp4",
+  "expiresInSeconds": 600,
+  "useStorage": true
+}
+```
+
+Response 200:
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "bucket": "<bucket>",
+    "key": "assets/example/file.mp4",
+    "url": "https://...",
+    "method": "PUT"
+  }
+}
+```
+
+Lalu client melakukan upload langsung:
+- Method: `PUT` ke `data.url`
+- Header: `Content-Type: <contentType>`
+- Body: bytes file
+
+---
+
 ## Buat Riwayat Upload
 
 POST /admin/uploads
