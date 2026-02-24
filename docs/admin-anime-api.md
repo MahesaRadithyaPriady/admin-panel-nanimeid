@@ -8,6 +8,10 @@ Endpoint admin untuk membuat anime baru. Hanya role SUPERADMIN dan UPLOADER.
 Catatan upload:
 - Endpoint admin anime saat ini menggunakan `multipart/form-data` untuk upload cover.
 - Untuk flow upload yang lebih cepat (direct-to-B2), lihat `Admin Uploads API` bagian **Direct Upload ke B2 (Presigned PUT URL)**.
+- Jika mengirim `gambar_anime` berupa URL `http(s)`, server akan **mengunduh** gambar dari URL tersebut lalu **meng-upload ulang** ke storage menggunakan **signed URL** (PUT).
+  - **URL asli tidak disimpan**.
+  - Client wajib menggunakan **URL callback** dari response (`item.gambar_anime`) sebagai URL cover yang valid (URL storage/CDN).
+  - Jika `gambar_anime` SUDAH merupakan URL storage/CDN (prefix `CDN_BASE_URL_STORAGE`), server akan menyimpan nilai tersebut apa adanya (tidak download ulang).
 
 ## Buat Anime (SUPERADMIN | UPLOADER)
 - Method: POST
@@ -17,7 +21,13 @@ Catatan upload:
 Body (multipart form):
 
 - `image` (file, opsional) — cover anime (hanya file gambar)
-- Alternatif (tanpa upload file): kirim `gambar_anime` berisi URL cover (mis. URL CDN/B2 hasil presigned upload)
+- Alternatif (tanpa upload file): kirim `gambar_anime` berisi URL cover.
+  - Jika `gambar_anime` adalah URL `http(s)`, server akan **download** dan **re-upload** ke storage.
+  - Jika `gambar_anime` adalah path static lokal (mis. `/static/...`), server akan menyimpan nilai tersebut apa adanya.
+
+Callback URL:
+- Jika request menggunakan URL remote `http(s)` dan URL tersebut BUKAN URL storage/CDN, maka value `gambar_anime` di database akan **diganti** menjadi URL storage.
+- Client tidak perlu menebak URL storage; cukup pakai `item.gambar_anime` dari response sebagai **callback**.
 - Field lain mengikuti JSON, dikirim sebagai text:
   - `nama_anime`, `rating_anime`, `status_anime`, `sinopsis_anime`, `label_anime`
   - `type` / `content_type`, `is_21_plus`
@@ -48,6 +58,10 @@ body:
 - Cover wajib dikirim melalui **salah satu**:
   - `image` (file)
   - `gambar_anime` (URL)
+- Batasan untuk `gambar_anime` URL `http(s)`:
+  - Harus mengarah ke konten `image/*`
+  - Max size: 10MB
+  - Timeout download: 15s
 - **Khusus `status_anime = "ongoing"`**:
   - Wajib mengirim **minimal satu jadwal** melalui field `schedule` *atau* `schedules`.
   - Jika tidak ada jadwal yang valid (`hari` & `jam` kosong), server akan mengembalikan **400** dengan pesan bahwa jadwal wajib diisi.
@@ -64,7 +78,7 @@ body:
   "item": {
     "id": 1,
     "nama_anime": "Naruto",
-    "gambar_anime": "https://cdn.example.com/naruto.jpg",
+    "gambar_anime": "https://<CDN_STORAGE>/<key>",
     "tags_anime": ["shounen","action"],
     "rating_anime": "8.6",
     "view_anime": 1000,
@@ -255,6 +269,10 @@ Body (opsional): field yang ingin diubah. Untuk mengganti cover bisa:
 
 - Upload file pada field `image`, atau
 - Kirim `gambar_anime` (URL)
+
+Catatan untuk `gambar_anime` saat update:
+- Jika `gambar_anime` adalah URL `http(s)`, server akan **download** lalu **re-upload** ke storage, dan menyimpan URL storage.
+- Jika `gambar_anime` adalah path static lokal (mis. `/static/...`), server akan menyimpan nilai tersebut apa adanya.
 
   - `image` (file gambar, opsional) — cover anime baru
   - `gambar_anime` (string URL, opsional) — cover anime baru (alternatif tanpa upload file)

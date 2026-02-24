@@ -26,6 +26,8 @@ export default function UploaderOverviewPage() {
     animeId: '',
     number: '',
     title: '',
+    thumbnail_mode: 'upload',
+    thumbnail_url: '',
     image: null,
     previewUrl: '',
     sources: [
@@ -62,10 +64,23 @@ export default function UploaderOverviewPage() {
 
   const onAddEpisode = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    const { animeId, number, title, image, sources } = formEpisode;
-    if (!animeId || !number || !title || !image) {
-      toast.error('Pilih anime dan isi nomor, judul, dan thumbnail episode');
+    const { animeId, number, title, image, sources, thumbnail_mode, thumbnail_url } = formEpisode;
+    if (!animeId || !number || !title) {
+      toast.error('Pilih anime dan isi nomor serta judul episode');
       return;
+    }
+    const thumbMode = (thumbnail_mode || 'upload').toString();
+    const thumbUrl = (thumbnail_url || '').trim();
+    if (thumbMode === 'upload') {
+      if (!(image instanceof File)) {
+        toast.error('Thumbnail episode wajib diupload');
+        return;
+      }
+    } else {
+      if (!thumbUrl) {
+        toast.error('Thumbnail episode URL wajib diisi');
+        return;
+      }
     }
     const validPairs = (sources || []).filter((s) => (s.url || '').trim() && (s.quality || '').trim());
     if (validPairs.length === 0) {
@@ -78,12 +93,12 @@ export default function UploaderOverviewPage() {
       const payload = {
         judul_episode: title,
         nomor_episode: Number(number),
-        image,
+        ...(thumbMode === 'upload' ? { image } : { thumbnail_episode: thumbUrl }),
         qualities: validPairs.map((s) => ({ nama_quality: s.quality, source_quality: s.url })),
       };
       const res = await createEpisode({ token, animeId: Number(animeId), payload });
       toast.success(res?.message || 'Episode berhasil diupload');
-      setFormEpisode({ animeId: '', number: '', title: '', image: null, previewUrl: '', sources: [{ quality: '720p', url: '' }] });
+      setFormEpisode({ animeId: '', number: '', title: '', thumbnail_mode: 'upload', thumbnail_url: '', image: null, previewUrl: '', sources: [{ quality: '720p', url: '' }] });
     } catch (err) {
       toast.error(err?.message || 'Gagal mengupload episode');
     } finally {
@@ -143,25 +158,50 @@ export default function UploaderOverviewPage() {
             </div>
           </div>
           <div>
-            <label className="text-xs font-bold">Thumbnail Episode (Upload)</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0] || null;
-                if (!file) return setFormEpisode((f) => ({ ...f, image: null, previewUrl: '' }));
-                const url = URL.createObjectURL(file);
-                setFormEpisode((f) => ({ ...f, image: file, previewUrl: url }));
-              }}
-              className="w-full mt-1 px-3 py-2 border-4 rounded-lg"
-              style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-            />
-            {formEpisode.previewUrl && (
-              <div className="flex items-center gap-2 text-xs mt-1" style={{ color: 'var(--foreground)' }}>
-                <span>Preview:</span>
-                <img src={formEpisode.previewUrl} alt="thumb" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
-              </div>
-            )}
+            <label className="text-xs font-bold">Thumbnail Episode</label>
+            <div className="grid sm:grid-cols-[140px_1fr] gap-2 mt-1">
+              <select
+                value={formEpisode.thumbnail_mode || 'upload'}
+                onChange={(e) => setFormEpisode((f) => ({ ...f, thumbnail_mode: e.target.value, thumbnail_url: e.target.value === 'url' ? f.thumbnail_url : '', image: e.target.value === 'upload' ? f.image : null, previewUrl: e.target.value === 'upload' ? f.previewUrl : '' }))}
+                className="w-full px-3 py-2 border-4 rounded-lg"
+                style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              >
+                <option value="upload">Upload</option>
+                <option value="url">With URL</option>
+              </select>
+              {(formEpisode.thumbnail_mode || 'upload') === 'upload' ? (
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    if (!file) return setFormEpisode((f) => ({ ...f, image: null, previewUrl: '' }));
+                    const url = URL.createObjectURL(file);
+                    setFormEpisode((f) => ({ ...f, image: file, previewUrl: url }));
+                  }}
+                  className="w-full px-3 py-2 border-4 rounded-lg"
+                  style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                />
+              ) : (
+                <input
+                  type="url"
+                  value={formEpisode.thumbnail_url || ''}
+                  onChange={(e) => setFormEpisode((f) => ({ ...f, thumbnail_url: e.target.value }))}
+                  className="w-full px-3 py-2 border-4 rounded-lg"
+                  style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  placeholder="https://..."
+                />
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-xs mt-1" style={{ color: 'var(--foreground)' }}>
+              <span>Preview:</span>
+              <img
+                src={formEpisode.previewUrl || ((formEpisode.thumbnail_mode || 'upload') === 'url' ? (formEpisode.thumbnail_url || '') : '') || ''}
+                alt="thumb"
+                className="w-10 h-10 object-contain border-2 rounded"
+                style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
+              />
+            </div>
           </div>
       </div>
 

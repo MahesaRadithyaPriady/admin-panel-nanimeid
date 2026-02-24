@@ -46,6 +46,8 @@ export default function DaftarKontenPage() {
   const [form, setForm] = useState({
     id: null,
     nama_anime: '',
+    cover_mode: 'upload',
+    cover_url: '',
     image: null,
     previewUrl: '',
     existingImageUrl: '',
@@ -226,6 +228,8 @@ export default function DaftarKontenPage() {
   const resetForm = () => setForm({
     id: null,
     nama_anime: '',
+    cover_mode: 'upload',
+    cover_url: '',
     image: null,
     previewUrl: '',
     existingImageUrl: '',
@@ -318,6 +322,8 @@ export default function DaftarKontenPage() {
     animeId: '',
     judul_episode: '',
     nomor_episode: 1,
+    thumbnail_mode: 'upload',
+    thumbnail_url: '',
     image: null,
     previewUrl: '',
     deskripsi_episode: '',
@@ -381,6 +387,8 @@ export default function DaftarKontenPage() {
       ...s,
       judul_episode: '',
       nomor_episode: hasEpisodes ? ((Number(latest?.nomor_episode) || 0) + 1) : 1,
+      thumbnail_mode: 'upload',
+      thumbnail_url: '',
       image: null,
       previewUrl: '',
       deskripsi_episode: latest?.deskripsi_episode || '',
@@ -607,15 +615,24 @@ export default function DaftarKontenPage() {
       toast.error('Pilih anime terlebih dahulu');
       return;
     }
-    if (!tabEpisode?.image) {
-      toast.error('Thumbnail episode wajib diupload');
-      return;
+    const tabThumbMode = (tabEpisode?.thumbnail_mode || 'upload').toString();
+    const tabThumbUrl = (tabEpisode?.thumbnail_url || '').trim();
+    if (tabThumbMode === 'upload') {
+      if (!(tabEpisode?.image instanceof File)) {
+        toast.error('Thumbnail episode wajib diupload');
+        return;
+      }
+    } else {
+      if (!tabThumbUrl) {
+        toast.error('Thumbnail episode URL wajib diisi');
+        return;
+      }
     }
     const token = getSession()?.token;
     if (!token) return toast.error('Token tidak tersedia');
 
     let thumbnail_episode;
-    if (tabEpisode.image instanceof File) {
+    if (tabThumbMode === 'upload' && tabEpisode.image instanceof File) {
       const parent = items.find((a) => a.id === tabEpisode.animeId);
       const animeSeg = safeKeySegment(parent?.nama_anime || parent?.id || tabEpisode.animeId);
       const ext = guessExtFromFile(tabEpisode.image);
@@ -624,6 +641,8 @@ export default function DaftarKontenPage() {
       const up = await uploadFileViaPresignedPut({ token, key, file: tabEpisode.image });
       thumbnail_episode = up?.publicUrl || '';
       if (!thumbnail_episode) throw new Error('URL thumbnail episode hasil upload tidak tersedia');
+    } else if (tabThumbMode !== 'upload') {
+      thumbnail_episode = tabThumbUrl;
     }
     const payload = {
       judul_episode: tabEpisode.judul_episode,
@@ -658,6 +677,8 @@ export default function DaftarKontenPage() {
         ...s,
         judul_episode: '',
         nomor_episode: 1,
+        thumbnail_mode: 'upload',
+        thumbnail_url: '',
         image: null,
         previewUrl: '',
         deskripsi_episode: '',
@@ -749,6 +770,8 @@ export default function DaftarKontenPage() {
       id: ep.id,
       judul_episode: ep.judul_episode || '',
       nomor_episode: ep.nomor_episode || 0,
+      thumbnail_mode: 'upload',
+      thumbnail_url: '',
       image: null,
       previewUrl: '',
       existingImageUrl: ep.thumbnail_episode || '',
@@ -771,8 +794,16 @@ export default function DaftarKontenPage() {
     const token = getSession()?.token;
     if (!token) return toast.error('Token tidak tersedia');
 
+    const editThumbMode = (editingEpisode?.thumbnail_mode || 'upload').toString();
+    const editThumbUrl = (editingEpisode?.thumbnail_url || '').trim();
+    if (editThumbMode === 'upload') {
+      // optional saat edit; kalau user tidak pilih file maka pakai existing
+    } else {
+      if (!editThumbUrl) return toast.error('Thumbnail episode URL wajib diisi');
+    }
+
     let thumbnail_episode;
-    if (editingEpisode.image instanceof File) {
+    if (editThumbMode === 'upload' && editingEpisode.image instanceof File) {
       const parent = items.find((a) => a.id === editingEpisode.animeId);
       const animeSeg = safeKeySegment(parent?.nama_anime || parent?.id || editingEpisode.animeId);
       const ext = guessExtFromFile(editingEpisode.image);
@@ -781,6 +812,8 @@ export default function DaftarKontenPage() {
       const up = await uploadFileViaPresignedPut({ token, key, file: editingEpisode.image });
       thumbnail_episode = up?.publicUrl || '';
       if (!thumbnail_episode) return toast.error('URL thumbnail episode hasil upload tidak tersedia');
+    } else if (editThumbMode !== 'upload' && editThumbUrl) {
+      thumbnail_episode = editThumbUrl;
     }
     const payload = {
       judul_episode: editingEpisode.judul_episode,
@@ -876,6 +909,8 @@ export default function DaftarKontenPage() {
     setNewEpisode({
       judul_episode: '',
       nomor_episode: nextNumber,
+      thumbnail_mode: 'upload',
+      thumbnail_url: '',
       image: null,
       previewUrl: '',
       existingImageUrl: latest?.thumbnail_episode || '',
@@ -912,15 +947,24 @@ export default function DaftarKontenPage() {
   const onSubmitCreateEpisode = async (e) => {
     e.preventDefault();
     if (!creatingForAnime || !newEpisode) return;
-    if (!newEpisode?.image) {
-      toast.error('Thumbnail episode wajib diupload');
-      return;
+    const epThumbMode = (newEpisode?.thumbnail_mode || 'upload').toString();
+    const epThumbUrl = (newEpisode?.thumbnail_url || '').trim();
+    if (epThumbMode === 'upload') {
+      if (!(newEpisode?.image instanceof File)) {
+        toast.error('Thumbnail episode wajib diupload');
+        return;
+      }
+    } else {
+      if (!epThumbUrl) {
+        toast.error('Thumbnail episode URL wajib diisi');
+        return;
+      }
     }
     const token = getSession()?.token;
     if (!token) return toast.error('Token tidak tersedia');
 
     let thumbnail_episode;
-    if (newEpisode.image instanceof File) {
+    if (epThumbMode === 'upload' && newEpisode.image instanceof File) {
       const parent = items.find((a) => a.id === creatingForAnime);
       const animeSeg = safeKeySegment(parent?.nama_anime || parent?.id || creatingForAnime);
       const ext = guessExtFromFile(newEpisode.image);
@@ -929,6 +973,8 @@ export default function DaftarKontenPage() {
       const up = await uploadFileViaPresignedPut({ token, key, file: newEpisode.image });
       thumbnail_episode = up?.publicUrl || '';
       if (!thumbnail_episode) return toast.error('URL thumbnail episode hasil upload tidak tersedia');
+    } else if (epThumbMode !== 'upload') {
+      thumbnail_episode = epThumbUrl;
     }
     const payload = {
       judul_episode: newEpisode.judul_episode,
@@ -1059,8 +1105,14 @@ export default function DaftarKontenPage() {
     if (!form.nama_anime || !form.rating_anime || !form.status_anime || !form.sinopsis_anime || !form.label_anime) {
       return toast.error('Field wajib belum lengkap');
     }
-    if (mode === 'add' && !(form.image instanceof File) && !form.existingImageUrl) {
-      return toast.error('Cover anime wajib diupload');
+    const coverMode = (form.cover_mode || 'upload').toString();
+    const coverUrl = (form.cover_url || '').trim();
+    if (mode === 'add') {
+      if (coverMode === 'upload') {
+        if (!(form.image instanceof File) && !form.existingImageUrl) return toast.error('Cover anime wajib diupload');
+      } else {
+        if (!coverUrl) return toast.error('Cover anime URL wajib diisi');
+      }
     }
     if (normalizeStatus(form.status_anime).toLowerCase() === 'ongoing') {
       const hari = (form.schedule_hari || '').trim();
@@ -1074,20 +1126,23 @@ export default function DaftarKontenPage() {
     try {
       setSubmittingAnime(true);
       let gambar_anime;
-      if (form.image instanceof File) {
+      if (coverMode === 'upload' && form.image instanceof File) {
         const animeSeg = safeKeySegment(form.nama_anime);
         const ext = guessExtFromFile(form.image);
         const key = `static/uploads/anime/${animeSeg || 'anime'}_${Date.now()}${ext ? `.${ext}` : ''}`;
         const up = await uploadFileViaPresignedPut({ token, key, file: form.image });
         gambar_anime = up?.publicUrl || '';
         if (!gambar_anime) throw new Error('URL cover anime hasil upload tidak tersedia');
+      } else if (coverMode !== 'upload' && coverUrl) {
+        gambar_anime = coverUrl;
       }
 
       const payload = buildPayload();
-      if (gambar_anime) {
-        payload.gambar_anime = gambar_anime;
-        delete payload.image;
+      if (gambar_anime) payload.gambar_anime = gambar_anime;
+      if (mode === 'edit' && !payload.gambar_anime) {
+        payload.gambar_anime = (form.existingImageUrl || '').trim() || undefined;
       }
+      delete payload.image;
       if (mode === 'add') {
         const res = await createAnime({ token, payload });
         toast.success(res?.message || 'Anime dibuat');
@@ -1113,6 +1168,8 @@ export default function DaftarKontenPage() {
     setForm({
       id: it.id,
       nama_anime: it.nama_anime || '',
+      cover_mode: 'upload',
+      cover_url: '',
       image: null,
       previewUrl: '',
       existingImageUrl: it.gambar_anime || '',
@@ -1333,14 +1390,48 @@ export default function DaftarKontenPage() {
                 <input type="text" value={form.nama_anime} onChange={(e) => setForm((f) => ({ ...f, nama_anime: e.target.value }))} placeholder="Nama anime (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               </div>
               <div className="grid gap-1">
-                <div className="text-xs font-extrabold">Cover Anime (Upload)</div>
-                <input type="file" accept="image/*" onChange={onChangeAnimeImage} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                {(form.previewUrl || form.existingImageUrl) && (
-                  <div className="flex items-center gap-2 text-xs mt-1">
-                    <span>Preview:</span>
-                    <img src={form.previewUrl || form.existingImageUrl} alt="cover" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
-                  </div>
-                )}
+                <div className="text-xs font-extrabold">Cover Anime</div>
+                <div className="grid sm:grid-cols-[140px_1fr] gap-2">
+                  <select
+                    value={form.cover_mode || 'upload'}
+                    onChange={(e) => setForm((f) => ({ ...f, cover_mode: e.target.value, cover_url: e.target.value === 'url' ? f.cover_url : '', image: e.target.value === 'upload' ? f.image : null, previewUrl: e.target.value === 'upload' ? f.previewUrl : '' }))}
+                    className="px-3 py-2 border-4 rounded-lg font-semibold"
+                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  >
+                    <option value="upload">Upload</option>
+                    <option value="url">With URL</option>
+                  </select>
+                  {(form.cover_mode || 'upload') === 'upload' ? (
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={onChangeAnimeImage}
+                      className="px-3 py-2 border-4 rounded-lg font-semibold"
+                      style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    />
+                  ) : (
+                    <input
+                      type="url"
+                      value={form.cover_url || ''}
+                      onChange={(e) => setForm((f) => ({ ...f, cover_url: e.target.value }))}
+                      placeholder="https://..."
+                      className="px-3 py-2 border-4 rounded-lg font-semibold"
+                      style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    />
+                  )}
+                </div>
+                <div className="mt-1 flex items-center gap-2 text-xs" style={{ color: 'var(--foreground)' }}>
+                  <span className="font-extrabold">Preview:</span>
+                  <img
+                    src={form.previewUrl || ((form.cover_mode || 'upload') === 'url' ? (form.cover_url || '') : form.existingImageUrl) || ''}
+                    alt="cover"
+                    className="w-10 h-10 object-contain border-2 rounded"
+                    style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
+                  />
+                  {!(form.previewUrl || form.existingImageUrl || (((form.cover_mode || 'upload') === 'url') && (form.cover_url || '').trim())) && (
+                    <span className="opacity-70">-</span>
+                  )}
+                </div>
               </div>
               <div className="grid gap-1">
                 <div className="text-xs font-extrabold">Rating</div>
@@ -1701,25 +1792,36 @@ export default function DaftarKontenPage() {
                   <input type="number" value={tabEpisode?.nomor_episode || 1} onChange={(e) => setTabEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                 </div>
                 <div className="grid gap-1">
-                  <div className="text-xs font-extrabold">Thumbnail Episode (Upload)</div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
-                      if (!file) return setTabEpisode((s) => ({ ...s, image: null, previewUrl: '' }));
-                      const url = URL.createObjectURL(file);
-                      setTabEpisode((s) => ({ ...s, image: file, previewUrl: url }));
-                    }}
-                    className="px-3 py-2 border-4 rounded-lg font-semibold"
-                    style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                  />
-                  {tabEpisode?.previewUrl && (
-                    <div className="flex items-center gap-2 text-xs mt-1">
-                      <span>Preview:</span>
-                      <img src={tabEpisode.previewUrl} alt="thumb" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
-                    </div>
-                  )}
+                  <div className="text-xs font-extrabold">Thumbnail Episode</div>
+                  <div className="grid sm:grid-cols-[140px_1fr] gap-2">
+                    <select value={tabEpisode?.thumbnail_mode || 'upload'} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_mode: e.target.value, thumbnail_url: e.target.value === 'url' ? s.thumbnail_url : '', image: e.target.value === 'upload' ? s.image : null, previewUrl: e.target.value === 'upload' ? s.previewUrl : '' }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                      <option value="upload">Upload</option>
+                      <option value="url">With URL</option>
+                    </select>
+                    {(tabEpisode?.thumbnail_mode || 'upload') === 'upload' ? (
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          if (!file) return setTabEpisode((s) => ({ ...s, image: null, previewUrl: '' }));
+                          const url = URL.createObjectURL(file);
+                          setTabEpisode((s) => ({ ...s, image: file, previewUrl: url }));
+                        }}
+                        className="px-3 py-2 border-4 rounded-lg font-semibold"
+                        style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                      />
+                    ) : (
+                      <input type="url" value={tabEpisode?.thumbnail_url || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_url: e.target.value }))} placeholder="https://..." className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                    )}
+                  </div>
+                  <div className="mt-1 flex items-center gap-2 text-xs" style={{ color: 'var(--foreground)' }}>
+                    <span className="font-extrabold">Preview:</span>
+                    <img src={tabEpisode.previewUrl || (((tabEpisode?.thumbnail_mode || 'upload') === 'url') ? (tabEpisode?.thumbnail_url || '') : '') || ''} alt="thumb" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                    {!(tabEpisode.previewUrl || (((tabEpisode?.thumbnail_mode || 'upload') === 'url') && (tabEpisode?.thumbnail_url || '').trim())) && (
+                      <span className="opacity-70">-</span>
+                    )}
+                  </div>
                 </div>
                 <div className="grid gap-1">
                   <div className="text-xs font-extrabold">Durasi Episode (detik)</div>
@@ -1976,25 +2078,36 @@ export default function DaftarKontenPage() {
                                         <input type="number" value={newEpisode.nomor_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                       </div>
                                       <div className="grid gap-1">
-                                        <div className="text-xs font-extrabold">Thumbnail Episode (Upload)</div>
-                                        <input
-                                          type="file"
-                                          accept="image/*"
-                                          onChange={(e) => {
-                                            const file = e.target.files?.[0] || null;
-                                            if (!file) return setNewEpisode((s) => ({ ...s, image: null, previewUrl: '' }));
-                                            const url = URL.createObjectURL(file);
-                                            setNewEpisode((s) => ({ ...s, image: file, previewUrl: url }));
-                                          }}
-                                          className="px-3 py-2 border-4 rounded-lg font-semibold"
-                                          style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                                        />
-                                        {(newEpisode.previewUrl || newEpisode.existingImageUrl) && (
-                                          <div className="flex items-center gap-2 text-xs mt-1">
-                                            <span>Preview:</span>
-                                            <img src={newEpisode.previewUrl || newEpisode.existingImageUrl} alt="thumb" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
-                                          </div>
-                                        )}
+                                        <div className="text-xs font-extrabold">Thumbnail Episode</div>
+                                        <div className="grid sm:grid-cols-[140px_1fr] gap-2">
+                                          <select value={newEpisode?.thumbnail_mode || 'upload'} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_mode: e.target.value, thumbnail_url: e.target.value === 'url' ? s.thumbnail_url : '', image: e.target.value === 'upload' ? s.image : null, previewUrl: e.target.value === 'upload' ? s.previewUrl : '' }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                                            <option value="upload">Upload</option>
+                                            <option value="url">With URL</option>
+                                          </select>
+                                          {(newEpisode?.thumbnail_mode || 'upload') === 'upload' ? (
+                                            <input
+                                              type="file"
+                                              accept="image/*"
+                                              onChange={(e) => {
+                                                const file = e.target.files?.[0] || null;
+                                                if (!file) return setNewEpisode((s) => ({ ...s, image: null, previewUrl: '' }));
+                                                const url = URL.createObjectURL(file);
+                                                setNewEpisode((s) => ({ ...s, image: file, previewUrl: url }));
+                                              }}
+                                              className="px-3 py-2 border-4 rounded-lg font-semibold"
+                                              style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                                            />
+                                          ) : (
+                                            <input type="url" value={newEpisode?.thumbnail_url || ''} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_url: e.target.value }))} placeholder="https://..." className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                          )}
+                                        </div>
+                                        <div className="mt-1 flex items-center gap-2 text-xs" style={{ color: 'var(--foreground)' }}>
+                                          <span className="font-extrabold">Preview:</span>
+                                          <img src={newEpisode.previewUrl || ((newEpisode?.thumbnail_mode || 'upload') === 'url' ? (newEpisode?.thumbnail_url || '') : newEpisode.existingImageUrl) || ''} alt="thumb" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                                          {!(newEpisode.previewUrl || newEpisode.existingImageUrl || (((newEpisode?.thumbnail_mode || 'upload') === 'url') && (newEpisode?.thumbnail_url || '').trim())) && (
+                                            <span className="opacity-70">-</span>
+                                          )}
+                                        </div>
                                       </div>
                                       <div className="grid gap-1">
                                         <div className="text-xs font-extrabold">Durasi Episode (detik)</div>
@@ -2104,25 +2217,36 @@ export default function DaftarKontenPage() {
                                         <input type="number" value={editingEpisode.nomor_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                       </div>
                                       <div className="grid gap-1">
-                                        <div className="text-xs font-extrabold">Thumbnail Episode (Upload)</div>
-                                        <input
-                                          type="file"
-                                          accept="image/*"
-                                          onChange={(e) => {
-                                            const file = e.target.files?.[0] || null;
-                                            if (!file) return setEditingEpisode((s) => ({ ...s, image: null, previewUrl: '' }));
-                                            const url = URL.createObjectURL(file);
-                                            setEditingEpisode((s) => ({ ...s, image: file, previewUrl: url }));
-                                          }}
-                                          className="px-3 py-2 border-4 rounded-lg font-semibold"
-                                          style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                                        />
-                                        {(editingEpisode.previewUrl || editingEpisode.existingImageUrl) && (
-                                          <div className="flex items-center gap-2 text-xs mt-1">
-                                            <span>Preview:</span>
-                                            <img src={editingEpisode.previewUrl || editingEpisode.existingImageUrl} alt="thumb" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
-                                          </div>
-                                        )}
+                                        <div className="text-xs font-extrabold">Thumbnail Episode</div>
+                                        <div className="grid sm:grid-cols-[140px_1fr] gap-2">
+                                          <select value={editingEpisode?.thumbnail_mode || 'upload'} onChange={(e) => setEditingEpisode((s) => ({ ...s, thumbnail_mode: e.target.value, thumbnail_url: e.target.value === 'url' ? s.thumbnail_url : '', image: e.target.value === 'upload' ? s.image : null, previewUrl: e.target.value === 'upload' ? s.previewUrl : '' }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                                            <option value="upload">Upload</option>
+                                            <option value="url">With URL</option>
+                                          </select>
+                                          {(editingEpisode?.thumbnail_mode || 'upload') === 'upload' ? (
+                                            <input
+                                              type="file"
+                                              accept="image/*"
+                                              onChange={(e) => {
+                                                const file = e.target.files?.[0] || null;
+                                                if (!file) return setEditingEpisode((s) => ({ ...s, image: null, previewUrl: '' }));
+                                                const url = URL.createObjectURL(file);
+                                                setEditingEpisode((s) => ({ ...s, image: file, previewUrl: url }));
+                                              }}
+                                              className="px-3 py-2 border-4 rounded-lg font-semibold"
+                                              style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                                            />
+                                          ) : (
+                                            <input type="url" value={editingEpisode?.thumbnail_url || ''} onChange={(e) => setEditingEpisode((s) => ({ ...s, thumbnail_url: e.target.value }))} placeholder="https://..." className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                          )}
+                                        </div>
+                                        <div className="mt-1 flex items-center gap-2 text-xs" style={{ color: 'var(--foreground)' }}>
+                                          <span className="font-extrabold">Preview:</span>
+                                          <img src={editingEpisode.previewUrl || ((editingEpisode?.thumbnail_mode || 'upload') === 'url' ? (editingEpisode?.thumbnail_url || '') : editingEpisode.existingImageUrl) || ''} alt="thumb" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                                          {!(editingEpisode.previewUrl || editingEpisode.existingImageUrl || (((editingEpisode?.thumbnail_mode || 'upload') === 'url') && (editingEpisode?.thumbnail_url || '').trim())) && (
+                                            <span className="opacity-70">-</span>
+                                          )}
+                                        </div>
                                       </div>
                                       <div className="grid gap-1">
                                         <div className="text-xs font-extrabold">Durasi Episode (detik)</div>
