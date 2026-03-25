@@ -571,8 +571,8 @@ export default function PrimeStoreAdminPage() {
       </form>
 
       {/* Filters */}
-      <form onSubmit={onSearch} className="grid sm:grid-cols-[1fr_180px_120px] gap-3">
-        <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+      <form onSubmit={onSearch} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,180px)_minmax(0,120px)] gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
           <label className="lbl flex items-center gap-2">
             <ListFilter className="size-4" /> Pencarian
           </label>
@@ -833,7 +833,7 @@ export default function PrimeStoreAdminPage() {
 
 function L({ label, children }) {
   return (
-    <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+    <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
       <label className="lbl">{label}</label>
       {children}
     </div>
@@ -877,8 +877,8 @@ function buildPrimeItemPayload(form) {
 }
 
 const styles = `
-.inp { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
-.sel { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
+.inp { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
+.sel { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
 .lbl { font-size: 0.875rem; font-weight: 800; }
 .btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
 .btn-pri { padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-primary); color: var(--accent-primary-foreground); border-color: var(--panel-border); }

@@ -117,7 +117,7 @@ export default function SponsorDetailPage() {
 
 function L({ label, children }) {
   return (
-    <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+    <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
       <label className="lbl">{label}</label>
       {children}
     </div>
@@ -151,8 +151,8 @@ function buildSponsorUpdate(form) {
 }
 
 const styles = `
-.inp { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
-.sel { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
+.inp { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
+.sel { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
 .lbl { font-size: 0.875rem; font-weight: 800; }
 .btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
 .btn-act { padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }

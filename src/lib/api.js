@@ -14,6 +14,31 @@ export function buildStoragePublicUrl(key) {
   return `${base}/${k}`;
 }
 
+export async function listMyAdminPublicKeys({ token } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const API_BASE = getApiBase();
+  const res = await fetch(`${API_BASE}/admin/me/public-keys`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil public keys');
+  const d = data?.data ?? data;
+  return {
+    items: Array.isArray(d?.items) ? d.items : Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+export async function upsertMyAdminPublicKey({ token, payload } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const API_BASE = getApiBase();
+  const res = await fetch(`${API_BASE}/admin/me/public-keys`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await handleJson(res, 'Gagal menyimpan public key');
+  return data?.data ?? data;
+}
+
 function guessFileExtension(filename) {
   const name = String(filename || '');
   const idx = name.lastIndexOf('.');
@@ -86,6 +111,9 @@ const watchEventConfigsBase = () => `${getApiBase()}/admin/watch-event-configs`;
 
 // ===== Admin Moderation =====
 const moderationBase = () => `${getApiBase()}/admin/moderation`;
+
+// ===== Admin Livechat =====
+const livechatAdminBase = () => `${getApiBase()}/admin/livechat`;
 
 export async function listAdmins({ token, page = 1, limit = 20, q = '' }) {
   if (!token) throw new Error('Token tidak tersedia');
@@ -289,6 +317,194 @@ export async function softDeleteGlobalChat({ token, messageId }) {
   return await handleJson(res, 'Gagal soft-delete global chat');
 }
 
+// ===== Admin Livechat (Ticket + Messages) =====
+export async function listAdminLivechatQueue({ token, status = 'QUEUED', take = 50, skip = 0 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (status) params.set('status', String(status));
+  if (take !== undefined && take !== null && take !== '') params.set('take', String(take));
+  if (skip !== undefined && skip !== null && skip !== '') params.set('skip', String(skip));
+
+  const url = `${livechatAdminBase()}/queue?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil queue livechat');
+  const d = data?.data ?? data;
+
+  return {
+    items: Array.isArray(d?.items) ? d.items : [],
+    total: d?.total ?? 0,
+    take: d?.take ?? take,
+    skip: d?.skip ?? skip,
+  };
+}
+
+export async function listAdminLivechatAdmins({ token, q = '', take = 50, skip = 0 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (q !== undefined && q !== null && q !== '') params.set('q', String(q));
+  if (take !== undefined && take !== null && take !== '') params.set('take', String(take));
+  if (skip !== undefined && skip !== null && skip !== '') params.set('skip', String(skip));
+
+  const url = `${livechatAdminBase()}/admins?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar admin livechat');
+  const d = data?.data ?? data;
+
+  return {
+    items: Array.isArray(d?.items) ? d.items : [],
+    total: d?.total ?? 0,
+    take: d?.take ?? take,
+    skip: d?.skip ?? skip,
+  };
+}
+
+export async function getAdminLivechatStats({ token } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+
+  const res = await fetch(`${livechatAdminBase()}/stats`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil statistik livechat');
+  const d = data?.data ?? data;
+
+  return {
+    queued: Number(d?.queued ?? 0) || 0,
+    active: Number(d?.active ?? 0) || 0,
+    closed: Number(d?.closed ?? 0) || 0,
+  };
+}
+
+export async function adminJoinLivechatTicket({ token, ticketId, device_id } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (ticketId === undefined || ticketId === null || ticketId === '') throw new Error('ticketId tidak valid');
+
+  const res = await fetch(`${livechatAdminBase()}/tickets/${ticketId}/join`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ device_id: device_id || 'admin-web-1' }),
+  });
+
+  const data = await handleJson(res, 'Gagal join ticket livechat');
+  const d = data?.data ?? data;
+
+  const serverToken =
+    d?.access_token ??
+    d?.accessToken ??
+    d?.participant?.encrypted_session_key ??
+    d?.participant?.encryptedSessionKey ??
+    null;
+
+  return {
+    participant: d?.participant ?? null,
+    access_token: serverToken,
+    livechat_token: serverToken,
+    public_key: d?.public_key ?? d?.publicKey ?? null,
+    alg: d?.alg ?? null,
+  };
+}
+
+export async function adminRemindLivechatTicket({ token, ticketId, title, body } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (ticketId === undefined || ticketId === null || ticketId === '') throw new Error('ticketId tidak valid');
+
+  const payload = {};
+  if (title !== undefined && title !== null && title !== '') payload.title = String(title);
+  if (body !== undefined && body !== null && body !== '') payload.body = String(body);
+
+  const res = await fetch(`${livechatAdminBase()}/tickets/${ticketId}/remind`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await handleJson(res, 'Gagal mengirim reminder livechat');
+  return data?.data ?? data;
+}
+
+export async function adminListLivechatTicketMessages({
+  token,
+  ticketId,
+  livechatToken,
+  take,
+  cursor,
+  direction,
+} = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (ticketId === undefined || ticketId === null || ticketId === '') throw new Error('ticketId tidak valid');
+  if (!livechatToken) throw new Error('livechatToken tidak tersedia');
+
+  const params = new URLSearchParams();
+  if (take !== undefined && take !== null && take !== '') params.set('take', String(take));
+  if (cursor !== undefined && cursor !== null && cursor !== '') params.set('cursor', String(cursor));
+  if (direction !== undefined && direction !== null && direction !== '') params.set('direction', String(direction));
+  const qs = params.toString();
+
+  const url = `${livechatAdminBase()}/tickets/${ticketId}/messages${qs ? `?${qs}` : ''}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}`, 'x-livechat-token': String(livechatToken) },
+  });
+  const data = await handleJson(res, 'Gagal mengambil pesan livechat');
+  const d = data?.data ?? data;
+
+  const items = Array.isArray(d?.items)
+    ? d.items
+    : Array.isArray(d?.messages)
+      ? d.messages
+      : [];
+
+  return {
+    items,
+    ticket: d?.ticket ?? d?.room?.ticket ?? null,
+    user_display: d?.user_display ?? d?.ticket?.user_display ?? null,
+    assigned_admin: d?.assigned_admin ?? d?.ticket?.assigned_admin ?? null,
+    total: d?.total ?? 0,
+    take: d?.take ?? take,
+    cursor: d?.cursor ?? cursor,
+    nextCursor: d?.nextCursor ?? d?.next_cursor ?? d?.next_cursor_id ?? null,
+    latestCursor: d?.latestCursor ?? d?.latest_cursor ?? d?.latest_cursor_id ?? null,
+  };
+}
+
+export async function adminPostLivechatTicketMessage({ token, ticketId, livechatToken, payload } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (ticketId === undefined || ticketId === null || ticketId === '') throw new Error('ticketId tidak valid');
+  if (!livechatToken) throw new Error('livechatToken tidak tersedia');
+
+  const res = await fetch(`${livechatAdminBase()}/tickets/${ticketId}/messages`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'x-livechat-token': String(livechatToken), 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await handleJson(res, 'Gagal mengirim pesan livechat');
+  return data?.data ?? data;
+}
+
+export async function adminTransferLivechatTicket({ token, ticketId, to_admin_id, reason } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (ticketId === undefined || ticketId === null || ticketId === '') throw new Error('ticketId tidak valid');
+
+  const res = await fetch(`${livechatAdminBase()}/tickets/${ticketId}/transfer`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to_admin_id, reason }),
+  });
+  const data = await handleJson(res, 'Gagal transfer ticket livechat');
+  return data?.data ?? data;
+}
+
+export async function adminCloseLivechatTicket({ token, ticketId, note } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (ticketId === undefined || ticketId === null || ticketId === '') throw new Error('ticketId tidak valid');
+
+  const res = await fetch(`${livechatAdminBase()}/tickets/${ticketId}/close`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ note }),
+  });
+  const data = await handleJson(res, 'Gagal menutup ticket livechat');
+  return data?.data ?? data;
+}
+
 export async function listSigninEventConfigs({ token, page = 1, limit = 20, is_active } = {}) {
   if (!token) throw new Error('Token tidak tersedia');
   const params = new URLSearchParams();
@@ -466,6 +682,25 @@ export async function updateAdminUser({ token, id, username, email, account_stat
   return data?.item ?? data;
 }
 
+export async function moderateAdminUser({ token, id, payload } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (id === undefined || id === null || id === '') throw new Error('id user tidak valid');
+  const API_BASE = getApiBase();
+  const body = Object.fromEntries(
+    Object.entries(payload || {}).filter(([, value]) => value !== undefined && value !== '')
+  );
+  const res = await fetch(`${API_BASE}/admin/users/${id}/moderation`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await handleJson(res, 'Gagal memperbarui moderasi user');
+  return data?.item ?? data;
+}
+
 export async function deleteAdminUser({ token, id }) {
   if (!token) throw new Error('Token tidak tersedia');
   const API_BASE = getApiBase();
@@ -491,6 +726,20 @@ export async function getUserRegistrationStats({ token }) {
     lastMonth: data?.lastMonth ?? 0,
     thisYear: data?.thisYear ?? 0,
     lastYear: data?.lastYear ?? 0,
+  };
+}
+
+export async function getAdminOverviewDailyStats({ token, days = 7 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const API_BASE = getApiBase();
+  const params = new URLSearchParams();
+  if (days !== undefined && days !== null && days !== '') params.set('days', String(days));
+  const url = `${API_BASE}/admin/overview/stats?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil statistik harian overview');
+  return {
+    days: data?.days ?? days,
+    items: Array.isArray(data?.items) ? data.items : [],
   };
 }
 
@@ -530,6 +779,20 @@ export async function listAnimeRequests({ token, page = 1, limit = 20, status = 
   const url = `${animeRequestsBase()}?${params.toString()}`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   return await handleJson(res, 'Gagal mengambil daftar anime requests');
+}
+
+export async function getAnimeRequestStats({ token } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${animeRequestsBase()}/stats`, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil statistik anime requests');
+  const d = data?.data ?? data?.stats ?? data ?? {};
+  return {
+    pending: Number(d?.pending ?? d?.PENDING ?? 0) || 0,
+    under_review: Number(d?.under_review ?? d?.UNDER_REVIEW ?? 0) || 0,
+    upload_in_progress: Number(d?.upload_in_progress ?? d?.UPLOAD_IN_PROGRESS ?? 0) || 0,
+    completed: Number(d?.completed ?? d?.COMPLETED ?? 0) || 0,
+    rejected: Number(d?.rejected ?? d?.REJECTED ?? 0) || 0,
+  };
 }
 
 export async function createAnimeRequest({ token, payload }) {
@@ -611,6 +874,21 @@ export async function searchAnime({ token, q = '', limit = 10, includeEpisodes =
   return { items: Array.isArray(data?.items) ? data.items : [] };
 }
 
+export async function listAnimeAliases({ token, q = '', limit = 20 }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 100)));
+  const qs = params.toString();
+  const url = `${animeBase()}/aliases${qs ? `?${qs}` : ''}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar alias anime');
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    pagination: data?.pagination || null,
+  };
+}
+
 export async function getAnimeDetail({ token, id }) {
   if (!token) throw new Error('Token tidak tersedia');
   const res = await fetch(`${animeBase()}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -652,16 +930,6 @@ export async function createAnime({ token, payload }) {
 export async function updateAnime({ token, id, payload }) {
   if (!token) throw new Error('Token tidak tersedia');
   const p0 = payload || {};
-  const hasImageFile = p0?.image instanceof File;
-  if (!hasImageFile) {
-    const { image: _image, ...rest } = p0;
-    const res = await fetch(`${animeBase()}/${id}`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(Object.fromEntries(Object.entries(rest).filter(([_, v]) => v !== undefined))),
-    });
-    return await handleJson(res, 'Gagal memperbarui anime');
-  }
   const fd = new FormData();
   const p = p0;
   if (p?.image instanceof File) fd.set('image', p.image);
@@ -1022,6 +1290,59 @@ export async function updateSettings({ token, payload }) {
   return data?.settings || null;
 }
 
+const inAppAnnouncementBase = () => `${getApiBase()}/admin/in-app-announcement`;
+
+export async function updateWatchLiteCoinPerMinute({ token, value }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${settingsBase()}/watch-lite-coin-per-minute`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ watch_lite_coin_per_minute: value }),
+  });
+  const data = await handleJson(res, 'Gagal memperbarui watch lite coin per minute');
+  return data?.settings || null;
+}
+
+export async function getInAppAnnouncement({ token }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(inAppAnnouncementBase(), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil in-app announcement');
+  return data?.data || data?.announcement || null;
+}
+
+export async function updateInAppAnnouncement({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(inAppAnnouncementBase(), {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await handleJson(res, 'Gagal memperbarui in-app announcement');
+  return data?.data || data?.announcement || null;
+}
+
+export async function updateInAppAnnouncementMessage({ token, message }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${inAppAnnouncementBase()}/message`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message }),
+  });
+  const data = await handleJson(res, 'Gagal memperbarui pesan in-app announcement');
+  return data?.data || data?.announcement || null;
+}
+
+export async function deleteInAppAnnouncement({ token }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(inAppAnnouncementBase(), {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus in-app announcement');
+}
+
 async function handleJson(res, defaultError = 'Request failed') {
   if (!res.ok) {
     let detail = '';
@@ -1085,11 +1406,12 @@ export async function getHttpLogs({ token, level }) {
 const topupBase = () => `${getApiBase()}/admin/topup`;
 
 // List topup manual requests
-export async function listTopupRequests({ token, userId = '', status = '', page = 1, limit = 20 }) {
+export async function listTopupRequests({ token, userId = '', status = '', q = '', page = 1, limit = 20 }) {
   if (!token) throw new Error('Token tidak tersedia');
   const params = new URLSearchParams();
   if (userId) params.set('userId', String(userId));
   if (status) params.set('status', status);
+  if (q) params.set('q', String(q));
   if (page) params.set('page', String(page));
   if (limit) params.set('limit', String(limit));
   const url = `${topupBase()}/requests?${params.toString()}`;
@@ -1100,6 +1422,7 @@ export async function listTopupRequests({ token, userId = '', status = '', page 
     page: pg.page ?? page,
     limit: pg.limit ?? limit,
     total: pg.total ?? 0,
+    totalPages: pg.totalPages ?? undefined,
     items: Array.isArray(data?.items) ? data.items : [],
   };
 }
@@ -1127,7 +1450,7 @@ export async function getTopupRequest({ token, id }) {
   return await handleJson(res, 'Gagal mengambil detail topup');
 }
 
-// Update topup request status: PENDING|APPROVED|REJECTED|PAID|CANCELED
+// Update topup request status for admin moderation: APPROVED|REJECTED
 export async function setTopupStatus({ token, id, status }) {
   if (!token) throw new Error('Token tidak tersedia');
   const res = await fetch(`${topupBase()}/requests/${id}/status`, {
@@ -1672,10 +1995,30 @@ export async function getWaifu({ id }) {
 // Admin: Create waifu
 export async function createWaifu({ token, payload }) {
   if (!token) throw new Error('Token tidak tersedia');
+  const p0 = payload || {};
+  if (p0?.image_url && !(p0?.file instanceof File)) {
+    const { file: _file, ...rest } = p0;
+    const res = await fetch(`${waifuBase()}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(Object.entries(rest).filter(([_, v]) => v !== undefined))),
+    });
+    return await handleJson(res, 'Gagal membuat waifu');
+  }
+  const fd = new FormData();
+  const p = p0;
+  if (p?.file instanceof File) fd.set('image', p.file);
+  Object.entries(p).forEach(([k, v]) => {
+    if (k === 'file') return;
+    if (v === undefined) return;
+    if (v === null) return;
+    if (Array.isArray(v) || (v && typeof v === 'object')) fd.set(k, JSON.stringify(v));
+    else fd.set(k, String(v));
+  });
   const res = await fetch(`${waifuBase()}`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload || {}),
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
   });
   return await handleJson(res, 'Gagal membuat waifu');
 }
@@ -1683,10 +2026,30 @@ export async function createWaifu({ token, payload }) {
 // Admin: Update waifu
 export async function updateWaifu({ token, id, payload }) {
   if (!token) throw new Error('Token tidak tersedia');
+  const p0 = payload || {};
+  if (p0?.image_url && !(p0?.file instanceof File)) {
+    const { file: _file, ...rest } = p0;
+    const res = await fetch(`${waifuBase()}/${id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(Object.entries(rest).filter(([_, v]) => v !== undefined))),
+    });
+    return await handleJson(res, 'Gagal memperbarui waifu');
+  }
+  const fd = new FormData();
+  const p = p0;
+  if (p?.file instanceof File) fd.set('image', p.file);
+  Object.entries(p).forEach(([k, v]) => {
+    if (k === 'file') return;
+    if (v === undefined) return;
+    if (v === null) return;
+    if (Array.isArray(v) || (v && typeof v === 'object')) fd.set(k, JSON.stringify(v));
+    else fd.set(k, String(v));
+  });
   const res = await fetch(`${waifuBase()}/${id}`, {
     method: 'PUT',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload || {}),
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
   });
   return await handleJson(res, 'Gagal memperbarui waifu');
 }
@@ -1784,6 +2147,7 @@ export async function deleteRedeemCode({ token, id }) {
   if (!token) throw new Error('Token tidak tersedia');
   const res = await fetch(`${redeemCodesBase()}/${id}`, {
     method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal menghapus kode redeem');
 }
@@ -2595,7 +2959,7 @@ export async function grabMangaChapterPlan({ token, mangaId, chapterNumber, url,
   const res = await fetch(`${mangaBase()}/${mangaId}/chapters/${chapterNumber}/grab`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ url, title, plan_only: plan_only !== undefined ? !!plan_only : true }),
+    body: JSON.stringify({ url, title, plan_only: plan_only !== undefined ? !!plan_only : false }),
   });
   return await handleJson(res, 'Gagal grab chapter (plan)');
 }
@@ -2615,9 +2979,36 @@ export async function grabKomikuRangePlan({ token, mangaId, sample_url, start, e
   const res = await fetch(`${mangaBase()}/${mangaId}/komiku/grab-range`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ sample_url, start, end, title_prefix, plan_only: plan_only !== undefined ? !!plan_only : true }),
+    body: JSON.stringify({ sample_url, start, end, title_prefix, plan_only: plan_only !== undefined ? !!plan_only : false }),
   });
   return await handleJson(res, 'Gagal grab Komiku range');
+}
+
+export async function getMangaKomikuGrabJob({ token, mangaId, jobId }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!mangaId && mangaId !== 0) throw new Error('mangaId tidak valid');
+  if (!jobId && jobId !== 0) throw new Error('jobId tidak valid');
+  const res = await fetch(`${mangaBase()}/${mangaId}/komiku/grab-jobs/${jobId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil progres grab manga');
+}
+
+export async function listGlobalMangaGrabStatus({ token, status, limit = 20 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (status) params.set('status', String(status));
+  if (limit) params.set('limit', String(limit));
+  const qs = params.toString();
+  const res = await fetch(`${mangaBase()}/grab-status${qs ? `?${qs}` : ''}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil status grab manga');
+  const d = data?.data ?? data ?? {};
+  return {
+    filter: d?.filter ?? null,
+    items: Array.isArray(d?.items) ? d.items : [],
+  };
 }
 
 // ===== Admin VIP Management (SUPERADMIN) =====

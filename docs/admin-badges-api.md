@@ -119,9 +119,15 @@ Membuat badge baru.
 Endpoint ini mendukung **dua cara** pengisian gambar:
 
 1. Mengirim URL langsung di `badge_url` (JSON).
-2. Mengupload file gambar lewat field `image` (multipart/form-data). File akan disimpan ke `static/uploads/badges`, dan URL penuh dibangun dari env `URL_BASE_UPLOAD`.
+2. Mengupload file gambar lewat field `image` (multipart/form-data). File akan di-upload ke storage/B2 dan server menyimpan URL storage/CDN.
 
 Dengan upload file, server akan mencoba membaca `width` dan `height` gambar dan menyimpannya ke DB.
+
+Catatan image source:
+
+- Jika `badge_url` berupa URL `http(s)` yang bukan URL storage/CDN, server akan download lalu upload ulang ke storage/B2.
+- Jika `badge_url` berupa path static lokal (mis. `/static/...`) atau URL localhost/static server (mis. `http://localhost:3001/static/...`), server akan membaca file sumber lalu upload ulang ke storage/B2.
+- Jika `badge_url` sudah berupa URL storage/CDN (prefix `CDN_BASE_URL_STORAGE`), server menyimpan nilainya apa adanya.
 
 Body (JSON, tanpa file):
 
@@ -213,8 +219,14 @@ Body (JSON) — semua field opsional, hanya yang dikirim yang akan diupdate:
 
 Endpoint ini juga mendukung upload file baru via field `image` (multipart/form-data). Jika file dikirim, maka:
 
-- `badge_url` akan diisi otomatis menggunakan `URL_BASE_UPLOAD` + `/static/uploads/badges/<filename>`.
+- `badge_url` akan diisi otomatis menggunakan URL storage/CDN hasil upload ke B2.
 - `width` dan `height` akan diperbarui sesuai dimensi file.
+
+Jika `badge_url` dikirim saat update:
+
+- URL `http(s)` non-storage akan di-download lalu di-upload ulang ke storage/B2.
+- Path static lokal `/static/...` atau URL localhost/static akan dibaca dari file lokal lalu di-upload ulang ke storage/B2.
+- URL storage/CDN yang sudah valid akan disimpan apa adanya.
 
 Contoh request (JSON):
 
@@ -261,7 +273,12 @@ Error:
 
 ## POST /admin/badges/:id/refresh-dimensions
 
-Gunakan endpoint ini sebagai **callback** setelah melakukan upload gambar via presigned PUT URL untuk mengisi ulang `width` dan `height` pada master `Badge`.
+Endpoint ini adalah utilitas admin untuk menghitung ulang `width` dan `height` pada master `Badge` berdasarkan `badge_url` yang tersimpan atau URL yang dikirim manual.
+
+Catatan:
+
+- Untuk flow admin standar create/update badge, client admin cukup mengirim file gambar langsung ke endpoint badge melalui field `image`, atau mengirim URL langsung melalui `badge_url`.
+- Client admin **tidak perlu** lagi memakai flow upload presigned PUT URL untuk badge.
 
 Body (JSON) opsional:
 ```json

@@ -22,6 +22,7 @@ function getDefaultPermissionsForRole(role) {
       'overview',
       'kelola-user',
       'kelola-admin',
+      'livechat',
       'moderation',
       'signin-event-configs',
       'watch-event-configs',
@@ -57,14 +58,14 @@ function getDefaultPermissionsForRole(role) {
   return [];
 }
 
-export async function loginAdmin({ username, password }) {
+export async function loginAdmin({ username, password, device_id }) {
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
   const url = `${API_BASE}/admin/auth/login`;
   // POST to the backend login endpoint
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, password, device_id }),
   });
 
   if (!res.ok) {
@@ -106,6 +107,7 @@ export async function loginAdmin({ username, password }) {
     role: normalizedRole,
     permissions,
     token,
+    device_id: device_id || null,
     createdAt: admin.createdAt,
   };
 

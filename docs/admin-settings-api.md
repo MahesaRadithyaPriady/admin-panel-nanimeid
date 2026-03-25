@@ -13,6 +13,7 @@ Catatan:
 - Model `AppSetting` bersifat singleton (id = 1). Seeder tersedia di `src/seeders/appSettingsSeeder.js`.
 - Jika tabel belum ada, jalankan `npx prisma db push` lalu `npx prisma generate`.
 - Default values: `maintenance_enabled=false`, `downloads_enabled=true`, `paid_qualities=[]`, `force_update_enabled=false`.
+- Nilai `watch_lite_coin_per_minute` dipakai untuk menentukan jumlah lite coin yang didapat user per menit pada fitur watch-lite.
 
 ---
 
@@ -35,6 +36,7 @@ Response 200:
     "paid_qualities": [],
     "force_update_enabled": false,
     "force_update_version": null,
+    "watch_lite_coin_per_minute": 1,
     "createdAt": "2025-08-31T12:00:00.000Z",
     "updatedAt": "2025-08-31T12:00:00.000Z"
   }
@@ -63,7 +65,8 @@ Body (semua field opsional, kirim yang ingin diubah):
   "downloads_enabled": false,
   "paid_qualities": ["720p","1080p"],
   "force_update_enabled": true,
-  "force_update_version": "2.5.0"
+  "force_update_version": "2.5.0",
+  "watch_lite_coin_per_minute": 2
 }
 ```
 
@@ -71,6 +74,7 @@ Aturan validasi:
 - `maintenance_enabled`, `downloads_enabled`, `force_update_enabled`: boolean (menerima `true`/`false` literal atau string "true"/"false").
 - `maintenance_message`, `force_update_version`: string atau `null`.
 - `paid_qualities`: array string atau string koma, contoh: `"720p,1080p"`.
+- `watch_lite_coin_per_minute`: integer `>= 0`.
 
 Response 200:
 ```json
@@ -84,6 +88,7 @@ Response 200:
     "paid_qualities": ["720p","1080p"],
     "force_update_enabled": true,
     "force_update_version": "2.5.0",
+    "watch_lite_coin_per_minute": 2,
     "createdAt": "2025-08-31T12:00:00.000Z",
     "updatedAt": "2025-08-31T12:05:00.000Z"
   }
@@ -92,6 +97,51 @@ Response 200:
 
 Error:
 - 400 BAD_REQUEST: format field tidak valid
+- 401 UNAUTHORIZED, 403 FORBIDDEN
+- 500 ERROR
+
+---
+
+## Update Watch Lite Coin per Minute
+
+PATCH /admin/settings/watch-lite-coin-per-minute
+
+Headers:
+- Content-Type: application/json
+- Authorization: Bearer <token>
+
+Body:
+```json
+{
+  "watch_lite_coin_per_minute": 3
+}
+```
+
+Aturan validasi:
+- `watch_lite_coin_per_minute` wajib dikirim.
+- Nilai harus integer `>= 0`.
+
+Response 200:
+```json
+{
+  "message": "watch_lite_coin_per_minute updated",
+  "settings": {
+    "id": 1,
+    "maintenance_enabled": false,
+    "maintenance_message": null,
+    "downloads_enabled": true,
+    "paid_qualities": [],
+    "force_update_enabled": false,
+    "force_update_version": null,
+    "watch_lite_coin_per_minute": 3,
+    "createdAt": "2025-08-31T12:00:00.000Z",
+    "updatedAt": "2025-08-31T12:10:00.000Z"
+  }
+}
+```
+
+Error:
+- 400 BAD_REQUEST: field tidak ada atau format nilai tidak valid
 - 401 UNAUTHORIZED, 403 FORBIDDEN
 - 500 ERROR
 
@@ -109,3 +159,4 @@ Error:
 - Menonaktifkan fitur download global: set `downloads_enabled=false`.
 - Menentukan kualitas video yang berbayar: isi `paid_qualities` dengan daftar quality (mis. `720p`, `1080p`).
 - Memaksa pengguna update versi app: set `force_update_enabled=true` dan `force_update_version` ke versi minimum yang diwajibkan.
+- Mengatur reward watch-lite: ubah `watch_lite_coin_per_minute` sesuai jumlah lite coin yang ingin diberikan per menit tontonan.

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { ListChecks, Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
+import { CalendarCheck2, Coins, Gift, ListChecks, Plus, Pencil, Trash2, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
 import { useSession } from "@/hooks/useSession";
 import { getSession } from "@/lib/auth";
 import {
@@ -48,7 +48,7 @@ function fromIsoToDateTimeLocal(iso) {
   return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
 }
 
-export default function SigninEventConfigsPage() {
+export function SigninEventConfigsContent({ embedded = false } = {}) {
   const router = useRouter();
   const { user, loading } = useSession();
 
@@ -91,11 +91,11 @@ export default function SigninEventConfigsPage() {
   }, [loading, user, router]);
 
   useEffect(() => {
-    if (!loading && user && !canAccess) {
-      toast.error("Kamu tidak punya permission untuk Sign-In Event Configs");
+    if (!embedded && !loading && user && !canAccess) {
+      toast.error("Kamu tidak punya izin untuk Konfigurasi Event Masuk");
       router.replace("/dashboard");
     }
-  }, [loading, user, canAccess, router]);
+  }, [embedded, loading, user, canAccess, router]);
 
   const loadList = async (opts = {}) => {
     setLoadingList(true);
@@ -320,44 +320,113 @@ export default function SigninEventConfigsPage() {
     return [];
   };
 
+  const activeCount = useMemo(() => items.filter((it) => !!it?.is_active).length, [items]);
+
+  const renderDateTime = (value) => {
+    if (!value) return "-";
+    const dt = new Date(value);
+    return Number.isNaN(dt.getTime()) ? "-" : dt.toLocaleString();
+  };
+
+  const renderRewardPreview = (it) => {
+    const coins = Array.isArray(it?.daily_coin_rewards) ? it.daily_coin_rewards : [];
+    const types = Array.isArray(it?.daily_reward_types) ? it.daily_reward_types : [];
+    const ids = Array.isArray(it?.daily_reward_ids) ? it.daily_reward_ids : [];
+    const totalDays = Math.max(1, Number(it?.days_total || 1));
+
+    return Array.from({ length: Math.min(totalDays, 3) }).map((_, idx) => {
+      const type = String(types[idx] || "NONE").toUpperCase();
+      const rewardId = Number(ids[idx] || 0);
+      const rewardLabel = type === "NONE" ? "Tanpa item" : rewardId > 0 ? `${type} #${rewardId}` : type;
+
+      return {
+        day: idx + 1,
+        coin: Number(coins[idx] || 0),
+        rewardLabel,
+      };
+    });
+  };
+
   if (loading || !user) return null;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-extrabold flex items-center gap-2">
-          <ListChecks className="size-5" /> Sign-In Event Configs
-        </h2>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div
+          className="rounded-[28px] border-4 p-5 md:p-6"
+          style={{
+            boxShadow: "10px 10px 0 #000",
+            background: "linear-gradient(135deg, var(--panel-bg) 0%, #fef3c7 100%)",
+            borderColor: "var(--panel-border)",
+            color: "var(--foreground)",
+          }}
+        >
+          <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-1 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "#fff7cc", color: "#92400e" }}>
+            <CalendarCheck2 className="size-4" /> Sign-In Event
+          </div>
+          <h2 className="mt-4 text-2xl md:text-3xl font-black flex items-center gap-3">
+            <ListChecks className="size-7" /> Konfigurasi Event Masuk
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm md:text-base font-semibold opacity-80">
+            Atur login streak harian, reward coin, hadiah item, dan periode aktif event dalam satu panel yang lebih mudah dipantau.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 rounded-[28px] border-4 p-5" style={{ boxShadow: "10px 10px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
+          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#f3f4f6" }}>
+            <div className="text-xs font-black uppercase tracking-wide opacity-70">Total Config</div>
+            <div className="mt-2 text-2xl font-black">{total}</div>
+          </div>
+          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#dcfce7", color: "#166534" }}>
+            <div className="text-xs font-black uppercase tracking-wide opacity-70">Aktif</div>
+            <div className="mt-2 text-2xl font-black">{activeCount}</div>
+          </div>
+          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#ede9fe", color: "#6d28d9" }}>
+            <div className="text-xs font-black uppercase tracking-wide opacity-70">Mode Form</div>
+            <div className="mt-2 text-sm font-black">{mode === "add" ? "Tambah Baru" : `Edit #${form.id}`}</div>
+          </div>
+          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#dbeafe", color: "#1d4ed8" }}>
+            <div className="text-xs font-black uppercase tracking-wide opacity-70">Hari Event</div>
+            <div className="mt-2 text-2xl font-black">{normalizedDaysTotal}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)", color: "var(--foreground)" }}>
+          <Gift className="size-4" /> Event login, reward item, dan coin harian
+        </div>
         <button
           type="button"
           onClick={async () => {
             await loadList();
             await loadLookups();
           }}
-          className="px-3 py-2 border-4 rounded-lg font-extrabold"
+          className="px-4 py-3 border-4 rounded-2xl font-extrabold"
           style={{
-            boxShadow: "4px 4px 0 #000",
+            boxShadow: "6px 6px 0 #000",
             background: "var(--panel-bg)",
             borderColor: "var(--panel-border)",
             color: "var(--foreground)",
           }}
         >
           <span className="inline-flex items-center gap-2">
-            <RefreshCw className="size-4" /> Refresh
+            <RefreshCw className="size-4" /> Muat Ulang
           </span>
         </button>
       </div>
 
       {/* Filters */}
       <div
-        className="p-3 border-4 rounded-lg"
+        className="p-4 border-4 rounded-[24px]"
         style={{
-          boxShadow: "4px 4px 0 #000",
+          boxShadow: "8px 8px 0 #000",
           background: "var(--panel-bg)",
           borderColor: "var(--panel-border)",
           color: "var(--foreground)",
         }}
       >
+        <div className="mb-3 text-sm font-black opacity-75">Filter Config</div>
         <div className="grid sm:grid-cols-[220px_1fr] gap-3 items-center">
           <select
             value={filterActive}
@@ -383,171 +452,148 @@ export default function SigninEventConfigsPage() {
 
       {/* Form */}
       <div
-        className="p-3 border-4 rounded-lg space-y-3"
+        className="p-4 border-4 rounded-[24px] space-y-4"
         style={{
-          boxShadow: "4px 4px 0 #000",
+          boxShadow: "8px 8px 0 #000",
           background: "var(--panel-bg)",
           borderColor: "var(--panel-border)",
           color: "var(--foreground)",
         }}
       >
-        <div className="text-sm font-extrabold">{mode === "add" ? "Tambah Config" : `Edit Config #${form.id}`}</div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-extrabold">{mode === "add" ? "Tambah Config" : `Edit Config #${form.id}`}</div>
+            <div className="mt-1 text-xs font-semibold opacity-70">Tentukan jumlah hari, reward coin, tipe hadiah, dan periode event.</div>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "#fff7cc", color: "#92400e" }}>
+            <Coins className="size-4" /> Lookup siap: {loadingLookups ? "memuat..." : `${borderOptions.length + stickerOptions.length + badgeOptions.length} item`}
+          </div>
+        </div>
 
-        <form onSubmit={onSubmit} className="grid gap-3">
-          <div className="grid sm:grid-cols-3 gap-3 items-center">
-            <label className="flex items-center gap-2 text-sm font-semibold">
-              <input
-                type="checkbox"
-                checked={!!form.is_active}
-                onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
-              />
-              <span>Aktif</span>
-            </label>
+        <form onSubmit={onSubmit} className="grid gap-3 min-w-0">
+          <div className="grid gap-3 min-w-0">
+            <div className="rounded-[22px] border-4 p-4 grid gap-3 content-start min-w-0" style={{ boxShadow: "6px 6px 0 #000", background: "#fff7cc", borderColor: "var(--panel-border)", color: "#92400e" }}>
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input
+                  type="checkbox"
+                  checked={!!form.is_active}
+                  onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
+                />
+                <span>Config aktif</span>
+              </label>
 
-            <input
-              type="number"
-              min={1}
-              value={form.days_total}
-              onChange={(e) => setForm((f) => ({ ...f, days_total: e.target.value }))}
-              placeholder="days_total"
-              className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{
-                boxShadow: "4px 4px 0 #000",
-                background: "var(--panel-bg)",
-                borderColor: "var(--panel-border)",
-                color: "var(--foreground)",
-              }}
-            />
+              <label className="grid gap-1">
+                <span className="text-xs font-extrabold">Jumlah hari</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={form.days_total}
+                  onChange={(e) => setForm((f) => ({ ...f, days_total: e.target.value }))}
+                  placeholder="Contoh: 7"
+                  className="w-full max-w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold"
+                  style={{ boxShadow: "4px 4px 0 #000", background: "#fff", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
+                />
+              </label>
 
-            <div className="text-xs font-semibold opacity-80">
-              {loadingLookups ? "Memuat item lookup..." : "Lookup: border/sticker/badge siap"}
+              <div className="rounded-2xl border-4 px-3 py-2 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "rgba(255,255,255,0.7)", color: "#92400e" }}>
+                {normalizedDaysTotal} hari reward login akan ditampilkan di editor.
+              </div>
+            </div>
+
+            <div className="grid gap-3 xl:grid-cols-2 min-w-0">
+              <label className="grid gap-1 rounded-[22px] border-4 p-4 min-w-0" style={{ boxShadow: "6px 6px 0 #000", background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
+                <span className="text-xs font-extrabold">Mulai (opsional)</span>
+                <input
+                  type="datetime-local"
+                  value={form.starts_at}
+                  onChange={(e) => setForm((f) => ({ ...f, starts_at: e.target.value }))}
+                  className="block w-full max-w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold text-sm"
+                  style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
+                />
+              </label>
+              <label className="grid gap-1 rounded-[22px] border-4 p-4 min-w-0" style={{ boxShadow: "6px 6px 0 #000", background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
+                <span className="text-xs font-extrabold">Selesai (opsional)</span>
+                <input
+                  type="datetime-local"
+                  value={form.ends_at}
+                  onChange={(e) => setForm((f) => ({ ...f, ends_at: e.target.value }))}
+                  className="block w-full max-w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold text-sm"
+                  style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
+                />
+              </label>
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-3">
-            <label className="grid gap-1">
-              <span className="text-xs font-extrabold">Starts at (opsional)</span>
-              <input
-                type="datetime-local"
-                value={form.starts_at}
-                onChange={(e) => setForm((f) => ({ ...f, starts_at: e.target.value }))}
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{
-                  boxShadow: "4px 4px 0 #000",
-                  background: "var(--panel-bg)",
-                  borderColor: "var(--panel-border)",
-                  color: "var(--foreground)",
-                }}
-              />
-            </label>
-            <label className="grid gap-1">
-              <span className="text-xs font-extrabold">Ends at (opsional)</span>
-              <input
-                type="datetime-local"
-                value={form.ends_at}
-                onChange={(e) => setForm((f) => ({ ...f, ends_at: e.target.value }))}
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{
-                  boxShadow: "4px 4px 0 #000",
-                  background: "var(--panel-bg)",
-                  borderColor: "var(--panel-border)",
-                  color: "var(--foreground)",
-                }}
-              />
-            </label>
-          </div>
+          <div className="grid gap-3 xl:grid-cols-2 min-w-0">
+            {Array.from({ length: normalizedDaysTotal }).map((_, idx) => {
+              const t = normalizedTypes[idx] || "NONE";
+              const opts = rewardOptionsForType(t);
+              const needsId = t !== "NONE";
 
-          <div className="overflow-auto">
-            <table
-              className="min-w-full border-4 rounded-lg overflow-hidden"
-              style={{
-                boxShadow: "6px 6px 0 #000",
-                borderColor: "var(--panel-border)",
-                color: "var(--foreground)",
-              }}
-            >
-              <thead style={{ background: "var(--panel-bg)" }}>
-                <tr>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Day</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Coin</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Reward Type</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Reward Item</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: normalizedDaysTotal }).map((_, idx) => {
-                  const t = normalizedTypes[idx] || "NONE";
-                  const opts = rewardOptionsForType(t);
-                  const needsId = t !== "NONE";
+              return (
+                <div key={idx} className="rounded-[22px] border-4 p-4 space-y-3 min-w-0 overflow-hidden" style={{ boxShadow: "6px 6px 0 #000", background: idx % 2 === 0 ? "var(--background)" : "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
+                  <div className="flex items-center justify-between gap-2 min-w-0 flex-wrap">
+                    <div className="text-sm font-black min-w-0">Hari #{idx + 1}</div>
+                    <div className="text-[11px] font-black rounded-full border-4 px-2 py-1" style={{ borderColor: "var(--panel-border)", background: "#fff7cc", color: "#92400e" }}>
+                      Login reward
+                    </div>
+                  </div>
 
-                  return (
-                    <tr key={idx}>
-                      <td className="px-3 py-2 border-b-4 font-extrabold" style={{ borderColor: "var(--panel-border)" }}>
-                        #{idx + 1}
-                      </td>
-                      <td className="px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                        <input
-                          type="number"
-                          min={0}
-                          value={normalizedCoins[idx]}
-                          onChange={(e) => setDayField(idx, { coin: e.target.value })}
-                          className="w-[120px] px-3 py-2 border-4 rounded-lg font-semibold"
-                          style={{
-                            boxShadow: "4px 4px 0 #000",
-                            background: "var(--panel-bg)",
-                            borderColor: "var(--panel-border)",
-                            color: "var(--foreground)",
-                          }}
-                        />
-                      </td>
-                      <td className="px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                        <select
-                          value={t}
-                          onChange={(e) => setDayField(idx, { type: e.target.value })}
-                          className="px-3 py-2 border-4 rounded-lg font-extrabold"
-                          style={{
-                            boxShadow: "4px 4px 0 #000",
-                            background: "var(--panel-bg)",
-                            borderColor: "var(--panel-border)",
-                            color: "var(--foreground)",
-                          }}
-                        >
-                          {REWARD_TYPES.map((rt) => (
-                            <option key={rt} value={rt}>
-                              {rt}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                        {needsId ? (
-                          <select
-                            value={normalizedIds[idx]}
-                            onChange={(e) => setDayField(idx, { id: e.target.value })}
-                            className="min-w-[260px] px-3 py-2 border-4 rounded-lg font-extrabold"
-                            style={{
-                              boxShadow: "4px 4px 0 #000",
-                              background: "var(--panel-bg)",
-                              borderColor: "var(--panel-border)",
-                              color: "var(--foreground)",
-                            }}
-                          >
-                            <option value={0}>Pilih item</option>
-                            {opts.map((o) => (
-                              <option key={o.id} value={o.id}>
-                                {o.label}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <div className="text-xs font-semibold opacity-70">(NONE)</div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  <div className="grid gap-3 md:grid-cols-2 min-w-0">
+                    <label className="grid gap-1 min-w-0">
+                      <span className="text-xs font-extrabold">Coin reward</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={normalizedCoins[idx]}
+                        onChange={(e) => setDayField(idx, { coin: e.target.value })}
+                        className="w-full max-w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold"
+                        style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
+                      />
+                    </label>
+
+                    <label className="grid gap-1 min-w-0">
+                      <span className="text-xs font-extrabold">Tipe hadiah</span>
+                      <select
+                        value={t}
+                        onChange={(e) => setDayField(idx, { type: e.target.value })}
+                        className="w-full max-w-full min-w-0 px-3 py-2 border-4 rounded-xl font-extrabold"
+                        style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
+                      >
+                        {REWARD_TYPES.map((rt) => (
+                          <option key={rt} value={rt}>
+                            {rt}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <label className="grid gap-1 min-w-0">
+                    <span className="text-xs font-extrabold">Item hadiah</span>
+                    {needsId ? (
+                      <select
+                        value={normalizedIds[idx]}
+                        onChange={(e) => setDayField(idx, { id: e.target.value })}
+                        className="w-full max-w-full min-w-0 px-3 py-2 border-4 rounded-xl font-extrabold"
+                        style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
+                      >
+                        <option value={0}>Pilih item</option>
+                        {opts.map((o) => (
+                          <option key={o.id} value={o.id}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="rounded-xl border-4 px-3 py-2 text-xs font-semibold opacity-80" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
+                        Tidak ada item tambahan untuk hari ini.
+                      </div>
+                    )}
+                  </label>
+                </div>
+              );
+            })}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -588,89 +634,112 @@ export default function SigninEventConfigsPage() {
       </div>
 
       {/* List table */}
-      <div className="overflow-auto">
-        <table
-          className="min-w-full border-4 rounded-lg overflow-hidden"
-          style={{
-            boxShadow: "6px 6px 0 #000",
-            borderColor: "var(--panel-border)",
-            color: "var(--foreground)",
-          }}
-        >
-          <thead style={{ background: "var(--panel-bg)" }}>
-            <tr>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>ID</th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Active</th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Days</th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Starts</th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Ends</th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it) => (
-              <tr key={it.id}>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>{it.id}</td>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>{it.is_active ? "Ya" : "Tidak"}</td>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>{it.days_total}</td>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>{it.starts_at ? new Date(it.starts_at).toLocaleString() : "-"}</td>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>{it.ends_at ? new Date(it.ends_at).toLocaleString() : "-"}</td>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                  <div className="flex items-center gap-2">
+      <div className="rounded-[24px] border-4 p-4" style={{ boxShadow: "8px 8px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-extrabold">Daftar Config</div>
+            <div className="mt-1 text-xs font-semibold opacity-70">Lihat config aktif/nonaktif, edit, toggle, atau hapus langsung dari satu panel.</div>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "#dbeafe", color: "#1d4ed8" }}>
+            <ListChecks className="size-4" /> {items.length} item ditampilkan
+          </div>
+        </div>
+        <div className="grid gap-3">
+          {items.map((it) => {
+            const preview = renderRewardPreview(it);
+
+            return (
+              <div key={it.id} className="rounded-[22px] border-4 p-4" style={{ boxShadow: "6px 6px 0 #000", background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="grid gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="text-base font-black">Config #{it.id}</div>
+                      <div className="rounded-full border-4 px-2 py-1 text-[11px] font-black" style={{ borderColor: "var(--panel-border)", background: it.is_active ? "#dcfce7" : "#f3f4f6", color: it.is_active ? "#166534" : "#374151" }}>
+                        {it.is_active ? "Aktif" : "Nonaktif"}
+                      </div>
+                    </div>
+                    <div className="text-sm font-semibold opacity-80">{it.days_total} hari reward login</div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={() => onEdit(it)}
-                      className="px-2 py-1 border-4 rounded font-extrabold"
-                      style={{
-                        boxShadow: "3px 3px 0 #000",
-                        background: "var(--accent-edit)",
-                        color: "var(--accent-edit-foreground)",
-                        borderColor: "var(--panel-border)",
-                      }}
+                      className="px-3 py-2 border-4 rounded-xl font-extrabold"
+                      style={{ boxShadow: "4px 4px 0 #000", background: "var(--accent-edit)", color: "var(--accent-edit-foreground)", borderColor: "var(--panel-border)" }}
                     >
-                      <Pencil className="size-4" />
+                      <span className="inline-flex items-center gap-2">
+                        <Pencil className="size-4" /> Edit
+                      </span>
                     </button>
                     <button
                       type="button"
                       disabled={togglingId === it.id}
                       onClick={() => onToggle(it)}
-                      className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60"
-                      style={{
-                        boxShadow: "3px 3px 0 #000",
-                        background: "var(--panel-bg)",
-                        color: "var(--foreground)",
-                        borderColor: "var(--panel-border)",
-                      }}
+                      className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
+                      style={{ boxShadow: "4px 4px 0 #000", background: it.is_active ? "#FFD803" : "#FFF", color: "var(--foreground)", borderColor: "var(--panel-border)" }}
                     >
-                      {togglingId === it.id ? "..." : "Toggle"}
+                      {togglingId === it.id ? "..." : it.is_active ? (
+                        <span className="inline-flex items-center gap-2">
+                          <ToggleRight className="size-4" /> Aktif
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-2">
+                          <ToggleLeft className="size-4" /> Nonaktif
+                        </span>
+                      )}
                     </button>
                     <button
                       type="button"
                       disabled={deletingId === it.id}
                       onClick={() => onDelete(it)}
-                      className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60"
-                      style={{
-                        boxShadow: "3px 3px 0 #000",
-                        background: "var(--panel-bg)",
-                        color: "var(--foreground)",
-                        borderColor: "var(--panel-border)",
-                      }}
+                      className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
+                      style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", color: "var(--foreground)", borderColor: "var(--panel-border)" }}
                     >
-                      <Trash2 className="size-4" />
+                      <span className="inline-flex items-center gap-2">
+                        <Trash2 className="size-4" /> Hapus
+                      </span>
                     </button>
                   </div>
-                </td>
-              </tr>
-            ))}
-            {items.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-sm opacity-70">
-                  {loadingList ? "Memuat..." : "Belum ada config."}
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+                </div>
+
+                <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {preview.map((day) => (
+                      <div key={`${it.id}-${day.day}`} className="rounded-[18px] border-4 p-3" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
+                        <div className="text-xs font-black opacity-70">Hari {day.day}</div>
+                        <div className="mt-1 text-sm font-black">{day.coin} coin</div>
+                        <div className="mt-1 text-xs font-semibold opacity-80">{day.rewardLabel}</div>
+                      </div>
+                    ))}
+                    {Number(it?.days_total || 0) > preview.length ? (
+                      <div className="rounded-[18px] border-4 p-3 flex items-center justify-center text-sm font-black" style={{ borderColor: "var(--panel-border)", background: "#ede9fe", color: "#6d28d9" }}>
+                        +{Number(it.days_total || 0) - preview.length} hari lainnya
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="grid gap-2">
+                    <div className="rounded-[18px] border-4 p-3" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
+                      <div className="text-xs font-black opacity-70">Mulai</div>
+                      <div className="mt-1 text-sm font-semibold">{renderDateTime(it.starts_at)}</div>
+                    </div>
+                    <div className="rounded-[18px] border-4 p-3" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
+                      <div className="text-xs font-black opacity-70">Selesai</div>
+                      <div className="mt-1 text-sm font-semibold">{renderDateTime(it.ends_at)}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {items.length === 0 ? (
+            <div className="rounded-[22px] border-4 px-4 py-8 text-center text-sm font-semibold opacity-70" style={{ borderColor: "var(--panel-border)", background: "var(--background)" }}>
+              {loadingList ? "Memuat..." : "Belum ada config."}
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {/* Pagination */}
@@ -686,7 +755,7 @@ export default function SigninEventConfigsPage() {
             color: "var(--foreground)",
           }}
         >
-          Prev
+          Sebelumnya
         </button>
         <div className="text-sm font-extrabold">
           Halaman {page} / {totalPages}
@@ -702,9 +771,13 @@ export default function SigninEventConfigsPage() {
             color: "var(--foreground)",
           }}
         >
-          Next
+          Berikutnya
         </button>
       </div>
     </div>
   );
 }
+
+ export default function SigninEventConfigsPage() {
+   return <SigninEventConfigsContent />;
+ }

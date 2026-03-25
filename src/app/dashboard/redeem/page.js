@@ -168,13 +168,13 @@ export default function RedeemCodesPage() {
           {/* Create Form */}
           <form onSubmit={onCreate} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <div className="grid sm:grid-cols-2 gap-3">
-              <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                 <label className="text-sm font-extrabold">Kode</label>
-                <input value={form.code} onChange={(e) => updateForm('code', e.target.value)} required className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input value={form.code} onChange={(e) => updateForm('code', e.target.value)} required className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               </div>
-              <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                 <label className="text-sm font-extrabold">Tipe</label>
-                <select value={form.type} onChange={(e) => updateForm('type', e.target.value)} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                <select value={form.type} onChange={(e) => updateForm('type', e.target.value)} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                   <option value="COIN">COIN</option>
                   <option value="VIP">VIP</option>
                   <option value="BADGE">BADGE</option>
@@ -184,74 +184,74 @@ export default function RedeemCodesPage() {
               </div>
 
               {form.type === 'COIN' && (
-                <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                   <label className="text-sm font-extrabold">Jumlah Koin</label>
-                  <input type="number" value={form.coins_amount} onChange={(e) => updateForm('coins_amount', e.target.value)} placeholder="mis. 100" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  <input type="number" value={form.coins_amount} onChange={(e) => updateForm('coins_amount', e.target.value)} placeholder="mis. 100" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                 </div>
               )}
 
               {form.type === 'VIP' && (
                 <>
-                  <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                     <label className="text-sm font-extrabold">Hari VIP</label>
-                    <input type="number" value={form.vip_days} onChange={(e) => updateForm('vip_days', e.target.value)} placeholder="mis. 7" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                    <input type="number" value={form.vip_days} onChange={(e) => updateForm('vip_days', e.target.value)} placeholder="mis. 7" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                   </div>
-                  <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                     <label className="text-sm font-extrabold">Level VIP</label>
-                    <input value={form.vip_level} onChange={(e) => updateForm('vip_level', e.target.value)} placeholder="Opsional, mis. Gold" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                    <input value={form.vip_level} onChange={(e) => updateForm('vip_level', e.target.value)} placeholder="Opsional, mis. Gold" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                   </div>
                 </>
               )}
 
               {form.type === 'BADGE' && (
                 <>
-                  <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                     <label className="text-sm font-extrabold">Nama Badge</label>
-                    <input value={form.badge_name} onChange={(e) => updateForm('badge_name', e.target.value)} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                    <input value={form.badge_name} onChange={(e) => updateForm('badge_name', e.target.value)} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                   </div>
-                  <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                     <label className="text-sm font-extrabold">Icon URL</label>
-                    <input value={form.badge_icon} onChange={(e) => updateForm('badge_icon', e.target.value)} placeholder="https://..." className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                    <input value={form.badge_icon} onChange={(e) => updateForm('badge_icon', e.target.value)} placeholder="https://..." className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                   </div>
-                  <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                     <label className="text-sm font-extrabold">Title Color</label>
-                    <input value={form.title_color} onChange={(e) => updateForm('title_color', e.target.value)} placeholder="#FF8800" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                    <input value={form.title_color} onChange={(e) => updateForm('title_color', e.target.value)} placeholder="#FF8800" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                   </div>
                 </>
               )}
 
               {form.type === 'VOUCHER' && (
                 <>
-                  <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                     <label className="text-sm font-extrabold">Diskon (%)</label>
                     <input
                       type="number"
                       value={form.voucher_discount_percent}
                       onChange={(e) => updateForm('voucher_discount_percent', e.target.value)}
                       placeholder="Opsional, mis. 10"
-                      className="px-3 py-2 border-4 rounded-lg font-semibold"
+                      className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
                       style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                     />
                   </div>
-                  <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                     <label className="text-sm font-extrabold">Diskon Nominal</label>
                     <input
                       type="number"
                       value={form.voucher_discount_amount}
                       onChange={(e) => updateForm('voucher_discount_amount', e.target.value)}
                       placeholder="Opsional, mis. 10000"
-                      className="px-3 py-2 border-4 rounded-lg font-semibold"
+                      className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
                       style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                     />
                   </div>
-                  <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                     <label className="text-sm font-extrabold">Masa Berlaku (hari)</label>
                     <input
                       type="number"
                       value={form.voucher_valid_days}
                       onChange={(e) => updateForm('voucher_valid_days', e.target.value)}
                       placeholder="mis. 7"
-                      className="px-3 py-2 border-4 rounded-lg font-semibold"
+                      className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
                       style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                     />
                   </div>
@@ -260,12 +260,12 @@ export default function RedeemCodesPage() {
 
               {form.type === 'BORDER' && (
                 <>
-                  <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                     <label className="text-sm font-extrabold">Avatar Border</label>
                     <select
                       value={form.border_id}
                       onChange={(e) => updateForm('border_id', e.target.value)}
-                      className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                      className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-extrabold"
                       style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                     >
                       <option value="">Pilih border...</option>
@@ -277,33 +277,33 @@ export default function RedeemCodesPage() {
                     </select>
                   </div>
                   {loadingBorders && (
-                    <div className="text-xs font-semibold opacity-70 col-span-2 ml-[120px]">Memuat avatar borders...</div>
+                    <div className="text-xs font-semibold opacity-70 col-span-1 sm:col-span-2 sm:ml-[120px]">Memuat avatar borders...</div>
                   )}
                 </>
               )}
 
-              <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                 <label className="text-sm font-extrabold">Aktif?</label>
-                <select value={String(form.is_active)} onChange={(e) => updateForm('is_active', e.target.value === 'true')} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                <select value={String(form.is_active)} onChange={(e) => updateForm('is_active', e.target.value === 'true')} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                   <option value="true">Ya</option>
                   <option value="false">Tidak</option>
                 </select>
               </div>
-              <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                 <label className="text-sm font-extrabold">Kuota Global</label>
-                <input type="number" value={form.max_uses} onChange={(e) => updateForm('max_uses', e.target.value)} placeholder="Opsional" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input type="number" value={form.max_uses} onChange={(e) => updateForm('max_uses', e.target.value)} placeholder="Opsional" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               </div>
-              <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                 <label className="text-sm font-extrabold">Limit / User</label>
-                <input type="number" value={form.per_user_limit} onChange={(e) => updateForm('per_user_limit', e.target.value)} placeholder="Opsional" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input type="number" value={form.per_user_limit} onChange={(e) => updateForm('per_user_limit', e.target.value)} placeholder="Opsional" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               </div>
-              <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                 <label className="text-sm font-extrabold">Mulai</label>
-                <input type="datetime-local" value={form.starts_at} onChange={(e) => updateForm('starts_at', e.target.value)} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input type="datetime-local" value={form.starts_at} onChange={(e) => updateForm('starts_at', e.target.value)} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               </div>
-              <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
                 <label className="text-sm font-extrabold">Berakhir</label>
-                <input type="datetime-local" value={form.expires_at} onChange={(e) => updateForm('expires_at', e.target.value)} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input type="datetime-local" value={form.expires_at} onChange={(e) => updateForm('expires_at', e.target.value)} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               </div>
             </div>
             <div>
@@ -314,8 +314,8 @@ export default function RedeemCodesPage() {
           </form>
 
           {/* Filters */}
-          <form onSubmit={onSearch} className="grid sm:grid-cols-[1fr_120px] gap-3">
-            <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+          <form onSubmit={onSearch} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,120px)] gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
               <label className="text-sm font-extrabold flex items-center gap-2">
                 <ListFilter className="size-4" /> Pencarian
               </label>
@@ -324,7 +324,7 @@ export default function RedeemCodesPage() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Cari kode..."
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
+                className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
                 style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               />
             </div>

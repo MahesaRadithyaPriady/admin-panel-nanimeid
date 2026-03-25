@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { BookOpen, Save, Trash2, ArrowLeft, Plus, Download } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { getManga, updateManga, deleteManga, listMangaChapters, createMangaChapter, deleteChapter, uploadFileViaPresignedPut, grabMangaChapterPlan, commitMangaChapterPages, refreshMangaChapterDimensions } from '@/lib/api';
+import { getManga, updateManga, deleteManga, listMangaChapters, createMangaChapter, deleteChapter, grabMangaChapterPlan, getMangaKomikuGrabJob } from '@/lib/api';
 
 export default function MangaDetailPage() {
   const router = useRouter();
@@ -25,8 +25,12 @@ export default function MangaDetailPage() {
   // Grab tab
   const [grab, setGrab] = useState({ chapter_number: '', url: '', title: '' });
   const [grabbing, setGrabbing] = useState(false);
+  const [grabJob, setGrabJob] = useState(null);
+  const [grabStatusText, setGrabStatusText] = useState('Belum ada proses grab berjalan.');
   const [upload, setUpload] = useState({ chapter_number: '', title: '', files: null });
   const [uploading, setUploading] = useState(false);
+  const [coverMode, setCoverMode] = useState('upload');
+  const [coverUrl, setCoverUrl] = useState('');
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState('');
   const [existingCoverUrl, setExistingCoverUrl] = useState('');
@@ -54,6 +58,8 @@ export default function MangaDetailPage() {
           rating_manga: (it?.rating_manga ?? it?.rating) !== undefined && (it?.rating_manga ?? it?.rating) !== null ? String(it?.rating_manga ?? it?.rating) : '',
         });
         setExistingCoverUrl(it?.cover_manga || '');
+        setCoverMode('upload');
+        setCoverUrl('');
         setCoverFile(null);
         setCoverPreviewUrl('');
       } catch (err) {
@@ -81,6 +87,61 @@ export default function MangaDetailPage() {
 
   useEffect(() => { if (user) loadChapters(); }, [user]);
 
+  useEffect(() => {
+    if (!user?.token) return;
+    if (!grabJob?.id) return;
+
+    let cancelled = false;
+    let timer = null;
+
+    const loadJob = async () => {
+      try {
+        const res = await getMangaKomikuGrabJob({ token: user.token, mangaId: id, jobId: grabJob.id });
+        if (cancelled) return;
+        const job = res?.job ?? res?.data?.job ?? res?.data ?? res ?? null;
+        if (!job) return;
+
+        setGrabJob(job);
+
+        const nextText = formatGrabJobStatus(job);
+        if (nextText) setGrabStatusText(nextText);
+
+        const status = String(job?.status || '').toUpperCase();
+        if (['COMPLETED', 'FAILED', 'PARTIAL'].includes(status)) {
+          if (status === 'COMPLETED') {
+            setGrabbing(false);
+            loadChapters();
+          } else {
+            setGrabbing(false);
+          }
+          return;
+        }
+
+        timer = setTimeout(loadJob, 2500);
+      } catch (err) {
+        if (cancelled) return;
+        setGrabStatusText(err?.message || 'Gagal membaca progres grab.');
+        timer = setTimeout(loadJob, 4000);
+      }
+    };
+
+    loadJob();
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [grabJob?.id, id, user?.token]);
+
+  const grabStatusTone = useMemo(() => {
+    const status = String(grabJob?.status || '').toUpperCase();
+    if (status === 'FAILED') return { bg: '#FECACA', fg: '#7F1D1D' };
+    if (status === 'PARTIAL') return { bg: '#FDE68A', fg: '#78350F' };
+    if (status === 'COMPLETED') return { bg: '#BBF7D0', fg: '#14532D' };
+    if (status === 'RUNNING' || status === 'PENDING') return { bg: '#DBEAFE', fg: '#1E3A8A' };
+    return { bg: 'var(--panel-bg)', fg: 'var(--foreground)' };
+  }, [grabJob?.status]);
+
   const updateField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const onSave = async (e) => {
@@ -89,22 +150,19 @@ export default function MangaDetailPage() {
     try {
       setSaving(true);
       const payload = buildMangaUpdate(form);
-      if (coverFile instanceof File) {
-        const safeTitle = String(payload?.judul_manga || form?.judul_manga || 'manga')
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '_')
-          .replace(/^_+|_+$/g, '')
-          .slice(0, 80);
-        const ext = String(coverFile?.name || '').split('.').pop()?.toLowerCase() || '';
-        const key = `static/uploads/manga/covers/${safeTitle || 'manga'}_${Date.now()}${ext ? `.${ext}` : ''}`;
-        const uploaded = await uploadFileViaPresignedPut({ token, file: coverFile, key });
-        payload.cover_manga = uploaded.publicUrl;
-      }
-      await updateManga({ token, id, payload });
+      const nextCoverMode = String(coverMode || 'upload');
+      const nextCoverUrl = String(coverUrl || '').trim();
+      if (nextCoverMode === 'upload' && coverFile instanceof File) payload.cover = coverFile;
+      if (nextCoverMode === 'url' && nextCoverUrl) payload.cover_manga = nextCoverUrl;
+      const res = await updateManga({ token, id, payload });
       toast.success('Manga disimpan');
+      setCoverMode('upload');
+      setCoverUrl('');
       setCoverFile(null);
       setCoverPreviewUrl('');
-      if (payload?.cover_manga) setExistingCoverUrl(payload.cover_manga);
+      const nextItem = res?.item || res?.data || res;
+      if (nextItem?.cover_manga) setExistingCoverUrl(nextItem.cover_manga);
+      else if (payload?.cover_manga) setExistingCoverUrl(payload.cover_manga);
     } catch (err) {
       toast.error(err?.message || 'Gagal menyimpan manga');
     } finally {
@@ -153,39 +211,34 @@ export default function MangaDetailPage() {
     const token = getSession()?.token;
     try {
       setGrabbing(true);
+      setGrabStatusText('Memulai proses grab di backend...');
       const num = Number(grab.chapter_number);
       if (!Number.isFinite(num)) throw new Error('chapter_number tidak valid');
 
-      const planRes = await grabMangaChapterPlan({ token, mangaId: id, chapterNumber: num, url: grab.url, title: grab.title || undefined, plan_only: true });
-      const uploads = planRes?.uploads || planRes?.data?.uploads || planRes?.plan?.uploads || [];
-      if (!Array.isArray(uploads) || uploads.length === 0) throw new Error('Upload plan tidak tersedia');
+      const res = await grabMangaChapterPlan({
+        token,
+        mangaId: id,
+        chapterNumber: num,
+        url: grab.url,
+        title: grab.title || undefined,
+        plan_only: false,
+      });
 
-      const pages = [];
-      for (const u of uploads) {
-        const page_number = u?.page_number;
-        const source_url = u?.source_url;
-        const key = u?.key;
-        if (!Number.isFinite(Number(page_number))) throw new Error('page_number tidak valid di plan');
-        if (!source_url) throw new Error('source_url tidak valid di plan');
-        if (!key) throw new Error('key tidak valid di plan');
+      const created = Number(res?.pages_created ?? res?.data?.pages_created ?? 0) || 0;
+      const replaced = Number(res?.pages_replaced ?? res?.data?.pages_replaced ?? 0) || 0;
+      const removed = Number(res?.pages_removed ?? res?.data?.pages_removed ?? 0) || 0;
+      const job = res?.job ?? res?.data?.job ?? null;
 
-        const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(source_url)}`;
-        const imgRes = await fetch(proxyUrl);
-        if (!imgRes.ok) throw new Error(`Gagal download source_url (${imgRes.status})`);
-        const blob = await imgRes.blob();
-
-        const ext = String(key).split('.').pop()?.toLowerCase() || '';
-        const fileName = `page_${page_number}${ext ? `.${ext}` : ''}`;
-        const file = new File([blob], fileName, { type: blob.type || 'application/octet-stream' });
-
-        const uploaded = await uploadFileViaPresignedPut({ token, file, key });
-        pages.push({ page_number: Number(page_number), image_url: uploaded.publicUrl });
+      if (job?.id) {
+        setGrabJob(job);
+        setGrabStatusText(formatGrabJobStatus(job) || 'Job grab sudah dibuat, menunggu progres...');
+      } else {
+        setGrabJob(null);
+        setGrabStatusText(`Grab selesai. +${created} dibuat, ${replaced} diganti, ${removed} dihapus.`);
       }
 
-      await commitMangaChapterPages({ token, mangaId: id, chapterNumber: num, replace: true, title: grab.title || undefined, pages });
-      await refreshMangaChapterDimensions({ token, mangaId: id, chapterNumber: num, only_missing: true });
-
-      toast.success('Grab berhasil (uploaded & committed)');
+      toast.success(`Grab selesai. +${created} dibuat, ${replaced} diganti, ${removed} dihapus`);
+      setGrab((g) => ({ ...g, url: '', title: '' }));
       await loadChapters();
     } catch (err) {
       toast.error(err?.message || 'Gagal grab chapter');
@@ -224,24 +277,50 @@ export default function MangaDetailPage() {
             <form onSubmit={onSave} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
               <div className="grid sm:grid-cols-2 gap-3">
                 <L label="Judul"><input value={form.judul_manga} onChange={(e)=>updateField('judul_manga', e.target.value)} required className="inp" /></L>
-                <L label="Cover (Upload)">
+                <L label="Cover">
                   <div className="space-y-2">
-                    <input
-                      type="file"
-                      accept="image/*"
+                    <select
+                      value={coverMode}
                       onChange={(e) => {
-                        const file = e.target.files?.[0] || null;
-                        setCoverFile(file);
-                        if (!file) return setCoverPreviewUrl('');
-                        const url = URL.createObjectURL(file);
-                        setCoverPreviewUrl(url);
+                        const next = e.target.value;
+                        setCoverMode(next);
+                        if (next === 'upload') setCoverUrl('');
+                        if (next === 'url') {
+                          setCoverFile(null);
+                          setCoverPreviewUrl('');
+                        }
                       }}
-                      className="inp"
-                    />
-                    {(coverPreviewUrl || existingCoverUrl) && (
+                      className="sel"
+                    >
+                      <option value="upload">Upload cover</option>
+                      <option value="url">Gunakan URL</option>
+                    </select>
+                    {coverMode === 'upload' ? (
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          setCoverFile(file);
+                          if (!file) return setCoverPreviewUrl('');
+                          const url = URL.createObjectURL(file);
+                          setCoverPreviewUrl(url);
+                        }}
+                        className="inp"
+                      />
+                    ) : (
+                      <input
+                        type="url"
+                        value={coverUrl}
+                        onChange={(e) => setCoverUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="inp"
+                      />
+                    )}
+                    {(coverPreviewUrl || (coverMode === 'url' ? String(coverUrl || '').trim() : existingCoverUrl)) && (
                       <div className="flex items-center gap-2 text-xs">
                         <span>Preview:</span>
-                        <img src={coverPreviewUrl || existingCoverUrl} alt="cover" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                        <img src={coverPreviewUrl || (coverMode === 'url' ? coverUrl : existingCoverUrl)} alt="cover" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
                       </div>
                     )}
                   </div>
@@ -315,12 +394,18 @@ export default function MangaDetailPage() {
           {/* Grab Tab */}
           <div className="space-y-3">
             <div className="text-lg font-extrabold flex items-center gap-2"><Download className="size-4" /> Grab Komiku</div>
+            <div className="text-sm font-semibold opacity-80">
+              Grab sekarang memakai flow backend-managed upload. Backend akan download gambar dari source, upload ke storage, lalu replace/update pages chapter secara otomatis.
+            </div>
             <form onSubmit={onGrab} className="flex flex-wrap items-center gap-2">
               <input type="number" placeholder="chapter_number" value={grab.chapter_number} onChange={(e)=>setGrab(g=>({...g, chapter_number: e.target.value}))} className="inp" />
               <input placeholder="Komiku chapter URL" value={grab.url} onChange={(e)=>setGrab(g=>({...g, url: e.target.value}))} className="inp" />
               <input placeholder="Judul (opsional)" value={grab.title} onChange={(e)=>setGrab(g=>({...g, title: e.target.value}))} className="inp" />
               <button disabled={grabbing} className="btn-add">{grabbing ? 'Mengambil...' : (<><Download className="size-4" /> Grab</>)}</button>
             </form>
+            <div className="px-3 py-2 border-4 rounded-lg text-sm font-semibold" style={{ boxShadow: '3px 3px 0 #000', background: grabStatusTone.bg, color: grabStatusTone.fg, borderColor: 'var(--panel-border)' }}>
+              {grabStatusText}
+            </div>
           </div>
 
           {/* Upload dipindahkan ke halaman halaman-chapter */}
@@ -334,7 +419,7 @@ export default function MangaDetailPage() {
 
 function L({ label, children }) {
   return (
-    <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+    <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
       <label className="lbl">{label}</label>
       {children}
     </div>
@@ -363,9 +448,32 @@ function buildChapterPayload(ch) {
   return out;
 }
 
+function formatGrabJobStatus(job) {
+  if (!job) return '';
+  const status = String(job?.status || '').toUpperCase();
+  const stage = String(job?.current_stage || '').trim();
+  const chapterLabel = String(job?.current_chapter_label || job?.current_chapter_number || '').trim();
+  const processed = Number(job?.processed_chapters ?? 0) || 0;
+  const total = Number(job?.total_chapters ?? 0) || 0;
+  const success = Number(job?.success_chapters ?? 0) || 0;
+  const failed = Number(job?.failed_chapters ?? 0) || 0;
+  const errorMessage = String(job?.error_message || '').trim();
+
+  if (status === 'FAILED') return errorMessage || 'Grab gagal diproses di backend.';
+  if (status === 'PARTIAL') return `Grab selesai sebagian. ${success} chapter berhasil, ${failed} gagal${total ? ` dari ${total}` : ''}.`;
+  if (status === 'COMPLETED') return `Grab selesai. ${success || processed}${total ? ` dari ${total}` : ''} chapter berhasil diproses.`;
+  if (status === 'PENDING') return 'Job grab sudah masuk antrian, menunggu backend mulai memproses...';
+  if (status === 'RUNNING') {
+    if (chapterLabel) return `Sedang grab chapter ${chapterLabel}${stage ? ` (${stage})` : ''}${total ? ` • ${processed}/${total}` : ''}`;
+    if (stage) return `Sedang memproses grab (${stage})${total ? ` • ${processed}/${total}` : ''}`;
+    return `Sedang memproses grab${total ? ` • ${processed}/${total}` : ''}`;
+  }
+  return 'Proses grab sedang berjalan...';
+}
+
 const styles = `
-.inp { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
-.sel { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
+.inp { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
+.sel { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
 .lbl { font-size: 0.875rem; font-weight: 800; }
 .btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
 .btn-act { padding:0.25rem 0.5rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }

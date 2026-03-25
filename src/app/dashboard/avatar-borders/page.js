@@ -7,24 +7,7 @@ import { toast } from 'react-hot-toast';
 import { Image as ImageIcon, Pencil, Trash2, Plus, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { createAvatarBorder, listAvatarBorders, updateAvatarBorder, deleteAvatarBorder, uploadFileViaPresignedPut } from '@/lib/api';
-
-function safeKeySegment(input) {
-  return String(input || '')
-    .trim()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_\-]/g, '')
-    .slice(0, 80);
-}
-
-function guessExtFromFile(file) {
-  const name = String(file?.name || '');
-  const idx = name.lastIndexOf('.');
-  if (idx === -1) return '';
-  const ext = name.slice(idx + 1).toLowerCase();
-  if (!ext || ext.length > 10) return '';
-  return ext;
-}
+import { createAvatarBorder, createAvatarBorderWithFile, listAvatarBorders, updateAvatarBorder, updateAvatarBorderWithFile, deleteAvatarBorder } from '@/lib/api';
 
 export default function AvatarBordersPage() {
   const router = useRouter();
@@ -53,8 +36,11 @@ export default function AvatarBordersPage() {
     total_supply: '', // string to allow empty -> null
     per_user_limit: '1',
     tier: 'C',
+    image_mode: 'upload',
+    image_url: '',
     file: null,
     preview_url: '',
+    existing_image_url: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -73,8 +59,11 @@ export default function AvatarBordersPage() {
       total_supply: '',
       per_user_limit: '1',
       tier: 'C',
+      image_mode: 'upload',
+      image_url: '',
       file: null,
       preview_url: '',
+      existing_image_url: '',
     });
   };
 
@@ -92,9 +81,17 @@ export default function AvatarBordersPage() {
       toast.error('code dan title wajib');
       return false;
     }
-    if (mode === 'add' && !form.file) {
-      toast.error('File gambar wajib saat membuat border baru');
-      return false;
+    const imageMode = (form.image_mode || 'upload').toString();
+    const imageUrl = (form.image_url || '').trim();
+    if (mode === 'add') {
+      if (imageMode === 'upload' && !(form.file instanceof File)) {
+        toast.error('File gambar wajib saat membuat border baru');
+        return false;
+      }
+      if (imageMode !== 'upload' && !imageUrl) {
+        toast.error('URL gambar wajib saat membuat border baru');
+        return false;
+      }
     }
     if (form.is_limited && form.total_supply !== '' && Number.isNaN(Number(form.total_supply))) {
       toast.error('total_supply harus angka');
@@ -116,7 +113,7 @@ export default function AvatarBordersPage() {
     setForm((f) => ({
       ...f,
       file,
-      preview_url: file ? URL.createObjectURL(file) : (mode === 'edit' ? f.preview_url : ''),
+      preview_url: file ? URL.createObjectURL(file) : '',
     }));
   };
 
@@ -128,16 +125,8 @@ export default function AvatarBordersPage() {
       setSubmitting(true);
       const token = getSession()?.token;
       if (!token) throw new Error('Token tidak tersedia');
-
-      let image_url;
-      if (form.file instanceof File) {
-        const codeSeg = safeKeySegment(form.code);
-        const ext = guessExtFromFile(form.file);
-        const key = `static/uploads/borders/${codeSeg || 'border'}_${Date.now()}${ext ? `.${ext}` : ''}`;
-        const up = await uploadFileViaPresignedPut({ token, key, file: form.file });
-        image_url = up?.publicUrl || '';
-        if (!image_url) throw new Error('URL hasil upload tidak tersedia');
-      }
+      const imageMode = (form.image_mode || 'upload').toString();
+      const imageUrl = (form.image_url || '').trim();
 
       const payload = {
         code: form.code.trim(),
@@ -150,17 +139,21 @@ export default function AvatarBordersPage() {
         total_supply: form.total_supply === '' ? null : Number(form.total_supply),
         per_user_limit: Number(form.per_user_limit || 1),
         tier: form.tier,
-        ...(image_url ? { image_url } : {}),
+        ...(imageMode !== 'upload' && imageUrl ? { image_url: imageUrl } : {}),
       };
 
       if (mode === 'add') {
-        const res = await createAvatarBorder({ token, payload });
+        const res = imageMode === 'upload'
+          ? await createAvatarBorderWithFile({ token, form: { ...payload, file: form.file } })
+          : await createAvatarBorder({ token, payload });
         toast.success(res?.message || 'Avatar border dibuat');
         resetForm();
         setPage(1);
         await loadList({ page: 1 });
       } else {
-        const res = await updateAvatarBorder({ token, id: editingId, payload });
+        const res = imageMode === 'upload' && form.file instanceof File
+          ? await updateAvatarBorderWithFile({ token, id: editingId, form: { ...payload, file: form.file } })
+          : await updateAvatarBorder({ token, id: editingId, payload });
         toast.success(res?.message || 'Avatar border diupdate');
         setMode('add');
         setEditingId(null);
@@ -217,8 +210,11 @@ export default function AvatarBordersPage() {
       total_supply: it.total_supply == null ? '' : String(it.total_supply),
       per_user_limit: it.per_user_limit == null ? '1' : String(it.per_user_limit),
       tier: it.tier || 'C',
+      image_mode: 'upload',
+      image_url: '',
       file: null,
-      preview_url: it.image_url || '',
+      preview_url: '',
+      existing_image_url: it.image_url || '',
     });
   };
 
@@ -320,16 +316,38 @@ export default function AvatarBordersPage() {
 
             <div className="space-y-1">
               <label className="text-sm font-extrabold">Gambar Border {mode === 'add' ? '*' : '(biarkan kosong jika tidak diubah)'}</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={onFileChange}
-                className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              />
-              {form.preview_url ? (
+              <div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)]">
+                <select
+                  value={form.image_mode}
+                  onChange={onChange('image_mode')}
+                  className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
+                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                >
+                  <option value="upload">Upload file</option>
+                  <option value="url">Gunakan URL</option>
+                </select>
+                {form.image_mode === 'upload' ? (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={onFileChange}
+                    className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
+                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  />
+                ) : (
+                  <input
+                    type="url"
+                    value={form.image_url}
+                    onChange={onChange('image_url')}
+                    placeholder="https://..."
+                    className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
+                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  />
+                )}
+              </div>
+              {(form.preview_url || form.image_url || form.existing_image_url) ? (
                 <div className="mt-2">
-                  <img src={form.preview_url} alt="Preview" className="max-h-40 border-4 rounded-lg" style={{ borderColor: 'var(--panel-border)' }} />
+                  <img src={form.preview_url || form.image_url || form.existing_image_url} alt="Preview" className="max-h-40 border-4 rounded-lg" style={{ borderColor: 'var(--panel-border)' }} />
                 </div>
               ) : null}
             </div>
@@ -369,9 +387,9 @@ export default function AvatarBordersPage() {
                   <option value="B">B</option>
                   <option value="A">A</option>
                   <option value="S">S</option>
-                  <option value="S+">S+</option>
-                  <option value="SS+">SS+</option>
-                  <option value="SSS+">SSS+</option>
+                  <option value="S_PLUS">S_PLUS</option>
+                  <option value="SS_PLUS">SS_PLUS</option>
+                  <option value="SSS_PLUS">SSS_PLUS</option>
                 </select>
               </div>
               <div className="flex items-end gap-2">

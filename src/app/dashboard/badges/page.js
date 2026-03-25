@@ -7,24 +7,7 @@ import { toast } from 'react-hot-toast';
 import { List, Plus, Pencil, Trash2, Image as ImageIcon, Info, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listBadges, createBadge, updateBadge, deleteBadge, uploadFileViaPresignedPut, refreshBadgeDimensions } from '@/lib/api';
-
-function safeKeySegment(input) {
-  return String(input || '')
-    .trim()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_\-]/g, '')
-    .slice(0, 80);
-}
-
-function guessExtFromFile(file) {
-  const name = String(file?.name || '');
-  const idx = name.lastIndexOf('.');
-  if (idx === -1) return '';
-  const ext = name.slice(idx + 1).toLowerCase();
-  if (!ext || ext.length > 10) return '';
-  return ext;
-}
+import { listBadges, createBadge, updateBadge, deleteBadge } from '@/lib/api';
 
 export default function BadgesPage() {
   const router = useRouter();
@@ -47,6 +30,8 @@ export default function BadgesPage() {
     poin_collection: '500',
     is_active: true,
     sort_order: '',
+    image_mode: 'upload',
+    image_url: '',
     file: null,
     previewUrl: '',
     existingImageUrl: '',
@@ -99,6 +84,8 @@ export default function BadgesPage() {
       poin_collection: '500',
       is_active: true,
       sort_order: '',
+      image_mode: 'upload',
+      image_url: '',
       file: null,
       previewUrl: '',
       existingImageUrl: '',
@@ -110,7 +97,7 @@ export default function BadgesPage() {
     setForm((f) => ({
       ...f,
       file,
-      previewUrl: file ? URL.createObjectURL(file) : f.previewUrl,
+      previewUrl: file ? URL.createObjectURL(file) : '',
     }));
   };
 
@@ -119,28 +106,22 @@ export default function BadgesPage() {
     if (!form.code || !form.name) {
       return toast.error('Code dan name wajib diisi');
     }
-    if (mode === 'add' && !form.file) {
-      return toast.error('File gambar wajib diisi saat membuat badge baru');
+    const imageMode = (form.image_mode || 'upload').toString();
+    const imageUrl = (form.image_url || '').trim();
+    if (mode === 'add') {
+      if (imageMode === 'upload') {
+        if (!(form.file instanceof File)) {
+          return toast.error('File gambar wajib diisi saat membuat badge baru');
+        }
+      } else if (!imageUrl) {
+        return toast.error('URL badge wajib diisi');
+      }
     }
 
     const token = getSession()?.token;
     if (!token) return toast.error('Token tidak tersedia');
 
-    let uploadedBadgeUrl = '';
     try {
-      if (form.file instanceof File) {
-        const codeSeg = safeKeySegment(form.code);
-        const ext = guessExtFromFile(form.file);
-        const key = `static/uploads/badges/${codeSeg || 'badge'}_${Date.now()}${ext ? `.${ext}` : ''}`;
-        const up = await uploadFileViaPresignedPut({
-          token,
-          key,
-          file: form.file,
-        });
-        uploadedBadgeUrl = up?.publicUrl || '';
-        if (!uploadedBadgeUrl) throw new Error('URL badge hasil upload tidak tersedia');
-      }
-
       const payloadForm = {
         code: form.code,
         name: form.name,
@@ -148,31 +129,16 @@ export default function BadgesPage() {
         poin_collection: form.poin_collection === '' ? '' : Number(form.poin_collection) || 500,
         is_active: !!form.is_active,
         sort_order: form.sort_order === '' ? '' : Number(form.sort_order) || 0,
-        badge_url: uploadedBadgeUrl || undefined,
-        file: uploadedBadgeUrl ? undefined : (form.file || undefined),
+        badge_url: imageMode !== 'upload' && imageUrl ? imageUrl : undefined,
+        file: imageMode === 'upload' && form.file instanceof File ? form.file : undefined,
       };
 
       setSubmitting(true);
       if (mode === 'add') {
         const res = await createBadge({ token, form: payloadForm });
-        const createdId = res?.data?.id ?? res?.data?.badge?.id ?? res?.badge?.id ?? res?.id;
-        if (uploadedBadgeUrl && createdId != null) {
-          try {
-            await refreshBadgeDimensions({ token, id: createdId, badge_url: uploadedBadgeUrl });
-          } catch (e) {
-            toast.error(e?.message || 'Gagal refresh dimensi badge');
-          }
-        }
         toast.success(res?.message || 'Badge dibuat');
       } else {
         const res = await updateBadge({ token, id: form.id, form: payloadForm });
-        if (uploadedBadgeUrl && form.id != null) {
-          try {
-            await refreshBadgeDimensions({ token, id: form.id, badge_url: uploadedBadgeUrl });
-          } catch (e) {
-            toast.error(e?.message || 'Gagal refresh dimensi badge');
-          }
-        }
         toast.success(res?.message || 'Badge diperbarui');
       }
       resetForm();
@@ -198,6 +164,8 @@ export default function BadgesPage() {
           : String(it.poin_collection),
       is_active: !!it.is_active,
       sort_order: typeof it.sort_order === 'number' ? String(it.sort_order) : it.sort_order || '',
+      image_mode: 'upload',
+      image_url: '',
       file: null,
       previewUrl: '',
       existingImageUrl: it.badge_url || '',
@@ -369,28 +337,61 @@ export default function BadgesPage() {
 
           <div className="space-y-2">
             <div className="text-xs font-extrabold">Gambar</div>
-            <div className="flex items-center gap-2">
-              <label
-                className="px-3 py-2 border-4 rounded-lg font-extrabold cursor-pointer"
+            <div className="grid sm:grid-cols-[180px_minmax(0,1fr)] gap-3 items-start">
+              <select
+                value={form.image_mode}
+                onChange={(e) => setForm((f) => ({ ...f, image_mode: e.target.value, image_url: e.target.value === 'url' ? f.image_url : '', file: e.target.value === 'upload' ? f.file : null, previewUrl: e.target.value === 'upload' ? f.previewUrl : '' }))}
+                className="px-3 py-2 border-4 rounded-lg font-semibold"
                 style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               >
-                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                <span className="flex items-center gap-2">
-                  <ImageIcon className="size-4" /> Pilih Gambar
-                </span>
-              </label>
-              {(form.previewUrl || form.existingImageUrl) && (
-                <div className="flex items-center gap-2 text-xs">
-                  <span>Preview:</span>
-                  <img
-                    src={form.previewUrl || form.existingImageUrl}
-                    alt="preview"
-                    className="w-10 h-10 object-contain border-2 rounded"
-                    style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
-                  />
+                <option value="upload">Upload file</option>
+                <option value="url">Gunakan URL</option>
+              </select>
+              {form.image_mode === 'upload' ? (
+                <div className="flex items-center gap-2">
+                  <label
+                    className="px-3 py-2 border-4 rounded-lg font-extrabold cursor-pointer"
+                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  >
+                    <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                    <span className="flex items-center gap-2">
+                      <ImageIcon className="size-4" /> Pilih Gambar
+                    </span>
+                  </label>
+                  {(form.previewUrl || form.existingImageUrl) && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span>Preview:</span>
+                      <img
+                        src={form.previewUrl || form.existingImageUrl}
+                        alt="preview"
+                        className="w-10 h-10 object-contain border-2 rounded"
+                        style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
+                      />
+                    </div>
+                  )}
                 </div>
+              ) : (
+                <input
+                  type="url"
+                  value={form.image_url}
+                  onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value, previewUrl: '' }))}
+                  placeholder="https://..."
+                  className="px-3 py-2 border-4 rounded-lg font-semibold"
+                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                />
               )}
             </div>
+            {form.image_mode === 'url' && (form.image_url || form.existingImageUrl) && (
+              <div className="flex items-center gap-2 text-xs">
+                <span>Preview:</span>
+                <img
+                  src={form.image_url || form.existingImageUrl}
+                  alt="preview"
+                  className="w-10 h-10 object-contain border-2 rounded"
+                  style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
+                />
+              </div>
+            )}
             <div className="flex items-start gap-2 text-xs sm:text-[11px] font-semibold opacity-90">
               <Info className="size-4 flex-shrink-0" />
               <span>

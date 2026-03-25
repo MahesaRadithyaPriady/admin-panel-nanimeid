@@ -13,6 +13,7 @@ const PERMISSION_ROUTE_PRIORITY = [
   // Kelola
   { key: 'kelola-user', href: '/dashboard/kelola-user' },
   { key: 'kelola-admin', href: '/dashboard/kelola-admin' },
+  { key: 'livechat', href: '/dashboard/livechat' },
 
   // Keuangan
   { key: 'keuangan', href: '/dashboard/keuangan' },
@@ -49,11 +50,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const getOrCreateDeviceId = () => {
+    if (typeof window === 'undefined') return 'admin-web-1';
+    try {
+      const key = 'nanimeid_livechat_device_id';
+      const existing = localStorage.getItem(key);
+      if (existing) return existing;
+      const next = `admin-web-${Math.random().toString(36).slice(2, 8)}`;
+      localStorage.setItem(key, next);
+      return next;
+    } catch {
+      return 'admin-web-1';
+    }
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const session = await loginAdmin({ username: username.trim(), password });
+      const device_id = getOrCreateDeviceId();
+      const session = await loginAdmin({ username: username.trim(), password, device_id });
       toast.success(`Login berhasil sebagai ${session.role}`);
 
       const permissions = Array.isArray(session?.permissions) ? session.permissions : [];

@@ -3,26 +3,64 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Plus, Pencil, Trash2, List, ChevronDown, ChevronRight, ChevronUp, Film } from 'lucide-react';
+import { Plus, Pencil, Trash2, List, ChevronDown, ChevronRight, ChevronUp, Film, ListChecks, BadgeCheck, Save } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listAnime, createAnime, updateAnime, deleteAnime, listEpisodes, createEpisode, updateEpisode, deleteEpisode, searchAnime, getAnimeDetail, listAnimeRequests, createAnimeRequest, updateAnimeRequest, deleteAnimeRequest, takeAnimeRequest, uploadFileViaPresignedPut } from '@/lib/api';
+import { listAnime, createAnime, updateAnime, deleteAnime, listEpisodes, createEpisode, updateEpisode, deleteEpisode, searchAnime, listAnimeAliases, getAnimeDetail, listAnimeRequests, deleteAnimeRequest, takeAnimeRequest, listEpisodeVideoIssueReasons, createEpisodeVideoIssueReason, updateEpisodeVideoIssueReason, deleteEpisodeVideoIssueReason, listEpisodeVideoIssueReports, updateEpisodeVideoIssueReport, updateEpisodeVideoIssueReportStatus, deleteEpisodeVideoIssueReport } from '@/lib/api';
 
-function safeKeySegment(input) {
-  return String(input || '')
-    .trim()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_\-]/g, '')
-    .slice(0, 80);
+function parseAliasNamesForUi(val) {
+  const raw = String(val || '').trim();
+  if (!raw) return [];
+
+  const pushAlias = (bucket, input) => {
+    if (!input) return;
+    if (typeof input === 'string') {
+      const trimmed = input.trim();
+      if (trimmed) bucket.push(trimmed);
+      return;
+    }
+    if (input && typeof input === 'object') {
+      const alias = String(input.alias || '').trim();
+      if (alias) bucket.push(alias);
+    }
+  };
+
+  try {
+    if (raw.startsWith('[') || raw.startsWith('{')) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const out = [];
+        parsed.forEach((item) => pushAlias(out, item));
+        return [...new Set(out)];
+      }
+      const out = [];
+      pushAlias(out, parsed);
+      return [...new Set(out)];
+    }
+  } catch {}
+
+  const out = [];
+  raw
+    .split(/\n|,/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .forEach((part) => {
+      if ((part.startsWith('{') && part.endsWith('}')) || (part.startsWith('[') && part.endsWith(']'))) {
+        try {
+          const parsed = JSON.parse(part);
+          if (Array.isArray(parsed)) parsed.forEach((item) => pushAlias(out, item));
+          else pushAlias(out, parsed);
+          return;
+        } catch {}
+      }
+      pushAlias(out, part);
+    });
+
+  return [...new Set(out)];
 }
 
-function guessExtFromFile(file) {
-  const name = String(file?.name || '');
-  const idx = name.lastIndexOf('.');
-  if (idx === -1) return '';
-  const ext = name.slice(idx + 1).toLowerCase();
-  if (!ext || ext.length > 10) return '';
-  return ext;
+function stringifyAliasNamesForUi(list) {
+  return [...new Set((Array.isArray(list) ? list : []).map((item) => String(item || '').trim()).filter(Boolean))].join('\n');
 }
 
 export default function DaftarKontenPage() {
@@ -42,7 +80,7 @@ export default function DaftarKontenPage() {
 
   // Form state (add/edit)
   const [mode, setMode] = useState('add'); // add | edit
-  const [activeTab, setActiveTab] = useState('anime'); // anime | episode | requests
+  const [activeTab, setActiveTab] = useState('anime'); // anime | episode | requests | episode-issue
   const [form, setForm] = useState({
     id: null,
     nama_anime: '',
@@ -68,6 +106,303 @@ export default function DaftarKontenPage() {
     schedule_jam: '',
     schedule_is_active: true,
   });
+  const [aliasSearch, setAliasSearch] = useState('');
+  const [aliasLookup, setAliasLookup] = useState([]);
+  const [aliasLookupLoading, setAliasLookupLoading] = useState(false);
+  const [newAliasInput, setNewAliasInput] = useState('');
+
+  const canEpisodeIssueAccess = useMemo(() => {
+    const role = String(user?.role || '').toLowerCase();
+    if (role === 'superadmin') return true;
+    const perms = Array.isArray(user?.permissions) ? user.permissions : [];
+    return perms.includes('episode-video-issues');
+  }, [user]);
+
+  useEffect(() => {
+    if (activeTab === 'episode-issue' && !canEpisodeIssueAccess) {
+      setActiveTab('anime');
+    }
+  }, [activeTab, canEpisodeIssueAccess]);
+
+  // Episode Issue: local UI state (reasons + reports)
+  const [issueSubTab, setIssueSubTab] = useState('reports'); // reasons | reports
+
+  // Reasons
+  const [issueIncludeInactive, setIssueIncludeInactive] = useState(false);
+  const [issueReasonsLoading, setIssueReasonsLoading] = useState(false);
+  const [issueReasons, setIssueReasons] = useState([]);
+  const [issueReasonMode, setIssueReasonMode] = useState('add');
+  const [issueReasonForm, setIssueReasonForm] = useState({
+    id: null,
+    code: '',
+    title: '',
+    description: '',
+    is_active: true,
+    sort_order: 0,
+  });
+  const [issueReasonSubmitting, setIssueReasonSubmitting] = useState(false);
+  const [issueReasonConfirmOpen, setIssueReasonConfirmOpen] = useState(false);
+  const [issueReasonConfirmTarget, setIssueReasonConfirmTarget] = useState(null);
+  const [issueReasonDeleting, setIssueReasonDeleting] = useState(false);
+
+  // Reports
+  const [issueReports, setIssueReports] = useState([]);
+  const [issueReportsPagination, setIssueReportsPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1, hasNext: false, hasPrev: false });
+  const [issueReportsLoading, setIssueReportsLoading] = useState(false);
+  const [issueReportStatus, setIssueReportStatus] = useState('');
+  const [issueReportEpisodeId, setIssueReportEpisodeId] = useState('');
+  const [issueReportUserId, setIssueReportUserId] = useState('');
+  const [issueReportReasonId, setIssueReportReasonId] = useState('');
+  const [issueEditingReport, setIssueEditingReport] = useState(null);
+  const [issueReportSubmitting, setIssueReportSubmitting] = useState(false);
+  const [issueReportConfirmOpen, setIssueReportConfirmOpen] = useState(false);
+  const [issueReportConfirmTarget, setIssueReportConfirmTarget] = useState(null);
+  const [issueReportDeleting, setIssueReportDeleting] = useState(false);
+
+  const loadIssueReasons = async (opts = {}) => {
+    setIssueReasonsLoading(true);
+    try {
+      const token = getSession()?.token;
+      const res = await listEpisodeVideoIssueReasons({ token, include_inactive: issueIncludeInactive, ...opts });
+      setIssueReasons(Array.isArray(res?.items) ? res.items : []);
+    } catch (err) {
+      toast.error(err?.message || 'Gagal memuat reasons');
+    } finally {
+      setIssueReasonsLoading(false);
+    }
+  };
+
+  const resetIssueReasonForm = () => {
+    setIssueReasonMode('add');
+    setIssueReasonForm({ id: null, code: '', title: '', description: '', is_active: true, sort_order: 0 });
+  };
+
+  const onEditIssueReason = (it) => {
+    setIssueReasonMode('edit');
+    setIssueReasonForm({
+      id: it.id,
+      code: it.code || '',
+      title: it.title || '',
+      description: it.description || '',
+      is_active: it.is_active !== undefined ? !!it.is_active : true,
+      sort_order: typeof it.sort_order === 'number' ? it.sort_order : Number(it.sort_order) || 0,
+    });
+  };
+
+  const onSubmitIssueReason = async (e) => {
+    e.preventDefault();
+    const token = getSession()?.token;
+
+    if (issueReasonMode === 'add') {
+      if (!issueReasonForm.code || !issueReasonForm.title) return toast.error('code dan title wajib diisi');
+    } else {
+      if (!issueReasonForm.title) return toast.error('title wajib diisi');
+    }
+
+    const payload = {
+      title: issueReasonForm.title,
+      description: issueReasonForm.description === '' ? null : issueReasonForm.description,
+      is_active: !!issueReasonForm.is_active,
+      sort_order: Number(issueReasonForm.sort_order) || 0,
+    };
+    if (issueReasonMode === 'add') payload.code = String(issueReasonForm.code || '').trim();
+
+    try {
+      setIssueReasonSubmitting(true);
+      if (issueReasonMode === 'add') {
+        const res = await createEpisodeVideoIssueReason({ token, payload });
+        toast.success(res?.message || 'Reason dibuat');
+      } else {
+        const res = await updateEpisodeVideoIssueReason({ token, id: issueReasonForm.id, payload });
+        toast.success(res?.message || 'Reason diperbarui');
+      }
+      resetIssueReasonForm();
+      await loadIssueReasons();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menyimpan reason');
+    } finally {
+      setIssueReasonSubmitting(false);
+    }
+  };
+
+  const onRequestDeleteIssueReason = (it) => {
+    setIssueReasonConfirmTarget(it);
+    setIssueReasonConfirmOpen(true);
+  };
+
+  const onCancelDeleteIssueReason = () => {
+    setIssueReasonConfirmOpen(false);
+    setIssueReasonConfirmTarget(null);
+  };
+
+  const onConfirmDeleteIssueReason = async () => {
+    if (!issueReasonConfirmTarget) return;
+    const token = getSession()?.token;
+    try {
+      setIssueReasonDeleting(true);
+      const res = await deleteEpisodeVideoIssueReason({ token, id: issueReasonConfirmTarget.id });
+      toast.success(res?.message || 'Reason dihapus');
+      setIssueReasonConfirmOpen(false);
+      setIssueReasonConfirmTarget(null);
+      if (issueReasonMode === 'edit' && issueReasonForm.id === issueReasonConfirmTarget.id) resetIssueReasonForm();
+      await loadIssueReasons();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menghapus reason');
+    } finally {
+      setIssueReasonDeleting(false);
+    }
+  };
+
+  const loadIssueReports = async (opts = {}) => {
+    setIssueReportsLoading(true);
+    try {
+      const token = getSession()?.token;
+      const page = opts.page ?? issueReportsPagination.page;
+      const limit = opts.limit ?? issueReportsPagination.limit;
+      const res = await listEpisodeVideoIssueReports({
+        token,
+        page,
+        limit,
+        status: issueReportStatus || undefined,
+        episode_id: issueReportEpisodeId || undefined,
+        user_id: issueReportUserId || undefined,
+        reason_id: issueReportReasonId || undefined,
+      });
+      setIssueReports(Array.isArray(res?.items) ? res.items : []);
+      setIssueReportsPagination(res?.pagination || { page, limit, total: 0, totalPages: 1, hasNext: false, hasPrev: false });
+    } catch (err) {
+      toast.error(err?.message || 'Gagal memuat reports');
+    } finally {
+      setIssueReportsLoading(false);
+    }
+  };
+
+  const parseIssueReportMetadata = (text) => {
+    const raw = (text || '').trim();
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      throw new Error('Metadata harus JSON valid (atau kosong)');
+    }
+  };
+
+  const onSearchIssueReports = (e) => {
+    e.preventDefault();
+    setIssueEditingReport(null);
+    loadIssueReports({ page: 1 });
+  };
+
+  const onStartEditIssueReport = (it) => {
+    setIssueEditingReport({
+      id: it.id,
+      reason_id: it.reason_id ?? '',
+      note: it.note ?? '',
+      metadataText: it.metadata ? JSON.stringify(it.metadata, null, 2) : '',
+      status: it.status || 'PENDING',
+    });
+  };
+
+  const onCancelEditIssueReport = () => setIssueEditingReport(null);
+
+  const onSaveEditIssueReport = async (e) => {
+    e.preventDefault();
+    if (!issueEditingReport) return;
+    const token = getSession()?.token;
+
+    let metadata;
+    try {
+      metadata = parseIssueReportMetadata(issueEditingReport.metadataText);
+    } catch (err) {
+      return toast.error(err?.message || 'Metadata tidak valid');
+    }
+
+    const payload = {
+      reason_id: issueEditingReport.reason_id === '' ? null : Number(issueEditingReport.reason_id),
+      note: issueEditingReport.note === '' ? null : issueEditingReport.note,
+      metadata,
+      status: issueEditingReport.status,
+    };
+
+    try {
+      setIssueReportSubmitting(true);
+      const res = await updateEpisodeVideoIssueReport({ token, id: issueEditingReport.id, payload });
+      toast.success(res?.message || 'Report diperbarui');
+      setIssueEditingReport(null);
+      await loadIssueReports();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menyimpan report');
+    } finally {
+      setIssueReportSubmitting(false);
+    }
+  };
+
+  const onQuickStatusIssueReport = async (id, nextStatus) => {
+    const token = getSession()?.token;
+    try {
+      setIssueReportSubmitting(true);
+      const res = await updateEpisodeVideoIssueReportStatus({ token, id, status: nextStatus });
+      toast.success(res?.message || 'Status diperbarui');
+      await loadIssueReports();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal update status');
+    } finally {
+      setIssueReportSubmitting(false);
+    }
+  };
+
+  const onRequestDeleteIssueReport = (it) => {
+    setIssueReportConfirmTarget(it);
+    setIssueReportConfirmOpen(true);
+  };
+
+  const onCancelDeleteIssueReport = () => {
+    setIssueReportConfirmOpen(false);
+    setIssueReportConfirmTarget(null);
+  };
+
+  const onConfirmDeleteIssueReport = async () => {
+    if (!issueReportConfirmTarget) return;
+    const token = getSession()?.token;
+    try {
+      setIssueReportDeleting(true);
+      const res = await deleteEpisodeVideoIssueReport({ token, id: issueReportConfirmTarget.id });
+      toast.success(res?.message || 'Report dihapus');
+      setIssueReportConfirmOpen(false);
+      setIssueReportConfirmTarget(null);
+      if (issueEditingReport?.id === issueReportConfirmTarget.id) setIssueEditingReport(null);
+      await loadIssueReports();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menghapus report');
+    } finally {
+      setIssueReportDeleting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user || !canEpisodeIssueAccess) return;
+    if (activeTab !== 'episode-issue') return;
+    loadIssueReasons({ include_inactive: true });
+    loadIssueReports({ page: 1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, user, canEpisodeIssueAccess]);
+
+  useEffect(() => {
+    if (!user || !canEpisodeIssueAccess) return;
+    if (activeTab !== 'episode-issue') return;
+    if (issueSubTab !== 'reasons') return;
+    loadIssueReasons();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [issueIncludeInactive, activeTab, issueSubTab, user, canEpisodeIssueAccess]);
+
+  useEffect(() => {
+    if (!user || !canEpisodeIssueAccess) return;
+    if (activeTab !== 'episode-issue') return;
+    if (issueSubTab !== 'reports') return;
+    if (issueReports.length > 0) return;
+    loadIssueReports({ page: 1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, issueSubTab, user, canEpisodeIssueAccess]);
 
   const onChangeAnimeImage = (e) => {
     const file = e.target.files?.[0] || null;
@@ -83,6 +418,14 @@ export default function DaftarKontenPage() {
 
   // ===== Tab: Anime Requests =====
   const REQUEST_STATUSES = useMemo(() => (['PENDING', 'UNDER_REVIEW', 'UPLOAD_IN_PROGRESS', 'COMPLETED', 'REJECTED']), []);
+  const REQUEST_STATUS_META = useMemo(() => ({
+    ALL: { label: 'Semua', bg: 'var(--panel-bg)', fg: 'var(--foreground)' },
+    PENDING: { label: 'Pending', bg: '#F59E0B', fg: '#111827' },
+    UNDER_REVIEW: { label: 'Review', bg: '#60A5FA', fg: '#172554' },
+    UPLOAD_IN_PROGRESS: { label: 'Upload', bg: '#FB7185', fg: '#4C0519' },
+    COMPLETED: { label: 'Selesai', bg: '#22C55E', fg: '#052E16' },
+    REJECTED: { label: 'Tolak', bg: '#A78BFA', fg: '#2E1065' },
+  }), []);
   const [reqItems, setReqItems] = useState([]);
   const [reqPage, setReqPage] = useState(1);
   const [reqLimit, setReqLimit] = useState(20);
@@ -92,9 +435,6 @@ export default function DaftarKontenPage() {
   const [reqStatus, setReqStatus] = useState('');
   const [reqUserId, setReqUserId] = useState('');
   const [reqAdminId, setReqAdminId] = useState('');
-  const [reqMode, setReqMode] = useState('add'); // add | edit
-  const [reqForm, setReqForm] = useState({ id: null, user_id: '', nama_anime: '', season: 1, status: 'PENDING', note: '' });
-  const [reqSubmitting, setReqSubmitting] = useState(false);
   const [reqTakingId, setReqTakingId] = useState(null);
   const [reqConfirmOpen, setReqConfirmOpen] = useState(false);
   const [reqConfirmTarget, setReqConfirmTarget] = useState(null);
@@ -133,56 +473,13 @@ export default function DaftarKontenPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, activeTab]);
 
-  const resetReqForm = () => {
-    setReqMode('add');
-    setReqForm({ id: null, user_id: '', nama_anime: '', season: 1, status: 'PENDING', note: '' });
-  };
-
-  const onSubmitReq = async (e) => {
-    e.preventDefault();
-    const token = getSession()?.token;
-    if (!token) return toast.error('Token tidak tersedia');
-    if (!reqForm.user_id || !reqForm.nama_anime) return toast.error('user_id dan nama_anime wajib diisi');
-
-    const payload = {
-      user_id: Number(reqForm.user_id),
-      nama_anime: reqForm.nama_anime,
-      season: reqForm.season === '' || reqForm.season === null || reqForm.season === undefined ? undefined : Number(reqForm.season),
-      status: reqForm.status || 'PENDING',
-      note: reqForm.note === '' ? null : reqForm.note,
-    };
-
-    try {
-      setReqSubmitting(true);
-      if (reqMode === 'add') {
-        const res = await createAnimeRequest({ token, payload });
-        toast.success(res?.message || 'Request dibuat');
-      } else {
-        const updatePayload = { ...payload };
-        delete updatePayload.user_id; // user_id tidak ada di contoh update docs
-        const res = await updateAnimeRequest({ token, id: reqForm.id, payload: updatePayload });
-        toast.success(res?.message || 'Request diperbarui');
-      }
-      resetReqForm();
-      await loadAnimeRequests();
-    } catch (err) {
-      toast.error(err?.message || 'Gagal menyimpan request');
-    } finally {
-      setReqSubmitting(false);
-    }
-  };
-
-  const onEditReq = (it) => {
-    setReqMode('edit');
-    setReqForm({
-      id: it.id,
-      user_id: String(it.user_id ?? ''),
-      nama_anime: it.nama_anime || '',
-      season: it.season ?? 1,
-      status: it.status || 'PENDING',
-      note: it.note || '',
-    });
-  };
+  useEffect(() => {
+    if (!user) return;
+    if (activeTab !== 'requests') return;
+    setReqPage(1);
+    loadAnimeRequests({ page: 1, status: reqStatus || undefined });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reqStatus]);
 
   const onTakeReq = async (it) => {
     const token = getSession()?.token;
@@ -215,7 +512,6 @@ export default function DaftarKontenPage() {
       setReqDeleting(true);
       const res = await deleteAnimeRequest({ token, id: reqConfirmTarget.id });
       toast.success(res?.message || 'Request dihapus');
-      if (reqMode === 'edit' && reqForm.id === reqConfirmTarget.id) resetReqForm();
       setReqConfirmOpen(false);
       setReqConfirmTarget(null);
       await loadAnimeRequests();
@@ -225,31 +521,37 @@ export default function DaftarKontenPage() {
       setReqDeleting(false);
     }
   };
-  const resetForm = () => setForm({
-    id: null,
-    nama_anime: '',
-    cover_mode: 'upload',
-    cover_url: '',
-    image: null,
-    previewUrl: '',
-    existingImageUrl: '',
-    rating_anime: '',
-    content_type: 'ANIME',
-    is_21_plus: false,
-    status_anime: '',
-    sinopsis_anime: '',
-    label_anime: '',
-    tags_anime: '',
-    genre_anime: '',
-    studio_anime: '',
-    fakta_menarik: '',
-    tanggal_rilis_anime: '',
-    aliases: '',
-    alias_priority: '',
-    schedule_hari: '',
-    schedule_jam: '',
-    schedule_is_active: true,
-  });
+  const resetForm = () => {
+    setAliasSearch('');
+    setAliasLookup([]);
+    setAliasLookupLoading(false);
+    setNewAliasInput('');
+    setForm({
+      id: null,
+      nama_anime: '',
+      cover_mode: 'upload',
+      cover_url: '',
+      image: null,
+      previewUrl: '',
+      existingImageUrl: '',
+      rating_anime: '',
+      content_type: 'ANIME',
+      is_21_plus: false,
+      status_anime: '',
+      sinopsis_anime: '',
+      label_anime: '',
+      tags_anime: '',
+      genre_anime: '',
+      studio_anime: '',
+      fakta_menarik: '',
+      tanggal_rilis_anime: '',
+      aliases: '',
+      alias_priority: '',
+      schedule_hari: '',
+      schedule_jam: '',
+      schedule_is_active: true,
+    });
+  };
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -302,6 +604,83 @@ export default function DaftarKontenPage() {
     }
     return out.length ? out : undefined;
   };
+  const currentAliasList = useMemo(() => parseAliasNamesForUi(form.aliases), [form.aliases]);
+  const aliasLookupNames = useMemo(() => {
+    if (!Array.isArray(aliasLookup)) return [];
+    return aliasLookup
+      .map((item) => String(item?.alias || '').trim())
+      .filter(Boolean);
+  }, [aliasLookup]);
+  const aliasOptions = useMemo(() => {
+    const fromItems = items.flatMap((it) => {
+      if (!Array.isArray(it?.aliases)) return [];
+      return it.aliases
+        .map((a) => (typeof a === 'string' ? a : a?.alias || ''))
+        .map((alias) => String(alias || '').trim())
+        .filter(Boolean);
+    });
+    return [...new Set([...fromItems, ...aliasLookupNames, ...currentAliasList])].sort((a, b) => a.localeCompare(b));
+  }, [items, aliasLookupNames, currentAliasList]);
+  const aliasLookupResults = useMemo(() => {
+    const seen = new Set();
+    return (Array.isArray(aliasLookup) ? aliasLookup : []).filter((item) => {
+      const alias = String(item?.alias || '').trim();
+      if (!alias) return false;
+      if (currentAliasList.includes(alias)) return false;
+      if (seen.has(alias.toLowerCase())) return false;
+      seen.add(alias.toLowerCase());
+      return true;
+    });
+  }, [aliasLookup, currentAliasList]);
+  const addAliasToForm = (alias) => {
+    const normalized = String(alias || '').trim();
+    if (!normalized) return;
+    setForm((f) => ({
+      ...f,
+      aliases: stringifyAliasNamesForUi([...parseAliasNamesForUi(f.aliases), normalized]),
+    }));
+  };
+  const removeAliasFromForm = (alias) => {
+    const normalized = String(alias || '').trim();
+    setForm((f) => ({
+      ...f,
+      aliases: stringifyAliasNamesForUi(parseAliasNamesForUi(f.aliases).filter((item) => item !== normalized)),
+    }));
+  };
+  const onAddManualAlias = () => {
+    const normalized = String(newAliasInput || '').trim();
+    if (!normalized) return toast.error('Alias baru tidak boleh kosong');
+    addAliasToForm(normalized);
+    setNewAliasInput('');
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'anime') return;
+    const q = String(aliasSearch || '').trim();
+    if (q.length < 2) {
+      setAliasLookup([]);
+      setAliasLookupLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        setAliasLookupLoading(true);
+        const token = getSession()?.token;
+        if (!token) return;
+        const res = await listAnimeAliases({ token, q, limit: 8 });
+        if (!cancelled) setAliasLookup(Array.isArray(res?.items) ? res.items : []);
+      } catch (err) {
+        if (!cancelled) toast.error(err?.message || 'Gagal mencari alias anime');
+      } finally {
+        if (!cancelled) setAliasLookupLoading(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [activeTab, aliasSearch]);
   const replaceEpisodeToken = (text, n) => {
     if (!text) return text;
     const num = Number(n) || 0;
@@ -631,23 +1010,11 @@ export default function DaftarKontenPage() {
     const token = getSession()?.token;
     if (!token) return toast.error('Token tidak tersedia');
 
-    let thumbnail_episode;
-    if (tabThumbMode === 'upload' && tabEpisode.image instanceof File) {
-      const parent = items.find((a) => a.id === tabEpisode.animeId);
-      const animeSeg = safeKeySegment(parent?.nama_anime || parent?.id || tabEpisode.animeId);
-      const ext = guessExtFromFile(tabEpisode.image);
-      const epNo = Number(tabEpisode.nomor_episode) || 0;
-      const key = `static/uploads/episodes/${animeSeg || 'anime'}_ep${epNo}_${Date.now()}${ext ? `.${ext}` : ''}`;
-      const up = await uploadFileViaPresignedPut({ token, key, file: tabEpisode.image });
-      thumbnail_episode = up?.publicUrl || '';
-      if (!thumbnail_episode) throw new Error('URL thumbnail episode hasil upload tidak tersedia');
-    } else if (tabThumbMode !== 'upload') {
-      thumbnail_episode = tabThumbUrl;
-    }
     const payload = {
       judul_episode: tabEpisode.judul_episode,
       nomor_episode: Number(tabEpisode.nomor_episode),
-      ...(thumbnail_episode ? { thumbnail_episode } : {}),
+      ...(tabThumbMode === 'upload' && tabEpisode.image instanceof File ? { image: tabEpisode.image } : {}),
+      ...(tabThumbMode !== 'upload' && tabThumbUrl ? { thumbnail_episode: tabThumbUrl } : {}),
       deskripsi_episode: tabEpisode.deskripsi_episode || null,
       durasi_episode: Number(tabEpisode.durasi_episode) || 0,
       intro_start_seconds: Number(tabEpisode.intro_start_seconds) || 0,
@@ -802,23 +1169,11 @@ export default function DaftarKontenPage() {
       if (!editThumbUrl) return toast.error('Thumbnail episode URL wajib diisi');
     }
 
-    let thumbnail_episode;
-    if (editThumbMode === 'upload' && editingEpisode.image instanceof File) {
-      const parent = items.find((a) => a.id === editingEpisode.animeId);
-      const animeSeg = safeKeySegment(parent?.nama_anime || parent?.id || editingEpisode.animeId);
-      const ext = guessExtFromFile(editingEpisode.image);
-      const epNo = Number(editingEpisode.nomor_episode) || 0;
-      const key = `static/uploads/episodes/${animeSeg || 'anime'}_ep${epNo}_${Date.now()}${ext ? `.${ext}` : ''}`;
-      const up = await uploadFileViaPresignedPut({ token, key, file: editingEpisode.image });
-      thumbnail_episode = up?.publicUrl || '';
-      if (!thumbnail_episode) return toast.error('URL thumbnail episode hasil upload tidak tersedia');
-    } else if (editThumbMode !== 'upload' && editThumbUrl) {
-      thumbnail_episode = editThumbUrl;
-    }
     const payload = {
       judul_episode: editingEpisode.judul_episode,
       nomor_episode: editingEpisode.nomor_episode,
-      ...(thumbnail_episode ? { thumbnail_episode } : {}),
+      ...(editThumbMode === 'upload' && editingEpisode.image instanceof File ? { image: editingEpisode.image } : {}),
+      ...(editThumbMode !== 'upload' && editThumbUrl ? { thumbnail_episode: editThumbUrl } : {}),
       deskripsi_episode: editingEpisode.deskripsi_episode === '' ? null : editingEpisode.deskripsi_episode,
       durasi_episode: Number(editingEpisode.durasi_episode) || 0,
       intro_start_seconds: Number(editingEpisode.intro_start_seconds) || 0,
@@ -963,23 +1318,11 @@ export default function DaftarKontenPage() {
     const token = getSession()?.token;
     if (!token) return toast.error('Token tidak tersedia');
 
-    let thumbnail_episode;
-    if (epThumbMode === 'upload' && newEpisode.image instanceof File) {
-      const parent = items.find((a) => a.id === creatingForAnime);
-      const animeSeg = safeKeySegment(parent?.nama_anime || parent?.id || creatingForAnime);
-      const ext = guessExtFromFile(newEpisode.image);
-      const epNo = Number(newEpisode.nomor_episode) || 0;
-      const key = `static/uploads/episodes/${animeSeg || 'anime'}_ep${epNo}_${Date.now()}${ext ? `.${ext}` : ''}`;
-      const up = await uploadFileViaPresignedPut({ token, key, file: newEpisode.image });
-      thumbnail_episode = up?.publicUrl || '';
-      if (!thumbnail_episode) return toast.error('URL thumbnail episode hasil upload tidak tersedia');
-    } else if (epThumbMode !== 'upload') {
-      thumbnail_episode = epThumbUrl;
-    }
     const payload = {
       judul_episode: newEpisode.judul_episode,
       nomor_episode: Number(newEpisode.nomor_episode),
-      ...(thumbnail_episode ? { thumbnail_episode } : {}),
+      ...(epThumbMode === 'upload' && newEpisode.image instanceof File ? { image: newEpisode.image } : {}),
+      ...(epThumbMode !== 'upload' && epThumbUrl ? { thumbnail_episode: epThumbUrl } : {}),
       deskripsi_episode: newEpisode.deskripsi_episode || null,
       durasi_episode: Number(newEpisode.durasi_episode) || 0,
       intro_start_seconds: Number(newEpisode.intro_start_seconds) || 0,
@@ -1125,24 +1468,11 @@ export default function DaftarKontenPage() {
     if (!token) return toast.error('Token tidak tersedia');
     try {
       setSubmittingAnime(true);
-      let gambar_anime;
-      if (coverMode === 'upload' && form.image instanceof File) {
-        const animeSeg = safeKeySegment(form.nama_anime);
-        const ext = guessExtFromFile(form.image);
-        const key = `static/uploads/anime/${animeSeg || 'anime'}_${Date.now()}${ext ? `.${ext}` : ''}`;
-        const up = await uploadFileViaPresignedPut({ token, key, file: form.image });
-        gambar_anime = up?.publicUrl || '';
-        if (!gambar_anime) throw new Error('URL cover anime hasil upload tidak tersedia');
-      } else if (coverMode !== 'upload' && coverUrl) {
-        gambar_anime = coverUrl;
-      }
-
       const payload = buildPayload();
-      if (gambar_anime) payload.gambar_anime = gambar_anime;
+      if (coverMode !== 'upload' && coverUrl) payload.gambar_anime = coverUrl;
       if (mode === 'edit' && !payload.gambar_anime) {
         payload.gambar_anime = (form.existingImageUrl || '').trim() || undefined;
       }
-      delete payload.image;
       if (mode === 'add') {
         const res = await createAnime({ token, payload });
         toast.success(res?.message || 'Anime dibuat');
@@ -1165,6 +1495,9 @@ export default function DaftarKontenPage() {
 
   const onEdit = (it) => {
     setMode('edit');
+    setAliasSearch('');
+    setAliasLookup([]);
+    setNewAliasInput('');
     setForm({
       id: it.id,
       nama_anime: it.nama_anime || '',
@@ -1279,21 +1612,62 @@ export default function DaftarKontenPage() {
     <div className="space-y-6">
       {loading || !user ? null : (
         <>
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-extrabold flex items-center gap-2"><List className="size-5" /> Daftar Konten</h2>
+          <div className="rounded-[28px] border-4 p-5 md:p-6" style={{ boxShadow: '10px 10px 0 #000', background: 'linear-gradient(135deg, var(--panel-bg) 0%, #dbeafe 100%)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-1 text-xs font-black" style={{ borderColor: 'var(--panel-border)', background: '#e0f2fe', color: '#1d4ed8' }}>Admin Workspace</div>
+                <h2 className="mt-4 text-2xl md:text-3xl font-black flex items-center gap-3"><List className="size-7" /> Daftar Konten</h2>
+                <p className="mt-2 max-w-3xl text-sm md:text-base font-semibold opacity-80">Kelola anime, episode, dan request dari halaman kerja utama yang lebih nyaman dipakai admin setiap hari.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 rounded-[22px] border-4 p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'rgba(255,255,255,0.6)', borderColor: 'var(--panel-border)' }}>
+                <div className="rounded-[18px] border-4 px-3 py-3" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
+                  <div className="text-[11px] font-black uppercase opacity-70">Anime</div>
+                  <div className="mt-1 text-xl font-black">{total}</div>
+                </div>
+                <div className="rounded-[18px] border-4 px-3 py-3" style={{ borderColor: 'var(--panel-border)', background: '#fff7cc', color: '#92400e' }}>
+                  <div className="text-[11px] font-black uppercase opacity-70">Mode</div>
+                  <div className="mt-1 text-sm font-black">{mode === 'add' ? 'Tambah' : `Edit #${form.id}`}</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Tabs: Tambah Anime | Tambah Episode | Request Anime */}
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setActiveTab('anime')} className={`px-3 py-2 border-4 rounded-lg font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'anime' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: activeTab === 'anime' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Tambah Anime</button>
-            <button type="button" onClick={() => setActiveTab('episode')} className={`px-3 py-2 border-4 rounded-lg font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'episode' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: activeTab === 'episode' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Tambah Episode</button>
-            <button type="button" onClick={() => setActiveTab('requests')} className={`px-3 py-2 border-4 rounded-lg font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'requests' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: activeTab === 'requests' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Request Anime</button>
+          <div className="flex flex-wrap items-center gap-2 rounded-[22px] border-4 p-2" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+            <button type="button" onClick={() => setActiveTab('anime')} className={`w-full sm:w-auto px-4 py-3 border-4 rounded-2xl font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'anime' ? '#dbeafe' : 'var(--background)', color: activeTab === 'anime' ? '#1d4ed8' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Tambah Anime</button>
+            <button type="button" onClick={() => setActiveTab('episode')} className={`w-full sm:w-auto px-4 py-3 border-4 rounded-2xl font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'episode' ? '#ede9fe' : 'var(--background)', color: activeTab === 'episode' ? '#6d28d9' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Tambah Episode</button>
+            <button type="button" onClick={() => setActiveTab('requests')} className={`w-full sm:w-auto px-4 py-3 border-4 rounded-2xl font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'requests' ? '#fef3c7' : 'var(--background)', color: activeTab === 'requests' ? '#92400e' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Request Anime</button>
+            {canEpisodeIssueAccess && (
+              <button type="button" onClick={() => setActiveTab('episode-issue')} className={`w-full sm:w-auto px-4 py-3 border-4 rounded-2xl font-extrabold`} style={{ boxShadow: '4px 4px 0 #000', background: activeTab === 'episode-issue' ? '#fee2e2' : 'var(--background)', color: activeTab === 'episode-issue' ? '#991b1b' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Masalah Episode</button>
+            )}
           </div>
 
           {/* Search + Filters */}
-          {activeTab === 'requests' ? (
+          {activeTab === 'episode-issue' ? null : (activeTab === 'requests' ? (
             <div className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
               <div className="font-extrabold mb-2">Cari Anime Requests</div>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {['', ...REQUEST_STATUSES].map((statusKey) => {
+                  const meta = REQUEST_STATUS_META[statusKey || 'ALL'];
+                  const active = reqStatus === statusKey;
+                  return (
+                    <button
+                      key={statusKey || 'ALL'}
+                      type="button"
+                      onClick={() => setReqStatus(statusKey)}
+                      className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                      style={{
+                        boxShadow: '4px 4px 0 #000',
+                        background: active ? meta.bg : 'var(--panel-bg)',
+                        color: active ? meta.fg : 'var(--foreground)',
+                        borderColor: 'var(--panel-border)',
+                      }}
+                    >
+                      {meta.label}
+                    </button>
+                  );
+                })}
+              </div>
               <form
                 onSubmit={(e) => { e.preventDefault(); setReqPage(1); loadAnimeRequests({ page: 1 }); }}
                 className="grid gap-3"
@@ -1301,23 +1675,16 @@ export default function DaftarKontenPage() {
                 <div className="grid sm:grid-cols-3 gap-4">
                   <div className="grid gap-1">
                     <div className="text-xs font-extrabold">Cari nama anime</div>
-                    <input value={reqQ} onChange={(e) => setReqQ(e.target.value)} placeholder="Cari nama_anime" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                  </div>
-                  <div className="grid gap-1">
-                    <div className="text-xs font-extrabold">Status</div>
-                    <select value={reqStatus} onChange={(e) => setReqStatus(e.target.value)} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                      <option value="">Semua status</option>
-                      {REQUEST_STATUSES.map((s) => (<option key={s} value={s}>{s}</option>))}
-                    </select>
+                    <input value={reqQ} onChange={(e) => setReqQ(e.target.value)} placeholder="Cari nama_anime" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                   </div>
                   <div className="grid gap-1">
                     <div className="text-xs font-extrabold">User ID</div>
-                    <input value={reqUserId} onChange={(e) => setReqUserId(e.target.value)} placeholder="user_id" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                    <input value={reqUserId} onChange={(e) => setReqUserId(e.target.value)} placeholder="user_id" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                   </div>
-                </div>
-                <div className="grid gap-1 sm:max-w-[420px]">
-                  <div className="text-xs font-extrabold">Admin ID</div>
-                  <input value={reqAdminId} onChange={(e) => setReqAdminId(e.target.value)} placeholder="admin_id" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Admin ID</div>
+                    <input value={reqAdminId} onChange={(e) => setReqAdminId(e.target.value)} placeholder="admin_id" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button type="submit" disabled={reqLoading} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>{reqLoading ? 'Memuat...' : 'Cari'}</button>
@@ -1333,8 +1700,15 @@ export default function DaftarKontenPage() {
               </form>
             </div>
           ) : (
-            <form onSubmit={onSearch} className="grid gap-3">
-              <div className="grid sm:grid-cols-[1fr_140px] gap-3">
+            <form onSubmit={onSearch} className="grid gap-3 rounded-[24px] border-4 p-4" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-extrabold">Pencarian Konten</div>
+                  <div className="mt-1 text-xs font-semibold opacity-70">Cari anime dengan cepat berdasarkan nama, genre, tag, dan status.</div>
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: 'var(--panel-border)', background: '#dbeafe', color: '#1d4ed8' }}>Total tampil: {items.length}</div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,140px)] gap-3">
                 <div className="grid gap-1">
                   <div className="text-xs font-extrabold">Pencarian</div>
                   <input
@@ -1342,7 +1716,7 @@ export default function DaftarKontenPage() {
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     placeholder="Cari (nama/genre/tag)"
-                    className="px-3 py-2 border-4 rounded-lg font-semibold"
+                    className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
                     style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                   />
                 </div>
@@ -1356,7 +1730,7 @@ export default function DaftarKontenPage() {
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
-                    className="px-3 py-2 border-4 rounded-lg font-semibold"
+                    className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
                     style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                   >
                     <option value="">Semua Status</option>
@@ -1373,202 +1747,590 @@ export default function DaftarKontenPage() {
                     value={genre}
                     onChange={(e) => setGenre(e.target.value)}
                     placeholder="Filter genre (exact, contoh: Action)"
-                    className="px-3 py-2 border-4 rounded-lg font-semibold"
+                    className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
                     style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                   />
                 </div>
               </div>
             </form>
-          )}
+          ))}
 
-          {/* Form Tambah / Edit Anime */}
-          {activeTab === 'anime' && (
-          <form onSubmit={onSubmit} className="grid gap-3">
-            <div className="grid sm:grid-cols-2 gap-3">
+          {activeTab === 'episode-issue' && canEpisodeIssueAccess && (
+            <div className="space-y-4">
+              <div className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIssueSubTab('reasons')}
+                    className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                    style={{ boxShadow: '4px 4px 0 #000', background: issueSubTab === 'reasons' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: issueSubTab === 'reasons' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                  >
+                    <span className="inline-flex items-center gap-2"><ListChecks className="size-4" /> Konfigurasi Alasan</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIssueSubTab('reports')}
+                    className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                    style={{ boxShadow: '4px 4px 0 #000', background: issueSubTab === 'reports' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: issueSubTab === 'reports' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                  >
+                    <span className="inline-flex items-center gap-2"><BadgeCheck className="size-4" /> Laporan Episode</span>
+                  </button>
+                </div>
+              </div>
+
+              {issueSubTab === 'reasons' && (
+                <>
+                  <div className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <label className="flex items-center gap-2 text-sm font-semibold">
+                        <input type="checkbox" checked={issueIncludeInactive} onChange={(e) => setIssueIncludeInactive(e.target.checked)} />
+                        <span>Include inactive</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => loadIssueReasons()}
+                        disabled={issueReasonsLoading}
+                        className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
+                        style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
+                      >
+                        {issueReasonsLoading ? 'Memuat...' : 'Refresh'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-3 border-4 rounded-lg space-y-3" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                    <div className="text-sm font-extrabold">{issueReasonMode === 'add' ? 'Tambah Alasan' : `Edit Alasan #${issueReasonForm.id}`}</div>
+                    <form onSubmit={onSubmitIssueReason} className="grid gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input
+                          value={issueReasonForm.code}
+                          onChange={(e) => setIssueReasonForm((f) => ({ ...f, code: e.target.value }))}
+                          disabled={issueReasonMode !== 'add'}
+                          placeholder="CODE (unik, contoh: NO_AUDIO)"
+                          className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
+                          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                        />
+                        <input
+                          value={issueReasonForm.title}
+                          onChange={(e) => setIssueReasonForm((f) => ({ ...f, title: e.target.value }))}
+                          placeholder="Judul alasan"
+                          className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
+                          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                        />
+                      </div>
+                      <textarea
+                        value={issueReasonForm.description}
+                        onChange={(e) => setIssueReasonForm((f) => ({ ...f, description: e.target.value }))}
+                        placeholder="Deskripsi (opsional)"
+                        rows={2}
+                        className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
+                        style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                      />
+                      <div className="grid grid-cols-1 sm:grid-cols-[180px_minmax(0,1fr)] gap-3 items-center">
+                        <input
+                          type="number"
+                          value={issueReasonForm.sort_order}
+                          onChange={(e) => setIssueReasonForm((f) => ({ ...f, sort_order: e.target.value }))}
+                          placeholder="sort_order"
+                          className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
+                          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                        />
+                        <label className="flex items-center gap-2 text-sm font-semibold">
+                          <input type="checkbox" checked={!!issueReasonForm.is_active} onChange={(e) => setIssueReasonForm((f) => ({ ...f, is_active: e.target.checked }))} />
+                          <span>Aktif</span>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="submit"
+                          disabled={issueReasonSubmitting}
+                          className="flex py-2 items-center w-40 justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
+                          style={{ boxShadow: '4px 4px 0 #000', background: issueReasonMode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', color: issueReasonMode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}
+                        >
+                          {issueReasonSubmitting ? (issueReasonMode === 'add' ? 'Menambah...' : 'Menyimpan...') : (issueReasonMode === 'add' ? (<><Plus className="size-4" /> Tambah</>) : (<><Pencil className="size-4" /> Simpan</>))}
+                        </button>
+                        {issueReasonMode === 'edit' && (
+                          <button
+                            type="button"
+                            onClick={resetIssueReasonForm}
+                            className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                          >
+                            Batal Edit
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
+
+                  <div className="overflow-auto">
+                    <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                      <thead style={{ background: 'var(--panel-bg)' }}>
+                        <tr>
+                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>ID</th>
+                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Code</th>
+                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Judul</th>
+                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aktif</th>
+                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Sort</th>
+                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...issueReasons].sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0)).map((it) => (
+                          <tr key={it.id}>
+                            <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.id}</td>
+                            <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.code}</td>
+                            <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.title}</td>
+                            <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.is_active ? 'Ya' : 'Tidak'}</td>
+                            <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.sort_order ?? '-'}</td>
+                            <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
+                              <div className="flex items-center gap-2">
+                                <button type="button" onClick={() => onEditIssueReason(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
+                                  <Pencil className="size-4" />
+                                </button>
+                                <button type="button" onClick={() => onRequestDeleteIssueReason(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>
+                                  <Trash2 className="size-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {issueReasons.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="px-3 py-6 text-center text-sm opacity-70">
+                              {issueReasonsLoading ? 'Memuat...' : 'Belum ada alasan.'}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {issueReasonConfirmOpen && (
+                    <div className="fixed inset-0 z-50 grid place-items-center">
+                      <div className="absolute inset-0 bg-black/40" onClick={onCancelDeleteIssueReason} />
+                      <div className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                        <div className="text-lg font-extrabold mb-1">Hapus Alasan?</div>
+                        <div className="text-sm opacity-80 mb-4 break-words">{issueReasonConfirmTarget?.title} ({issueReasonConfirmTarget?.code})</div>
+                        <div className="flex items-center justify-end gap-2">
+                          <button type="button" disabled={issueReasonDeleting} onClick={onCancelDeleteIssueReason} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Batal</button>
+                          <button type="button" disabled={issueReasonDeleting} onClick={onConfirmDeleteIssueReason} className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}>{issueReasonDeleting ? 'Menghapus...' : 'Ya, Hapus'}</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {issueSubTab === 'reports' && (
+                <>
+                  <div className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                    <form onSubmit={onSearchIssueReports} className="grid gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <select value={issueReportStatus} onChange={(e) => setIssueReportStatus(e.target.value)} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                          <option value="">Semua status</option>
+                          <option value="PENDING">PENDING</option>
+                          <option value="IN_PROGRESS">IN_PROGRESS</option>
+                          <option value="FIXED">FIXED</option>
+                        </select>
+                        <input value={issueReportEpisodeId} onChange={(e) => setIssueReportEpisodeId(e.target.value)} placeholder="episode_id" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                        <input value={issueReportUserId} onChange={(e) => setIssueReportUserId(e.target.value)} placeholder="user_id" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                        <select value={issueReportReasonId} onChange={(e) => setIssueReportReasonId(e.target.value)} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                          <option value="">Semua alasan</option>
+                          {issueReasons.map((r) => (
+                            <option key={r.id} value={String(r.id)}>{r.code} - {r.title}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button type="submit" disabled={issueReportsLoading} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>{issueReportsLoading ? 'Memuat...' : 'Cari'}</button>
+                        <button type="button" onClick={() => { setIssueReportStatus(''); setIssueReportEpisodeId(''); setIssueReportUserId(''); setIssueReportReasonId(''); setIssueEditingReport(null); loadIssueReports({ page: 1 }); }} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Reset</button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {issueEditingReport && (
+                    <div className="p-3 border-4 rounded-lg space-y-3" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                      <div className="text-sm font-extrabold">Edit Report #{issueEditingReport.id}</div>
+                      <form onSubmit={onSaveEditIssueReport} className="grid gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <select value={String(issueEditingReport.reason_id ?? '')} onChange={(e) => setIssueEditingReport((s) => ({ ...s, reason_id: e.target.value }))} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                            <option value="">(hapus reason)</option>
+                            {issueReasons.map((r) => (
+                              <option key={r.id} value={String(r.id)}>{r.code} - {r.title}</option>
+                            ))}
+                          </select>
+                          <select value={issueEditingReport.status} onChange={(e) => setIssueEditingReport((s) => ({ ...s, status: e.target.value }))} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                            <option value="PENDING">PENDING</option>
+                            <option value="IN_PROGRESS">IN_PROGRESS</option>
+                            <option value="FIXED">FIXED</option>
+                          </select>
+                        </div>
+                        <textarea value={issueEditingReport.note ?? ''} onChange={(e) => setIssueEditingReport((s) => ({ ...s, note: e.target.value }))} placeholder="Note (opsional)" rows={2} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                        <textarea value={issueEditingReport.metadataText ?? ''} onChange={(e) => setIssueEditingReport((s) => ({ ...s, metadataText: e.target.value }))} placeholder="Metadata (JSON, opsional)" rows={5} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-mono text-xs" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                        <div className="flex items-center gap-2">
+                          <button type="submit" disabled={issueReportSubmitting} className="flex w-32 py-2 items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>{issueReportSubmitting ? 'Menyimpan...' : (<><Save className="size-4" /> Simpan</>)}</button>
+                          <button type="button" onClick={onCancelEditIssueReport} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Batal</button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  <div className="overflow-auto">
+                    <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                      <thead style={{ background: 'var(--panel-bg)' }}>
+                        <tr>
+                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>ID</th>
+                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Status</th>
+                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>User</th>
+                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Episode</th>
+                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Reason</th>
+                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Note</th>
+                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Dibuat</th>
+                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {issueReports.map((it) => (
+                          <tr key={it.id}>
+                            <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.id}</td>
+                            <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.status}</td>
+                            <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.user?.username ? `${it.user.username} (#${it.user_id})` : `#${it.user_id}`}</td>
+                            <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.episode?.anime?.nama_anime ? `${it.episode.anime.nama_anime} - Ep ${it.episode.nomor_episode}` : `#${it.episode_id}`}</td>
+                            <td className="px-3 py-2 border-b-4 text-xs font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.reason?.code ? `${it.reason.code}` : (it.reason_id ? `#${it.reason_id}` : '-')}</td>
+                            <td className="px-3 py-2 border-b-4 text-xs" style={{ borderColor: 'var(--panel-border)' }}>{it.note || '-'}</td>
+                            <td className="px-3 py-2 border-b-4 text-xs font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.createdAt ? new Date(it.createdAt).toLocaleString() : '-'}</td>
+                            <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button type="button" onClick={() => onStartEditIssueReport(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
+                                  <Pencil className="size-4" />
+                                </button>
+                                <button type="button" onClick={() => onQuickStatusIssueReport(it.id, 'PENDING')} disabled={issueReportSubmitting} className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>P</button>
+                                <button type="button" onClick={() => onQuickStatusIssueReport(it.id, 'IN_PROGRESS')} disabled={issueReportSubmitting} className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>IP</button>
+                                <button type="button" onClick={() => onQuickStatusIssueReport(it.id, 'FIXED')} disabled={issueReportSubmitting} className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000', background: '#C6F6D5', color: '#111', borderColor: 'var(--panel-border)' }}>FIX</button>
+                                <button type="button" onClick={() => onRequestDeleteIssueReport(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>
+                                  <Trash2 className="size-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {issueReports.length === 0 && (
+                          <tr>
+                            <td colSpan={8} className="px-3 py-6 text-center text-sm opacity-70">{issueReportsLoading ? 'Memuat...' : 'Belum ada laporan.'}</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button disabled={(issueReportsPagination.page || 1) <= 1 || issueReportsLoading} onClick={() => loadIssueReports({ page: Math.max(1, (issueReportsPagination.page || 1) - 1) })} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Sebelumnya</button>
+                    <div className="text-sm font-extrabold">Halaman {issueReportsPagination.page || 1} / {Math.max(1, Number(issueReportsPagination?.totalPages) || Math.ceil((issueReportsPagination?.total || 0) / (issueReportsPagination?.limit || 1)) || 1)}</div>
+                    <button disabled={(issueReportsPagination.page || 1) >= Math.max(1, Number(issueReportsPagination?.totalPages) || Math.ceil((issueReportsPagination?.total || 0) / (issueReportsPagination?.limit || 1)) || 1) || issueReportsLoading} onClick={() => loadIssueReports({ page: (issueReportsPagination.page || 1) + 1 })} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Berikutnya</button>
+                  </div>
+
+                  {issueReportConfirmOpen && (
+                    <div className="fixed inset-0 z-50 grid place-items-center">
+                      <div className="absolute inset-0 bg-black/40" onClick={onCancelDeleteIssueReport} />
+                      <div className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                        <div className="text-lg font-extrabold mb-1">Hapus Laporan?</div>
+                        <div className="text-sm opacity-80 mb-4 break-words">Report #{issueReportConfirmTarget?.id}</div>
+                        <div className="flex items-center justify-end gap-2">
+                          <button type="button" disabled={issueReportDeleting} onClick={onCancelDeleteIssueReport} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Batal</button>
+                          <button type="button" disabled={issueReportDeleting} onClick={onConfirmDeleteIssueReport} className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}>{issueReportDeleting ? 'Menghapus...' : 'Ya, Hapus'}</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+        </div>
+      )}
+
+      {/* Form Tambah / Edit Anime */}
+      {activeTab === 'anime' && (
+        <form onSubmit={onSubmit} className="grid gap-4 rounded-[26px] border-4 p-4 md:p-5" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="text-lg font-extrabold">{mode === 'add' ? 'Tambah Anime Baru' : `Edit Anime #${form.id}`}</div>
+              <div className="mt-1 text-xs font-semibold opacity-70">Kelola metadata, cover, alias, dan jadwal tayang dari satu panel yang lebih nyaman dipakai.</div>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: 'var(--panel-border)', background: mode === 'add' ? '#dcfce7' : '#dbeafe', color: mode === 'add' ? '#166534' : '#1d4ed8' }}>{mode === 'add' ? 'Mode tambah' : 'Mode edit'}</div>
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)] items-start">
+            <div className="grid gap-3 rounded-[24px] border-4 p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #dbeafe 0%, var(--panel-bg) 100%)', borderColor: 'var(--panel-border)' }}>
               <div className="grid gap-1">
                 <div className="text-xs font-extrabold">Nama Anime</div>
-                <input type="text" value={form.nama_anime} onChange={(e) => setForm((f) => ({ ...f, nama_anime: e.target.value }))} placeholder="Nama anime (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input type="text" value={form.nama_anime} onChange={(e) => setForm((f) => ({ ...f, nama_anime: e.target.value }))} placeholder="Nama anime (wajib)" className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               </div>
+
               <div className="grid gap-1">
                 <div className="text-xs font-extrabold">Cover Anime</div>
-                <div className="grid sm:grid-cols-[140px_1fr] gap-2">
+                <div className="grid grid-cols-1 gap-2">
                   <select
                     value={form.cover_mode || 'upload'}
                     onChange={(e) => setForm((f) => ({ ...f, cover_mode: e.target.value, cover_url: e.target.value === 'url' ? f.cover_url : '', image: e.target.value === 'upload' ? f.image : null, previewUrl: e.target.value === 'upload' ? f.previewUrl : '' }))}
-                    className="px-3 py-2 border-4 rounded-lg font-semibold"
+                    className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold"
                     style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                   >
-                    <option value="upload">Upload</option>
-                    <option value="url">With URL</option>
+                    <option value="upload">Upload cover</option>
+                    <option value="url">Gunakan URL</option>
                   </select>
                   {(form.cover_mode || 'upload') === 'upload' ? (
                     <input
                       type="file"
                       accept="image/*"
                       onChange={onChangeAnimeImage}
-                      className="px-3 py-2 border-4 rounded-lg font-semibold"
+                      className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold"
                       style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                     />
                   ) : (
                     <input
                       type="url"
                       value={form.cover_url || ''}
-                      onChange={(e) => setForm((f) => ({ ...f, cover_url: e.target.value }))}
+                      onChange={(e) => setForm((f) => ({ ...f, cover_url: e.target.value, previewUrl: '' }))}
                       placeholder="https://..."
-                      className="px-3 py-2 border-4 rounded-lg font-semibold"
+                      className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold"
                       style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                     />
                   )}
                 </div>
-                <div className="mt-1 flex items-center gap-2 text-xs" style={{ color: 'var(--foreground)' }}>
-                  <span className="font-extrabold">Preview:</span>
-                  <img
-                    src={form.previewUrl || ((form.cover_mode || 'upload') === 'url' ? (form.cover_url || '') : form.existingImageUrl) || ''}
-                    alt="cover"
-                    className="w-10 h-10 object-contain border-2 rounded"
-                    style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
-                  />
-                  {!(form.previewUrl || form.existingImageUrl || (((form.cover_mode || 'upload') === 'url') && (form.cover_url || '').trim())) && (
-                    <span className="opacity-70">-</span>
+                <div className="mt-2 rounded-[22px] border-4 p-3" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+                  <div className="text-[11px] font-black uppercase opacity-70 mb-2">Preview Cover</div>
+                  {form.previewUrl || ((form.cover_mode || 'upload') === 'url' ? (form.cover_url || '').trim() : (form.existingImageUrl || '').trim()) ? (
+                    <img
+                      src={form.previewUrl || ((form.cover_mode || 'upload') === 'url' ? (form.cover_url || '') : form.existingImageUrl) || ''}
+                      alt="cover"
+                      className="w-full h-52 object-contain border-4 rounded-xl"
+                      style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
+                    />
+                  ) : (
+                    <div className="grid h-52 place-items-center text-sm font-semibold opacity-70 border-4 rounded-xl" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
+                      Belum ada cover
+                    </div>
                   )}
                 </div>
               </div>
-              <div className="grid gap-1">
-                <div className="text-xs font-extrabold">Rating</div>
-                <input type="text" value={form.rating_anime} onChange={(e) => setForm((f) => ({ ...f, rating_anime: e.target.value }))} placeholder="Rating (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              </div>
-              <div className="grid gap-1">
-                <div className="text-xs font-extrabold">Type</div>
-                <select value={form.content_type} onChange={(e) => setForm((f) => ({ ...f, content_type: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                  <option value="ANIME">ANIME</option>
-                  <option value="FILM">FILM</option>
-                  <option value="DONGHUA">DONGHUA</option>
-                </select>
-              </div>
-              <div className="grid gap-1">
-                <div className="text-xs font-extrabold">Status</div>
-                <select value={form.status_anime} onChange={(e) => setForm((f) => ({ ...f, status_anime: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                  <option value="" disabled>Pilih Status (wajib)</option>
-                  <option value="Ongoing">Ongoing</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Hiatus">Hiatus</option>
-                  <option value="Upcoming">Upcoming</option>
-                </select>
-              </div>
-              <div className="grid gap-1">
-                <div className="text-xs font-extrabold">Label</div>
-                <select value={form.label_anime} onChange={(e) => setForm((f) => ({ ...f, label_anime: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                  <option value="" disabled>Pilih Label (wajib)</option>
-                  <option value="TV">TV</option>
-                  <option value="Movie">Movie</option>
-                  <option value="OVA">OVA</option>
-                  <option value="ONA">ONA</option>
-                  <option value="Donghua">Donghua</option>
-                  <option value="Special">Special</option>
-                </select>
-              </div>
-              <div className="grid gap-1">
-                <div className="text-xs font-extrabold">21+</div>
-                <label className="flex items-center gap-2 text-sm font-semibold px-3 py-2 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                  <input type="checkbox" checked={!!form.is_21_plus} onChange={(e) => setForm((f) => ({ ...f, is_21_plus: e.target.checked }))} />
-                  <span>is_21_plus</span>
-                </label>
-              </div>
-              <div className="grid gap-1">
-                <div className="text-xs font-extrabold">Tanggal Rilis</div>
-                <input type="date" value={form.tanggal_rilis_anime} onChange={(e) => setForm((f) => ({ ...f, tanggal_rilis_anime: e.target.value }))} placeholder="Tanggal rilis (opsional)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              </div>
             </div>
-            <div className="grid gap-1">
-              <div className="text-xs font-extrabold">Sinopsis</div>
-              <textarea value={form.sinopsis_anime} onChange={(e) => setForm((f) => ({ ...f, sinopsis_anime: e.target.value }))} placeholder="Sinopsis (wajib)" rows={3} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-            </div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div className="grid gap-1">
-                <div className="text-xs font-extrabold">Tags</div>
-                <input type="text" value={form.tags_anime} onChange={(e) => setForm((f) => ({ ...f, tags_anime: e.target.value }))} placeholder="Tags (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              </div>
-              <div className="grid gap-1">
-                <div className="text-xs font-extrabold">Genre</div>
-                <input type="text" value={form.genre_anime} onChange={(e) => setForm((f) => ({ ...f, genre_anime: e.target.value }))} placeholder="Genre (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              </div>
-              <div className="grid gap-1">
-                <div className="text-xs font-extrabold">Studio</div>
-                <input type="text" value={form.studio_anime} onChange={(e) => setForm((f) => ({ ...f, studio_anime: e.target.value }))} placeholder="Studio (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              </div>
-              <div className="grid gap-1">
-                <div className="text-xs font-extrabold">Fakta Menarik</div>
-                <input type="text" value={form.fakta_menarik} onChange={(e) => setForm((f) => ({ ...f, fakta_menarik: e.target.value }))} placeholder="Fakta menarik (pisahkan dengan koma)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              </div>
-            </div>
-            {form.status_anime === 'Ongoing' && (
-              <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-center">
-                <div className="grid gap-1">
-                  <div className="text-xs font-extrabold">Jadwal Hari</div>
-                  <input
-                    type="text"
-                    value={form.schedule_hari}
-                    onChange={(e) => setForm((f) => ({ ...f, schedule_hari: e.target.value }))}
-                    placeholder="Hari tayang (contoh: Senin)"
-                    className="px-3 py-2 border-4 rounded-lg font-semibold"
-                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                  />
-                </div>
-                <div className="grid gap-1">
-                  <div className="text-xs font-extrabold">Jadwal Jam</div>
-                  <input
-                    type="text"
-                    value={form.schedule_jam}
-                    onChange={(e) => setForm((f) => ({ ...f, schedule_jam: e.target.value }))}
-                    placeholder="Jam tayang (HH:mm, contoh: 20:30)"
-                    className="px-3 py-2 border-4 rounded-lg font-semibold"
-                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                  />
-                </div>
-                <label className="flex items-center gap-2 text-sm font-semibold">
-                  <input
-                    type="checkbox"
-                    checked={!!form.schedule_is_active}
-                    onChange={(e) => setForm((f) => ({ ...f, schedule_is_active: e.target.checked }))}
-                  />
-                  <span>Jadwal aktif</span>
-                </label>
-              </div>
-            )}
-            <div className="grid gap-1">
-              <div className="text-xs font-extrabold">Aliases</div>
-              <textarea
-                value={form.aliases}
-                onChange={(e) => setForm((f) => ({ ...f, aliases: e.target.value }))}
-                placeholder={`Aliases (opsional). Bisa dipisah baris/koma, atau JSON: [\n  "Alias 1",\n  { "alias": "Naruto Shippuden", "language": "EN", "type": "AKA" }\n]`}
-                rows={4}
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              />
-            </div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div className="grid gap-1">
-                <div className="text-xs font-extrabold">Default Alias Priority</div>
-                <input
-                  type="number"
-                  value={form.alias_priority}
-                  onChange={(e) => setForm((f) => ({ ...f, alias_priority: e.target.value }))}
-                  placeholder="Default alias priority (opsional)"
-                  className="px-3 py-2 border-4 rounded-lg font-semibold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                />
-              </div>
-            </div>
-            <div className="grid sm:grid-cols-[160px]">
-              <button type="submit" disabled={submittingAnime} className={`flex items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60`} style={{ boxShadow: '4px 4px 0 #000', background: mode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', color: mode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
-                {submittingAnime ? (mode === 'add' ? 'Menambah...' : 'Menyimpan...') : (mode === 'add' ? (<><Plus className="size-4" /> Tambah</>) : (<><Pencil className="size-4" /> Simpan</>))}
-              </button>
-            </div>
-          </form>
-          )}
 
-          {/* Tab: Anime Related */}
-          {false && (
+            <div className="grid gap-4 min-w-0">
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Rating</div>
+                  <input type="text" value={form.rating_anime} onChange={(e) => setForm((f) => ({ ...f, rating_anime: e.target.value }))} placeholder="Rating (wajib)" className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Type</div>
+                  <select value={form.content_type} onChange={(e) => setForm((f) => ({ ...f, content_type: e.target.value }))} className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                    <option value="ANIME">ANIME</option>
+                    <option value="FILM">FILM</option>
+                    <option value="DONGHUA">DONGHUA</option>
+                  </select>
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Status</div>
+                  <select value={form.status_anime} onChange={(e) => setForm((f) => ({ ...f, status_anime: e.target.value }))} className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                    <option value="" disabled>Pilih Status (wajib)</option>
+                    <option value="Ongoing">Ongoing</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Hiatus">Hiatus</option>
+                    <option value="Upcoming">Upcoming</option>
+                  </select>
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Label</div>
+                  <select value={form.label_anime} onChange={(e) => setForm((f) => ({ ...f, label_anime: e.target.value }))} className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                    <option value="" disabled>Pilih Label (wajib)</option>
+                    <option value="TV">TV</option>
+                    <option value="Movie">Movie</option>
+                    <option value="OVA">OVA</option>
+                    <option value="ONA">ONA</option>
+                    <option value="Donghua">Donghua</option>
+                    <option value="Special">Special</option>
+                  </select>
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Tanggal Rilis</div>
+                  <input type="date" value={form.tanggal_rilis_anime} onChange={(e) => setForm((f) => ({ ...f, tanggal_rilis_anime: e.target.value }))} className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">21+</div>
+                  <label className="flex items-center gap-2 text-sm font-semibold px-3 py-2 border-4 rounded-xl min-h-[52px]" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                    <input type="checkbox" checked={!!form.is_21_plus} onChange={(e) => setForm((f) => ({ ...f, is_21_plus: e.target.checked }))} />
+                    <span>Konten 21+</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Sinopsis</div>
+                <textarea value={form.sinopsis_anime} onChange={(e) => setForm((f) => ({ ...f, sinopsis_anime: e.target.value }))} placeholder="Sinopsis (wajib)" rows={4} className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              </div>
+
+              <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Tags</div>
+                  <input type="text" value={form.tags_anime} onChange={(e) => setForm((f) => ({ ...f, tags_anime: e.target.value }))} placeholder="Tags (pisahkan dengan koma)" className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Genre</div>
+                  <input type="text" value={form.genre_anime} onChange={(e) => setForm((f) => ({ ...f, genre_anime: e.target.value }))} placeholder="Genre (pisahkan dengan koma)" className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Studio</div>
+                  <input type="text" value={form.studio_anime} onChange={(e) => setForm((f) => ({ ...f, studio_anime: e.target.value }))} placeholder="Studio (pisahkan dengan koma)" className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="grid gap-1">
+                  <div className="text-xs font-extrabold">Fakta Menarik</div>
+                  <input type="text" value={form.fakta_menarik} onChange={(e) => setForm((f) => ({ ...f, fakta_menarik: e.target.value }))} placeholder="Fakta menarik (pisahkan dengan koma)" className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+              </div>
+
+              {form.status_anime === 'Ongoing' && (
+                <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 items-center rounded-[22px] border-4 p-4" style={{ boxShadow: '6px 6px 0 #000', background: '#fff7cc', borderColor: 'var(--panel-border)' }}>
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Jadwal Hari</div>
+                    <input type="text" value={form.schedule_hari} onChange={(e) => setForm((f) => ({ ...f, schedule_hari: e.target.value }))} placeholder="Hari tayang (contoh: Senin)" className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Jadwal Jam</div>
+                    <input type="text" value={form.schedule_jam} onChange={(e) => setForm((f) => ({ ...f, schedule_jam: e.target.value }))} placeholder="Jam tayang (HH:mm, contoh: 20:30)" className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm font-semibold">
+                    <input type="checkbox" checked={!!form.schedule_is_active} onChange={(e) => setForm((f) => ({ ...f, schedule_is_active: e.target.checked }))} />
+                    <span>Jadwal aktif</span>
+                  </label>
+                </div>
+              )}
+
+              <div className="grid gap-3 rounded-[24px] border-4 p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-extrabold">Aliases</div>
+                    <div className="mt-1 text-xs font-semibold opacity-70">Cari alias yang sudah ada dari server, pilih yang relevan, atau tambahkan alias baru manual sesuai kebutuhan.</div>
+                  </div>
+                  <div className="text-xs font-black rounded-full border-4 px-3 py-2" style={{ borderColor: 'var(--panel-border)', background: '#ede9fe', color: '#6d28d9' }}>{currentAliasList.length} alias dipilih</div>
+                </div>
+
+                <div className="grid lg:grid-cols-[minmax(0,1.2fr)_220px] gap-3 items-start">
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Cari Alias Existing</div>
+                    <input
+                      type="text"
+                      value={aliasSearch}
+                      onChange={(e) => setAliasSearch(e.target.value)}
+                      placeholder="Cari alias atau nama anime sumber..."
+                      className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold"
+                      style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    />
+                  </div>
+
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Default Alias Priority</div>
+                    <select value={form.alias_priority} onChange={(e) => setForm((f) => ({ ...f, alias_priority: e.target.value }))} className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                      <option value="">Tanpa priority default</option>
+                      {Array.from({ length: 10 }).map((_, idx) => (
+                        <option key={idx + 1} value={String(idx + 1)}>Priority {idx + 1}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3 items-start">
+                  <div className="grid gap-2 rounded-[20px] border-4 p-3" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-xs font-extrabold">Hasil Pencarian Alias</div>
+                      <div className="text-[11px] font-black opacity-70">{aliasLookupLoading ? 'Mencari...' : `${aliasLookupResults.length} hasil`}</div>
+                    </div>
+                    {aliasSearch.trim().length < 2 ? (
+                      <div className="text-sm font-semibold opacity-70">Mulai ketik untuk mencari alias.</div>
+                    ) : aliasLookupResults.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {aliasLookupResults.map((item) => {
+                          const alias = String(item?.alias || '').trim();
+                          const meta = item?.source_anime_name ? `${item.source_anime_name}${item?.language ? ` • ${item.language}` : ''}${item?.type ? ` • ${item.type}` : ''}` : (item?.language || item?.type ? `${item?.language || ''}${item?.type ? ` • ${item.type}` : ''}` : 'Alias existing');
+                          return (
+                            <button
+                              key={`${alias}-${item?.source_anime_id || 'local'}`}
+                              type="button"
+                              onClick={() => addAliasToForm(alias)}
+                              className="px-3 py-2 text-left border-4 rounded-2xl font-extrabold"
+                              style={{ boxShadow: '4px 4px 0 #000', background: '#e0f2fe', color: '#0f172a', borderColor: 'var(--panel-border)' }}
+                            >
+                              <div>{alias}</div>
+                              <div className="text-[11px] font-semibold opacity-70">{meta}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-sm font-semibold opacity-70">Tidak ada alias yang cocok. Kamu bisa tambahkan alias baru manual di panel sebelah.</div>
+                    )}
+                  </div>
+
+                  <div className="grid gap-2 rounded-[20px] border-4 p-3" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+                    <div className="text-xs font-extrabold">Tambah Alias Baru</div>
+                    <div className="grid sm:grid-cols-[minmax(0,1fr)_120px] gap-2">
+                      <input
+                        type="text"
+                        value={newAliasInput}
+                        onChange={(e) => setNewAliasInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            onAddManualAlias();
+                          }
+                        }}
+                        placeholder="Tulis alias baru di sini"
+                        className="w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold"
+                        style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                      />
+                      <button type="button" onClick={onAddManualAlias} className="px-3 py-2 border-4 rounded-xl font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: '#dcfce7', color: '#166534', borderColor: 'var(--panel-border)' }}>
+                        <Plus className="size-4 inline-block mr-1" /> Tambah
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {aliasOptions.filter((alias) => !currentAliasList.includes(alias)).length > 0 && (
+                  <div className="grid gap-2">
+                    <div className="text-xs font-extrabold">Saran Cepat</div>
+                    <div className="flex flex-wrap gap-2">
+                      {aliasOptions.filter((alias) => !currentAliasList.includes(alias)).slice(0, 12).map((alias) => (
+                        <button key={alias} type="button" onClick={() => addAliasToForm(alias)} className="px-3 py-2 border-4 rounded-full font-extrabold text-sm" style={{ boxShadow: '4px 4px 0 #000', background: '#f5f3ff', color: '#5b21b6', borderColor: 'var(--panel-border)' }}>
+                          + {alias}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  {currentAliasList.length > 0 ? currentAliasList.map((alias) => (
+                    <button key={alias} type="button" onClick={() => removeAliasFromForm(alias)} className="px-3 py-2 border-4 rounded-full font-extrabold text-sm" style={{ boxShadow: '4px 4px 0 #000', background: '#fff7cc', color: '#92400e', borderColor: 'var(--panel-border)' }}>
+                      {alias} ×
+                    </button>
+                  )) : (
+                    <div className="text-sm font-semibold opacity-70">Belum ada alias dipilih.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-[160px]">
+            <button type="submit" disabled={submittingAnime} className={`flex items-center justify-center gap-2 border-4 rounded-xl font-extrabold disabled:opacity-60`} style={{ boxShadow: '4px 4px 0 #000', background: mode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', color: mode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
+              {submittingAnime ? (mode === 'add' ? 'Menambah...' : 'Menyimpan...') : (mode === 'add' ? (<><Plus className="size-4" /> Tambah</>) : (<><Pencil className="size-4" /> Simpan</>))}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Tab: Anime Related */}
+      {false && (
             <div className="grid gap-4">
               <div ref={relTopRef} />
               <form onSubmit={() => {}} className="grid gap-3 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
@@ -1793,8 +2555,8 @@ export default function DaftarKontenPage() {
                 </div>
                 <div className="grid gap-1">
                   <div className="text-xs font-extrabold">Thumbnail Episode</div>
-                  <div className="grid sm:grid-cols-[140px_1fr] gap-2">
-                    <select value={tabEpisode?.thumbnail_mode || 'upload'} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_mode: e.target.value, thumbnail_url: e.target.value === 'url' ? s.thumbnail_url : '', image: e.target.value === 'upload' ? s.image : null, previewUrl: e.target.value === 'upload' ? s.previewUrl : '' }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-[140px_minmax(0,1fr)] gap-2">
+                    <select value={tabEpisode?.thumbnail_mode || 'upload'} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_mode: e.target.value, thumbnail_url: e.target.value === 'url' ? s.thumbnail_url : '', image: e.target.value === 'upload' ? s.image : null, previewUrl: e.target.value === 'upload' ? s.previewUrl : '' }))} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                       <option value="upload">Upload</option>
                       <option value="url">With URL</option>
                     </select>
@@ -1808,11 +2570,11 @@ export default function DaftarKontenPage() {
                           const url = URL.createObjectURL(file);
                           setTabEpisode((s) => ({ ...s, image: file, previewUrl: url }));
                         }}
-                        className="px-3 py-2 border-4 rounded-lg font-semibold"
+                        className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
                         style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                       />
                     ) : (
-                      <input type="url" value={tabEpisode?.thumbnail_url || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_url: e.target.value }))} placeholder="https://..." className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                      <input type="url" value={tabEpisode?.thumbnail_url || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_url: e.target.value }))} placeholder="https://..." className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                     )}
                   </div>
                   <div className="mt-1 flex items-center gap-2 text-xs" style={{ color: 'var(--foreground)' }}>
@@ -1852,14 +2614,14 @@ export default function DaftarKontenPage() {
                 <div className="font-extrabold mb-2">Qualities</div>
                 <div className="space-y-2">
                   {(tabEpisode?.qualities || []).map((q, idx) => (
-                    <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto_auto_auto] gap-2">
+                    <div key={idx} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] gap-2">
                       <div className="grid gap-1">
                         <div className="text-xs font-extrabold">Nama Quality</div>
-                        <input type="text" value={q.nama_quality} onChange={(e) => updateTabQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                        <input type="text" value={q.nama_quality} onChange={(e) => updateTabQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                       </div>
                       <div className="grid gap-1">
                         <div className="text-xs font-extrabold">Source URL</div>
-                        <input type="url" value={q.source_quality} onChange={(e) => updateTabQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                        <input type="url" value={q.source_quality} onChange={(e) => updateTabQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                       </div>
                       <button type="button" onClick={() => moveTabQuality(idx, -1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === 0} aria-label="Naikkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                         <ChevronUp className="size-4" />
@@ -1890,42 +2652,27 @@ export default function DaftarKontenPage() {
           {/* Tab: Request Anime */}
           {activeTab === 'requests' && (
             <div className="space-y-4">
-              <div className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                <div className="font-extrabold mb-2">{reqMode === 'add' ? 'Tambah Request (Admin Manual)' : `Edit Request #${reqForm.id}`}</div>
-                <form onSubmit={onSubmitReq} className="grid gap-3">
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <div className="grid gap-1">
-                      <div className="text-xs font-extrabold">User ID</div>
-                      <input value={reqForm.user_id} onChange={(e) => setReqForm((s) => ({ ...s, user_id: e.target.value }))} placeholder="user_id (wajib)" disabled={reqMode !== 'add'} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                    </div>
-                    <div className="grid gap-1">
-                      <div className="text-xs font-extrabold">Nama Anime</div>
-                      <input value={reqForm.nama_anime} onChange={(e) => setReqForm((s) => ({ ...s, nama_anime: e.target.value }))} placeholder="nama_anime (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                    </div>
-                    <div className="grid gap-1">
-                      <div className="text-xs font-extrabold">Season</div>
-                      <input type="number" value={reqForm.season} onChange={(e) => setReqForm((s) => ({ ...s, season: Number(e.target.value) }))} placeholder="season" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                    </div>
-                    <div className="grid gap-1">
-                      <div className="text-xs font-extrabold">Status</div>
-                      <select value={reqForm.status} onChange={(e) => setReqForm((s) => ({ ...s, status: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                        {REQUEST_STATUSES.map((s) => (<option key={s} value={s}>{s}</option>))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid gap-1">
-                    <div className="text-xs font-extrabold">Note</div>
-                    <textarea value={reqForm.note} onChange={(e) => setReqForm((s) => ({ ...s, note: e.target.value }))} placeholder="note (opsional)" rows={2} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button type="submit" disabled={reqSubmitting} className="flex w-32 py-2 items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: reqMode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', color: reqMode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
-                      {reqSubmitting ? (reqMode === 'add' ? 'Menambah...' : 'Menyimpan...') : (reqMode === 'add' ? (<><Plus className="size-4" /> Tambah</>) : (<><Pencil className="size-4" /> Simpan</>))}
+              <div className="flex flex-wrap gap-2">
+                {['', ...REQUEST_STATUSES].map((statusKey) => {
+                  const meta = REQUEST_STATUS_META[statusKey || 'ALL'];
+                  const active = reqStatus === statusKey;
+                  return (
+                    <button
+                      key={statusKey || 'ALL'}
+                      type="button"
+                      onClick={() => setReqStatus(statusKey)}
+                      className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                      style={{
+                        boxShadow: '4px 4px 0 #000',
+                        background: active ? meta.bg : 'var(--panel-bg)',
+                        color: active ? meta.fg : 'var(--foreground)',
+                        borderColor: 'var(--panel-border)',
+                      }}
+                    >
+                      {meta.label}
                     </button>
-                    {reqMode === 'edit' && (
-                      <button type="button" onClick={resetReqForm} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Batal Edit</button>
-                    )}
-                  </div>
-                </form>
+                  );
+                })}
               </div>
 
               <div className="overflow-auto">
@@ -1954,7 +2701,6 @@ export default function DaftarKontenPage() {
                         <td className="px-3 py-2 border-b-4 text-xs" style={{ borderColor: 'var(--panel-border)' }}>{it.note || '-'}</td>
                         <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
                           <div className="flex flex-wrap items-center gap-2">
-                            <button type="button" onClick={() => onEditReq(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}><Pencil className="size-4" /></button>
                             <button
                               type="button"
                               onClick={() => onTakeReq(it)}
@@ -2007,10 +2753,16 @@ export default function DaftarKontenPage() {
             </div>
           )}
 
-          {activeTab !== 'requests' && (
+          {activeTab !== 'requests' && activeTab !== 'episode-issue' && (
             <>
-              {/* Table */}
-              <div className="overflow-auto">
+              <div className="rounded-[24px] border-4 p-4 overflow-auto" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-extrabold">Daftar Anime</div>
+                    <div className="mt-1 text-xs font-semibold opacity-70">Kelola anime, buka episode, edit cepat, dan hapus dari panel utama.</div>
+                  </div>
+                  <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: 'var(--panel-border)', background: '#dbeafe', color: '#1d4ed8' }}>Total data: {items.length}</div>
+                </div>
                 <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                   <thead style={{ background: 'var(--panel-bg)' }}>
                     <tr>
@@ -2079,8 +2831,8 @@ export default function DaftarKontenPage() {
                                       </div>
                                       <div className="grid gap-1">
                                         <div className="text-xs font-extrabold">Thumbnail Episode</div>
-                                        <div className="grid sm:grid-cols-[140px_1fr] gap-2">
-                                          <select value={newEpisode?.thumbnail_mode || 'upload'} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_mode: e.target.value, thumbnail_url: e.target.value === 'url' ? s.thumbnail_url : '', image: e.target.value === 'upload' ? s.image : null, previewUrl: e.target.value === 'upload' ? s.previewUrl : '' }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                                        <div className="grid grid-cols-1 sm:grid-cols-[140px_minmax(0,1fr)] gap-2">
+                                          <select value={newEpisode?.thumbnail_mode || 'upload'} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_mode: e.target.value, thumbnail_url: e.target.value === 'url' ? s.thumbnail_url : '', image: e.target.value === 'upload' ? s.image : null, previewUrl: e.target.value === 'upload' ? s.previewUrl : '' }))} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                                             <option value="upload">Upload</option>
                                             <option value="url">With URL</option>
                                           </select>
@@ -2094,11 +2846,11 @@ export default function DaftarKontenPage() {
                                                 const url = URL.createObjectURL(file);
                                                 setNewEpisode((s) => ({ ...s, image: file, previewUrl: url }));
                                               }}
-                                              className="px-3 py-2 border-4 rounded-lg font-semibold"
+                                              className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
                                               style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                                             />
                                           ) : (
-                                            <input type="url" value={newEpisode?.thumbnail_url || ''} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_url: e.target.value }))} placeholder="https://..." className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                            <input type="url" value={newEpisode?.thumbnail_url || ''} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_url: e.target.value }))} placeholder="https://..." className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                           )}
                                         </div>
                                         <div className="mt-1 flex items-center gap-2 text-xs" style={{ color: 'var(--foreground)' }}>
@@ -2160,14 +2912,14 @@ export default function DaftarKontenPage() {
                                       <div className="font-extrabold mb-2">Qualities</div>
                                       <div className="space-y-2">
                                         {(newEpisode.qualities || []).map((q, idx) => (
-                                          <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto_auto_auto] gap-2">
+                                          <div key={idx} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] gap-2">
                                             <div className="grid gap-1">
                                               <div className="text-xs font-extrabold">Nama Quality</div>
-                                              <input type="text" value={q.nama_quality} onChange={(e) => updateNewQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                              <input type="text" value={q.nama_quality} onChange={(e) => updateNewQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                             </div>
                                             <div className="grid gap-1">
                                               <div className="text-xs font-extrabold">Source URL</div>
-                                              <input type="url" value={q.source_quality} onChange={(e) => updateNewQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                              <input type="url" value={q.source_quality} onChange={(e) => updateNewQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                             </div>
                                             <button type="button" onClick={() => moveNewQuality(idx, -1)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-50" disabled={idx === 0} aria-label="Naikkan urutan" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                                               <ChevronUp className="size-4" />

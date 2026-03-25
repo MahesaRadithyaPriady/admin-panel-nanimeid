@@ -9,6 +9,14 @@ Endpoint untuk mengelola Episode anime beserta Qualities-nya. Semua endpoint dil
   - Controllers: `src/controllers/adminAnime.controller.js`
   - Prisma models: `prisma/schema.prisma` (`Anime`, `Episode`, `EpisodeQuality`)
 
+Catatan upload:
+- Client admin **tidak perlu** upload thumbnail episode ke endpoint presigned upload seperti `/upload/admin/presigned-put`.
+- Untuk create/update episode, kirim file gambar langsung ke endpoint episode melalui field multipart `image`, atau kirim URL langsung melalui field `thumbnail_episode`.
+- Jika mengirim `thumbnail_episode` berupa URL `http(s)`, server akan **mengunduh** gambar dari URL tersebut lalu **meng-upload ulang** ke storage menggunakan **signed URL** (PUT).
+  - **URL asli tidak disimpan**.
+  - Client wajib menggunakan **URL callback** dari response (`item.thumbnail_episode`) sebagai URL thumbnail yang valid (URL storage/CDN).
+  - Jika `thumbnail_episode` SUDAH merupakan URL storage/CDN (prefix `CDN_BASE_URL_STORAGE`), server akan menyimpan nilai tersebut apa adanya (tidak download ulang).
+
 ---
 
 ## Daftar Episodes per Anime
@@ -71,7 +79,14 @@ Headers:
 Body (multipart form):
 
 - `image` (file, opsional) — thumbnail episode (hanya file gambar)
-- Alternatif (tanpa upload file): kirim `thumbnail_episode` berisi URL thumbnail (mis. URL CDN/B2 hasil presigned upload)
+- Client admin cukup mengirim file langsung di field `image` ke endpoint ini.
+- Alternatif (tanpa upload file): kirim `thumbnail_episode` berisi URL thumbnail.
+  - Jika `thumbnail_episode` adalah URL `http(s)`, server akan **download** dan **re-upload** ke storage.
+  - Jika `thumbnail_episode` adalah path static lokal (mis. `/static/...`) atau URL localhost/static server (mis. `http://localhost:3001/static/...`), server akan membaca file sumber tersebut lalu **re-upload** ke storage.
+
+Callback URL:
+- Jika request menggunakan URL remote `http(s)` dan URL tersebut BUKAN URL storage/CDN, maka value `thumbnail_episode` di database akan **diganti** menjadi URL storage.
+- Client tidak perlu menebak URL storage; cukup pakai `item.thumbnail_episode` dari response sebagai **callback**.
 - Field lain dikirim sebagai text:
   - `judul_episode`, `nomor_episode`
   - `deskripsi_episode`, `durasi_episode`, `intro_start_seconds`, `intro_duration_seconds`, `outro_start_seconds`, `outro_duration_seconds`, `tanggal_rilis_episode`
@@ -100,7 +115,7 @@ Response 201:
     "anime_id": 1,
     "judul_episode": "Episode 1",
     "nomor_episode": 1,
-    "thumbnail_episode": "https://img/ep1.jpg",
+    "thumbnail_episode": "https://<CDN_STORAGE>/<key>",
     "deskripsi_episode": "Pembuka",
     "durasi_episode": 1420,
     "intro_start_seconds": 0,
@@ -124,10 +139,15 @@ Catatan:
   - `outro_duration_seconds`: 90
 
 Error codes:
-- 400 BAD_REQUEST: field wajib kosong (`judul_episode`, `nomor_episode`, `image`) atau `animeId` tidak valid
+- 400 BAD_REQUEST: field wajib kosong (`judul_episode`, `nomor_episode`, `image/thumbnail_episode`) atau `animeId` tidak valid
 - 401 UNAUTHORIZED, 403 FORBIDDEN
 - 409 CONFLICT: duplikasi kombinasi unik `[anime_id, nomor_episode]`
 - 500 ERROR
+
+Batasan untuk `thumbnail_episode` URL `http(s)`:
+- Harus mengarah ke konten `image/*`
+- Max size: 10MB
+- Timeout download: 15s
 
 ---
 
@@ -178,7 +198,13 @@ Headers:
 Body (multipart form, partial allowed):
 
 - `image` (file gambar, opsional) — thumbnail episode baru
+- Client admin cukup mengirim file thumbnail baru langsung di field `image` ke endpoint ini.
+- `thumbnail_episode` (string URL, opsional) — thumbnail episode baru (alternatif tanpa upload file)
 - Field lain sama seperti create, semua opsional
+
+Catatan:
+- Jika `thumbnail_episode` adalah URL `http(s)`, server akan **download** lalu **re-upload** ke storage, dan menyimpan URL storage.
+- Jika `thumbnail_episode` adalah path static lokal (mis. `/static/...`) atau URL localhost/static server (mis. `http://localhost:3001/static/...`), server akan membaca file lokalnya lalu **re-upload** ke storage, dan menyimpan URL storage.
 
 Catatan:
 - Jika properti `qualities` disertakan (array), maka semua kualitas lama episode akan dihapus lalu dibuat ulang sesuai isi array.
@@ -224,4 +250,3 @@ Error codes:
 - `tanggal_rilis_episode` mengikuti format ISO 8601 (UTC) bila dikirim.
 - Untuk performa, gunakan pagination saat mengambil daftar episode.
 - Kualitas video (720p/1080p, dll) didefinisikan di model `EpisodeQuality` dan dikelola via body `qualities` pada create/update episode.
-perbaiaki

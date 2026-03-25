@@ -14,6 +14,8 @@ export default function StoreItemDetailPage() {
   const { user, loading } = useSession();
   const id = params?.id;
 
+  const isSuperAdmin = user?.role === 'superadmin';
+
   const [loadingItem, setLoadingItem] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -238,7 +240,7 @@ export default function StoreItemDetailPage() {
 
 function L({ label, children }) {
   return (
-    <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+    <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
       <label className="lbl">{label}</label>
       {children}
     </div>
@@ -281,11 +283,11 @@ function buildUpdatePayload(form) {
 
 // Styles (re-use from store-admin page if present)
 const styles = `
-.inp { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
-.sel { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
+.inp { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
+.sel { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
 .lbl { font-size: 0.875rem; font-weight: 800; }
 .btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
-.btn-act { padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }
+.btn-act { padding:0.25rem 0.5rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }
 .btn-pg { padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; background:#fff; font-weight:800; box-shadow:4px 4px 0 #000; }
 `;
 if (typeof document !== 'undefined' && !document.getElementById('store-admin-detail-styles')) {

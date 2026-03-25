@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { BookOpen, Plus, ExternalLink, Trash2 } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listManga, createManga, deleteManga, grabKomikuRange, uploadFileViaPresignedPut } from '@/lib/api';
+import { listManga, createManga, deleteManga, grabKomikuRange } from '@/lib/api';
 
 export default function MangaAdminPage() {
   const router = useRouter();
@@ -34,6 +34,8 @@ export default function MangaAdminPage() {
     rating_manga: '',
   });
   const [creating, setCreating] = useState(false);
+  const [coverMode, setCoverMode] = useState('upload');
+  const [coverUrl, setCoverUrl] = useState('');
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState('');
   const [grabRange, setGrabRange] = useState({ mangaId: '', sample_url: '', start: '', end: '', title_prefix: '' });
@@ -93,21 +95,26 @@ export default function MangaAdminPage() {
     const token = getSession()?.token;
     try {
       setCreating(true);
-      if (!(coverFile instanceof File)) throw new Error('Cover manga wajib diupload');
+      const nextCoverMode = String(coverMode || 'upload');
+      const nextCoverUrl = String(coverUrl || '').trim();
+      if (nextCoverMode === 'upload') {
+        if (!(coverFile instanceof File)) throw new Error('Cover manga wajib diupload');
+      } else if (!nextCoverUrl) {
+        throw new Error('URL cover manga wajib diisi');
+      }
       const payload = buildMangaPayload(form);
 
-      const safeTitle = String(payload?.judul_manga || 'manga')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '')
-        .slice(0, 80);
-      const ext = String(coverFile?.name || '').split('.').pop()?.toLowerCase() || '';
-      const key = `static/uploads/manga/covers/${safeTitle || 'manga'}_${Date.now()}${ext ? `.${ext}` : ''}`;
-      const uploaded = await uploadFileViaPresignedPut({ token, file: coverFile, key });
+      if (nextCoverMode === 'upload' && coverFile instanceof File) {
+        payload.cover = coverFile;
+      } else if (nextCoverUrl) {
+        payload.cover_manga = nextCoverUrl;
+      }
 
-      await createManga({ token, payload: { ...payload, cover_manga: uploaded.publicUrl } });
+      await createManga({ token, payload });
       toast.success('Manga dibuat');
       setForm({ judul_manga: '', sinopsis_manga: '', genre_manga: '', type_manga: 'MANGA', author: '', artist: '', label_manga: '', tanggal_rilis_manga: '', rating_manga: '' });
+      setCoverMode('upload');
+      setCoverUrl('');
       setCoverFile(null);
       setCoverPreviewUrl('');
       await loadList();
@@ -145,24 +152,50 @@ export default function MangaAdminPage() {
           <form onSubmit={onCreate} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <div className="grid sm:grid-cols-2 gap-3">
               <L label="Judul"><input value={form.judul_manga} onChange={(e)=>updateForm('judul_manga', e.target.value)} required className="inp" /></L>
-              <L label="Cover (Upload)">
+              <L label="Cover">
                 <div className="space-y-2">
-                  <input
-                    type="file"
-                    accept="image/*"
+                  <select
+                    value={coverMode}
                     onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
-                      setCoverFile(file);
-                      if (!file) return setCoverPreviewUrl('');
-                      const url = URL.createObjectURL(file);
-                      setCoverPreviewUrl(url);
+                      const next = e.target.value;
+                      setCoverMode(next);
+                      if (next === 'upload') setCoverUrl('');
+                      if (next === 'url') {
+                        setCoverFile(null);
+                        setCoverPreviewUrl('');
+                      }
                     }}
-                    className="inp"
-                  />
-                  {coverPreviewUrl && (
+                    className="sel"
+                  >
+                    <option value="upload">Upload cover</option>
+                    <option value="url">Gunakan URL</option>
+                  </select>
+                  {coverMode === 'upload' ? (
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setCoverFile(file);
+                        if (!file) return setCoverPreviewUrl('');
+                        const url = URL.createObjectURL(file);
+                        setCoverPreviewUrl(url);
+                      }}
+                      className="inp"
+                    />
+                  ) : (
+                    <input
+                      type="url"
+                      value={coverUrl}
+                      onChange={(e) => setCoverUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="inp"
+                    />
+                  )}
+                  {(coverPreviewUrl || (coverMode === 'url' ? String(coverUrl || '').trim() : '')) && (
                     <div className="flex items-center gap-2 text-xs">
                       <span>Preview:</span>
-                      <img src={coverPreviewUrl} alt="cover" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                      <img src={coverPreviewUrl || coverUrl} alt="cover" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
                     </div>
                   )}
                 </div>
@@ -242,7 +275,7 @@ export default function MangaAdminPage() {
 
 function L({ label, children }) {
   return (
-    <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+    <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
       <label className="lbl">{label}</label>
       {children}
     </div>
@@ -272,8 +305,8 @@ function buildMangaPayload(form) {
 }
 
 const styles = `
-.inp { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
-.sel { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
+.inp { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
+.sel { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
 .lbl { font-size: 0.875rem; font-weight: 800; }
 .btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
 .btn-act { padding:0.25rem 0.5rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }

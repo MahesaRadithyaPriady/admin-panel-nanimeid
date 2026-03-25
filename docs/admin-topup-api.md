@@ -24,11 +24,20 @@ Ambil daftar permintaan topup manual.
 - Query params:
   - `userId` (opsional): filter by user id tertentu
   - `status` (opsional): `PENDING|APPROVED|REJECTED|PAID|CANCELED`
+  - `q` (opsional): pencarian bebas untuk data topup dan identitas user, misalnya:
+    - `payment_ref` / nomor referensi / string seperti `GPA.1234-5678-9012-34567`
+    - `userID`
+    - `username`
+    - `email`
+    - `google_email`
+    - `profile.full_name`
+    - `note`
+    - `payment_method`
   - `page`, `limit`
 
 ### Contoh Request
 ```
-GET /1.0.10/admin/topup/requests?status=PENDING&page=1&limit=20
+GET /1.0.10/admin/topup/requests?status=PENDING&q=GPA.1234-5678-9012-34567&page=1&limit=20
 Authorization: Bearer <ADMIN_TOKEN>
 ```
 
@@ -44,7 +53,17 @@ Authorization: Bearer <ADMIN_TOKEN>
       "payment_method": "MANUAL_QRIS",
       "payment_ref": "https://host/1.0.10/static/uploads/banners/xxx.jpg",
       "note": "Seeder manual QRIS",
-      "status": "PENDING"
+      "status": "PENDING",
+      "user": {
+        "id": 1702,
+        "userID": 1702,
+        "username": "johnny",
+        "email": "johnny@example.com",
+        "google_email": "johnny@gmail.com",
+        "profile": {
+          "full_name": "Johnny Doe"
+        }
+      }
     }
   ],
   "pagination": { "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
@@ -84,7 +103,12 @@ Authorization: Bearer <ADMIN_TOKEN>
 ---
 
 ## PATCH /admin/topup/requests/:id/status
-Ubah status permintaan topup manual. Gunakan `APPROVED` jika valid (akan mengkredit koin otomatis), atau `REJECTED` jika tidak valid. `PAID` juga mengkredit bila belum pernah dikredit.
+Ubah status permintaan topup manual. Opsi moderasi admin hanya:
+
+- `APPROVED` untuk **setuju**
+- `REJECTED` untuk **tolak**
+
+Jika diset `APPROVED`, server akan mengkredit koin otomatis.
 
 - Method: `PATCH`
 - Auth: Admin token + role SUPERADMIN
@@ -92,7 +116,7 @@ Ubah status permintaan topup manual. Gunakan `APPROVED` jika valid (akan mengkre
 ```json
 { "status": "APPROVED" }
 ```
-- Nilai status yang diperbolehkan: `PENDING|APPROVED|REJECTED|PAID|CANCELED`
+- Nilai status yang diperbolehkan untuk endpoint admin ini: `APPROVED|REJECTED`
 
 ### Contoh Request (approve)
 ```
@@ -115,7 +139,7 @@ Content-Type: application/json
 ```
 
 ### Catatan Penting
-- Saat status menjadi `APPROVED` atau `PAID`, server akan melakukan kredit koin idempoten menggunakan `WalletService.earn()` dengan `ref = TOPUP:<id>`.
+- Saat status menjadi `APPROVED`, server akan melakukan kredit koin idempoten menggunakan `WalletService.earn()` dengan `ref = TOPUP:<id>`.
 - Jika request pernah dikredit sebelumnya, pengkreditan tidak akan dilakukan lagi (idempotent check pada `coinTransaction.ref`).
 
 ---
@@ -156,6 +180,7 @@ Authorization: Bearer <ADMIN_TOKEN>
 ## Error Umum
 - 400 `status wajib`
 - 400 `status tidak valid`
+- 400 `status hanya boleh APPROVED atau REJECTED`
 - 404 `Topup request tidak ditemukan`
 - 401/403 jika token invalid atau role bukan SUPERADMIN
 
@@ -165,7 +190,7 @@ Authorization: Bearer <ADMIN_TOKEN>
 - Controller: `src/controllers/adminTopup.controller.js`
   - `adminListTopupRequests()` → `TopupService.list()`
   - `adminGetTopupRequest()` → `TopupService.get()`
-  - `adminSetTopupStatus()` → `TopupService.setStatus()` (auto kredit pada `APPROVED/PAID`)
+  - `adminSetTopupStatus()` → `TopupService.setStatus()` (opsi admin dibatasi ke `APPROVED/REJECTED`, auto kredit pada `APPROVED`)
   - `adminTopupRequestStats()` → aggregasi `topupRequest` dengan prisma
 - Routes: `src/routes/admin.routes.js`
   - `GET /topup/requests`, `GET /topup/requests/stats`, `GET /topup/requests/:id`, `PATCH /topup/requests/:id/status`

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { Film, Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
+import { Clapperboard, Film, Gift, Plus, Pencil, Trash2, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
 import { useSession } from "@/hooks/useSession";
 import { getSession } from "@/lib/auth";
 import {
@@ -44,7 +44,7 @@ function randomThresholdId() {
   return `T${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
-export default function WatchEventConfigsPage() {
+export function WatchEventConfigsContent({ embedded = false } = {}) {
   const router = useRouter();
   const { user, loading } = useSession();
 
@@ -83,11 +83,11 @@ export default function WatchEventConfigsPage() {
   }, [loading, user, router]);
 
   useEffect(() => {
-    if (!loading && user && !canAccess) {
-      toast.error("Kamu tidak punya permission untuk Watch Event Configs");
+    if (!embedded && !loading && user && !canAccess) {
+      toast.error("Kamu tidak punya izin untuk Konfigurasi Event Tonton");
       router.replace("/dashboard");
     }
-  }, [loading, user, canAccess, router]);
+  }, [embedded, loading, user, canAccess, router]);
 
   const ensureLookupsLoaded = async (rewardType) => {
     const type = String(rewardType || "NONE").toUpperCase();
@@ -101,7 +101,7 @@ export default function WatchEventConfigsPage() {
         const res = await listAvatarBorders({ token, page: 1, limit: 200, q: "", active: true });
         setBorders(Array.isArray(res?.items) ? res.items : []);
       } catch (err) {
-        toast.error(err?.message || "Gagal memuat Avatar Borders");
+        toast.error(err?.message || "Gagal memuat Bingkai Avatar");
       } finally {
         setLoadingLookups((s) => ({ ...s, borders: false }));
       }
@@ -114,7 +114,7 @@ export default function WatchEventConfigsPage() {
         const res = await listStickers({ token, page: 1, limit: 200, q: "" });
         setStickers(Array.isArray(res?.items) ? res.items : []);
       } catch (err) {
-        toast.error(err?.message || "Gagal memuat Stickers");
+        toast.error(err?.message || "Gagal memuat Stiker");
       } finally {
         setLoadingLookups((s) => ({ ...s, stickers: false }));
       }
@@ -127,7 +127,7 @@ export default function WatchEventConfigsPage() {
         const res = await listBadges({ token, page: 1, limit: 200, q: "", active: true });
         setBadges(Array.isArray(res?.items) ? res.items : []);
       } catch (err) {
-        toast.error(err?.message || "Gagal memuat Badges");
+        toast.error(err?.message || "Gagal memuat Lencana");
       } finally {
         setLoadingLookups((s) => ({ ...s, badges: false }));
       }
@@ -375,62 +375,139 @@ export default function WatchEventConfigsPage() {
     return `${s} → ${e}`;
   };
 
-  const renderModeSummary = (it) => {
-    const hasThresholds = Array.isArray(it?.thresholds) && it.thresholds.length > 0;
-    if (hasThresholds) {
-      const txt = it.thresholds
-        .map((t) => {
-          const mm = t?.minutes ? `${t.minutes}m` : "";
-          const ep = t?.episodes ? `${t.episodes}ep` : "";
-          const req = [mm, ep].filter(Boolean).join("/") || "-";
-          const rt = String(t?.reward_type || "NONE").toUpperCase();
-          const rid = Number(t?.reward_id || 0);
-          const reward = rt === "NONE" ? "NONE" : `${rt}#${rid}`;
-          return `${t?.id || "?"}:${req}=>${t?.coin_reward || 0} (${reward})`;
-        })
-        .join(", ");
-      return `Tier (${it.thresholds.length}) - ${txt}`;
-    }
+  const renderConfigSummary = (it) => {
+    const raw = Array.isArray(it?.thresholds) ? it.thresholds : [];
+    if (raw.length === 0) return <span className="opacity-70">-</span>;
 
-    return "-";
+    const formatReward = (t) => {
+      const rt = String(t?.reward_type || "NONE").toUpperCase();
+      const rid = Number(t?.reward_id || 0);
+      if (rt === "NONE") return "-";
+      if (!rid) return rt;
+      return `${rt} #${rid}`;
+    };
+
+    const formatReq = (t) => {
+      const mm = t?.minutes ? `${t.minutes}m` : "";
+      const ep = t?.episodes ? `${t.episodes}ep` : "";
+      return [mm, ep].filter(Boolean).join("/") || "-";
+    };
+
+    const maxShow = 2;
+    const shown = raw.slice(0, maxShow);
+    const remaining = Math.max(0, raw.length - shown.length);
+
+    return (
+      <div className="space-y-1">
+        <div className="text-[11px] font-extrabold">Tingkat: {raw.length}</div>
+        <div className="space-y-1">
+          {shown.map((t, idx) => (
+            <div key={`${t?.id || "IDX"}-${idx}`} className="text-[11px] leading-snug">
+              <span className="font-extrabold">{t?.id || "?"}</span>
+              <span className="opacity-80"> · </span>
+              <span>{formatReq(t)}</span>
+              <span className="opacity-80"> · </span>
+              <span className="font-extrabold">{Number(t?.coin_reward || 0)} koin</span>
+              <span className="opacity-80"> · </span>
+              <span>{formatReward(t)}</span>
+            </div>
+          ))}
+          {remaining > 0 ? <div className="text-[11px] opacity-70">+{remaining} lainnya</div> : null}
+        </div>
+      </div>
+    );
   };
+
+  const renderDateTime = (value) => {
+    if (!value) return "-";
+    const dt = new Date(value);
+    return Number.isNaN(dt.getTime()) ? "-" : dt.toLocaleString();
+  };
+
+  const activeCount = useMemo(() => items.filter((it) => !!it?.is_active).length, [items]);
+  const totalThresholds = useMemo(
+    () => items.reduce((sum, it) => sum + (Array.isArray(it?.thresholds) ? it.thresholds.length : 0), 0),
+    [items]
+  );
 
   if (loading || !user) return null;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-extrabold flex items-center gap-2">
-          <Film className="size-5" /> Watch Event Configs
-        </h2>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div
+          className="rounded-[28px] border-4 p-5 md:p-6"
+          style={{
+            boxShadow: "10px 10px 0 #000",
+            background: "linear-gradient(135deg, var(--panel-bg) 0%, #dbeafe 100%)",
+            borderColor: "var(--panel-border)",
+            color: "var(--foreground)",
+          }}
+        >
+          <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-1 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "#e0f2fe", color: "#1d4ed8" }}>
+            <Clapperboard className="size-4" /> Watch Event
+          </div>
+          <h2 className="mt-4 text-2xl md:text-3xl font-black flex items-center gap-3">
+            <Film className="size-7" /> Konfigurasi Event Tonton
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm md:text-base font-semibold opacity-80">
+            Atur reward berdasarkan ambang menit atau episode, coin bonus, hadiah item, serta jadwal aktif event tonton dengan tampilan yang lebih rapi.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 rounded-[28px] border-4 p-5" style={{ boxShadow: "10px 10px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
+          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#f3f4f6" }}>
+            <div className="text-xs font-black uppercase tracking-wide opacity-70">Total Config</div>
+            <div className="mt-2 text-2xl font-black">{total}</div>
+          </div>
+          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#dcfce7", color: "#166534" }}>
+            <div className="text-xs font-black uppercase tracking-wide opacity-70">Aktif</div>
+            <div className="mt-2 text-2xl font-black">{activeCount}</div>
+          </div>
+          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#ede9fe", color: "#6d28d9" }}>
+            <div className="text-xs font-black uppercase tracking-wide opacity-70">Mode Form</div>
+            <div className="mt-2 text-sm font-black">{mode === "add" ? "Tambah Baru" : `Edit #${form.id}`}</div>
+          </div>
+          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#dbeafe", color: "#1d4ed8" }}>
+            <div className="text-xs font-black uppercase tracking-wide opacity-70">Threshold</div>
+            <div className="mt-2 text-2xl font-black">{totalThresholds}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)", color: "var(--foreground)" }}>
+          <Gift className="size-4" /> Reward menonton berdasarkan progress dan threshold
+        </div>
         <button
           type="button"
           onClick={async () => {
             await loadList();
           }}
-          className="px-3 py-2 border-4 rounded-lg font-extrabold"
+          className="px-4 py-3 border-4 rounded-2xl font-extrabold"
           style={{
-            boxShadow: "4px 4px 0 #000",
+            boxShadow: "6px 6px 0 #000",
             background: "var(--panel-bg)",
             borderColor: "var(--panel-border)",
             color: "var(--foreground)",
           }}
         >
           <span className="inline-flex items-center gap-2">
-            <RefreshCw className="size-4" /> Refresh
+            <RefreshCw className="size-4" /> Muat Ulang
           </span>
         </button>
       </div>
 
       <div
-        className="p-3 border-4 rounded-lg"
+        className="p-4 border-4 rounded-[24px]"
         style={{
-          boxShadow: "4px 4px 0 #000",
+          boxShadow: "8px 8px 0 #000",
           background: "var(--panel-bg)",
           borderColor: "var(--panel-border)",
           color: "var(--foreground)",
         }}
       >
+        <div className="mb-3 text-sm font-black opacity-75">Filter Config</div>
         <div className="grid sm:grid-cols-[220px_1fr] gap-3 items-center">
           <select
             value={filterActive}
@@ -455,79 +532,72 @@ export default function WatchEventConfigsPage() {
       </div>
 
       <div
-        className="p-3 border-4 rounded-lg space-y-3"
+        className="p-4 border-4 rounded-[24px] space-y-4"
         style={{
-          boxShadow: "4px 4px 0 #000",
+          boxShadow: "8px 8px 0 #000",
           background: "var(--panel-bg)",
           borderColor: "var(--panel-border)",
           color: "var(--foreground)",
         }}
       >
-        <div className="text-sm font-extrabold">{mode === "add" ? "Tambah Config" : `Edit Config #${form.id}`}</div>
+        <div>
+          <div className="text-sm font-extrabold">{mode === "add" ? "Tambah Config" : `Edit Config #${form.id}`}</div>
+          <div className="mt-1 text-xs font-semibold opacity-70">Tentukan reset harian, periode event, serta daftar threshold reward menonton.</div>
+        </div>
 
         <form onSubmit={onSubmit} className="grid gap-3">
-          <div className="grid sm:grid-cols-3 gap-3 items-center">
-            <label className="flex items-center gap-2 text-sm font-semibold">
-              <input
-                type="checkbox"
-                checked={!!form.is_active}
-                onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
-              />
-              <span>Aktif</span>
-            </label>
+          <div className="grid gap-3 lg:grid-cols-[240px_minmax(0,1fr)]">
+            <div className="rounded-[22px] border-4 p-4 grid gap-3 content-start" style={{ boxShadow: "6px 6px 0 #000", background: "#dbeafe", borderColor: "var(--panel-border)", color: "#1d4ed8" }}>
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input
+                  type="checkbox"
+                  checked={!!form.is_active}
+                  onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
+                />
+                <span>Config aktif</span>
+              </label>
 
-            <label className="flex items-center gap-2 text-sm font-semibold">
-              <input
-                type="checkbox"
-                checked={!!form.daily_reset}
-                onChange={(e) => setForm((f) => ({ ...f, daily_reset: e.target.checked }))}
-              />
-              <span>Daily reset</span>
-            </label>
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input
+                  type="checkbox"
+                  checked={!!form.daily_reset}
+                  onChange={(e) => setForm((f) => ({ ...f, daily_reset: e.target.checked }))}
+                />
+                <span>Reset harian</span>
+              </label>
 
-            <div className="text-xs font-semibold opacity-80">
-              {loadingLookups.borders || loadingLookups.stickers || loadingLookups.badges
-                ? "Memuat lookup hadiah..."
-                : "Lookup hadiah siap"}
+              <div className="rounded-2xl border-4 px-3 py-2 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "rgba(255,255,255,0.7)", color: "#1d4ed8" }}>
+                {normalizedThresholds.length} threshold aktif di editor.
+              </div>
             </div>
-          </div>
 
-          <div className="grid sm:grid-cols-2 gap-3">
-            <label className="grid gap-1">
-              <span className="text-xs font-extrabold">Starts at (opsional)</span>
-              <input
-                type="datetime-local"
-                value={form.starts_at}
-                onChange={(e) => setForm((f) => ({ ...f, starts_at: e.target.value }))}
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{
-                  boxShadow: "4px 4px 0 #000",
-                  background: "var(--panel-bg)",
-                  borderColor: "var(--panel-border)",
-                  color: "var(--foreground)",
-                }}
-              />
-            </label>
-            <label className="grid gap-1">
-              <span className="text-xs font-extrabold">Ends at (opsional)</span>
-              <input
-                type="datetime-local"
-                value={form.ends_at}
-                onChange={(e) => setForm((f) => ({ ...f, ends_at: e.target.value }))}
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{
-                  boxShadow: "4px 4px 0 #000",
-                  background: "var(--panel-bg)",
-                  borderColor: "var(--panel-border)",
-                  color: "var(--foreground)",
-                }}
-              />
-            </label>
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="grid gap-1 rounded-[22px] border-4 p-4" style={{ boxShadow: "6px 6px 0 #000", background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
+                <span className="text-xs font-extrabold">Mulai (opsional)</span>
+                <input
+                  type="datetime-local"
+                  value={form.starts_at}
+                  onChange={(e) => setForm((f) => ({ ...f, starts_at: e.target.value }))}
+                  className="px-3 py-2 border-4 rounded-xl font-semibold"
+                  style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
+                />
+              </label>
+              <label className="grid gap-1 rounded-[22px] border-4 p-4" style={{ boxShadow: "6px 6px 0 #000", background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
+                <span className="text-xs font-extrabold">Selesai (opsional)</span>
+                <input
+                  type="datetime-local"
+                  value={form.ends_at}
+                  onChange={(e) => setForm((f) => ({ ...f, ends_at: e.target.value }))}
+                  className="px-3 py-2 border-4 rounded-xl font-semibold"
+                  style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
+                />
+              </label>
+            </div>
           </div>
 
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-xs font-extrabold">Thresholds</div>
+              <div className="text-xs font-extrabold">Ambang</div>
 
               <button
                 type="button"
@@ -549,7 +619,7 @@ export default function WatchEventConfigsPage() {
                 }}
               >
                 <span className="inline-flex items-center gap-2">
-                  <Plus className="size-4" /> Add threshold
+                  <Plus className="size-4" /> Tambah ambang
                 </span>
               </button>
             </div>
@@ -563,16 +633,21 @@ export default function WatchEventConfigsPage() {
                 return (
                   <div
                     key={t.key}
-                    className="p-3 border-4 rounded-lg space-y-3"
+                    className="p-4 border-4 rounded-[22px] space-y-4"
                     style={{
-                      boxShadow: "4px 4px 0 #000",
-                      background: "var(--panel-bg)",
+                      boxShadow: "6px 6px 0 #000",
+                      background: idx % 2 === 0 ? "var(--background)" : "var(--panel-bg)",
                       borderColor: "var(--panel-border)",
                       color: "var(--foreground)",
                     }}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="text-sm font-extrabold">Tier #{idx + 1}</div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="text-sm font-extrabold">Tingkat #{idx + 1}</div>
+                        <div className="rounded-full border-4 px-2 py-1 text-[11px] font-black" style={{ borderColor: "var(--panel-border)", background: "#e0f2fe", color: "#1d4ed8" }}>
+                          Threshold reward
+                        </div>
+                      </div>
 
                       <button
                         type="button"
@@ -589,19 +664,19 @@ export default function WatchEventConfigsPage() {
                             };
                           });
                         }}
-                        className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                        className="px-3 py-2 border-4 rounded-xl font-extrabold"
                         style={{
                           boxShadow: "4px 4px 0 #000",
-                          background: "var(--panel-bg)",
+                          background: "#fee2e2",
                           borderColor: "var(--panel-border)",
-                          color: "var(--foreground)",
+                          color: "#991b1b",
                         }}
                       >
                         Hapus
                       </button>
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                       <label className="grid gap-1">
                         <span className="text-xs font-extrabold">ID</span>
                         <input
@@ -614,7 +689,7 @@ export default function WatchEventConfigsPage() {
                               return { ...f, thresholds: next };
                             });
                           }}
-                          className="px-3 py-2 border-4 rounded-lg font-semibold"
+                          className="px-3 py-2 border-4 rounded-xl font-semibold"
                           style={{
                             boxShadow: "4px 4px 0 #000",
                             background: "var(--panel-bg)",
@@ -625,7 +700,7 @@ export default function WatchEventConfigsPage() {
                       </label>
 
                       <label className="grid gap-1">
-                        <span className="text-xs font-extrabold">Coin reward</span>
+                        <span className="text-xs font-extrabold">Hadiah koin</span>
                         <input
                           type="number"
                           min={0}
@@ -649,7 +724,7 @@ export default function WatchEventConfigsPage() {
                       </label>
 
                       <label className="grid gap-1">
-                        <span className="text-xs font-extrabold">Minutes (opsional)</span>
+                        <span className="text-xs font-extrabold">Menit (opsional)</span>
                         <input
                           type="number"
                           min={0}
@@ -673,7 +748,7 @@ export default function WatchEventConfigsPage() {
                       </label>
 
                       <label className="grid gap-1">
-                        <span className="text-xs font-extrabold">Episodes (opsional)</span>
+                        <span className="text-xs font-extrabold">Episode (opsional)</span>
                         <input
                           type="number"
                           min={0}
@@ -697,7 +772,7 @@ export default function WatchEventConfigsPage() {
                       </label>
 
                       <label className="grid gap-1">
-                        <span className="text-xs font-extrabold">Reward type</span>
+                        <span className="text-xs font-extrabold">Tipe hadiah</span>
                         <select
                           value={rt}
                           onChange={(e) => {
@@ -709,7 +784,7 @@ export default function WatchEventConfigsPage() {
                               return { ...f, thresholds: next };
                             });
                           }}
-                          className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                          className="px-3 py-2 border-4 rounded-xl font-extrabold"
                           style={{
                             boxShadow: "4px 4px 0 #000",
                             background: "var(--panel-bg)",
@@ -726,7 +801,7 @@ export default function WatchEventConfigsPage() {
                       </label>
 
                       <label className="grid gap-1">
-                        <span className="text-xs font-extrabold">Reward item</span>
+                        <span className="text-xs font-extrabold">Item hadiah</span>
                         {needsRewardId ? (
                           <select
                             value={Number(t.reward_id || 0)}
@@ -738,7 +813,7 @@ export default function WatchEventConfigsPage() {
                                 return { ...f, thresholds: next };
                               });
                             }}
-                            className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                            className="px-3 py-2 border-4 rounded-xl font-extrabold"
                             style={{
                               boxShadow: "4px 4px 0 #000",
                               background: "var(--panel-bg)",
@@ -759,7 +834,7 @@ export default function WatchEventConfigsPage() {
                           <input
                             value="NONE"
                             disabled
-                            className="px-3 py-2 border-4 rounded-lg font-semibold opacity-70"
+                            className="px-3 py-2 border-4 rounded-xl font-semibold opacity-70"
                             style={{
                               boxShadow: "4px 4px 0 #000",
                               background: "var(--panel-bg)",
@@ -813,122 +888,107 @@ export default function WatchEventConfigsPage() {
         </form>
       </div>
 
-      <div className="overflow-auto">
-        <table
-          className="min-w-full border-4 rounded-lg overflow-hidden"
-          style={{
-            boxShadow: "8px 8px 0 #000",
-            borderColor: "var(--panel-border)",
-            color: "var(--foreground)",
-          }}
-        >
-          <thead style={{ background: "var(--panel-bg)" }}>
-            <tr>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                ID
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                Active
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                Window
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                Daily reset
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                Config
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it) => (
-              <tr key={it.id} style={{ opacity: loadingList ? 0.6 : 1 }}>
-                <td className="px-3 py-2 border-b-4 font-extrabold" style={{ borderColor: "var(--panel-border)" }}>
-                  #{it.id}
-                </td>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                  {it.is_active ? "true" : "false"}
-                </td>
-                <td className="px-3 py-2 border-b-4 text-xs" style={{ borderColor: "var(--panel-border)" }}>
-                  {renderWindow(it)}
-                </td>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                  {it.daily_reset ? "true" : "false"}
-                </td>
-                <td className="px-3 py-2 border-b-4 text-xs" style={{ borderColor: "var(--panel-border)" }}>
-                  {renderModeSummary(it)}
-                </td>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(it)}
-                      className="px-3 py-2 border-4 rounded-lg font-extrabold"
-                      style={{
-                        boxShadow: "4px 4px 0 #000",
-                        background: "var(--accent-edit)",
-                        color: "var(--accent-edit-foreground)",
-                        borderColor: "var(--panel-border)",
-                      }}
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <Pencil className="size-4" /> Edit
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => onToggle(it)}
-                      disabled={togglingId === it.id}
-                      className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-                      style={{
-                        boxShadow: "4px 4px 0 #000",
-                        background: "#FFD803",
-                        color: "#111",
-                        borderColor: "var(--panel-border)",
-                      }}
-                    >
-                      {togglingId === it.id ? "Toggling..." : "Toggle"}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => onDelete(it)}
-                      disabled={deletingId === it.id}
-                      className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-                      style={{
-                        boxShadow: "4px 4px 0 #000",
-                        background: "var(--accent-delete)",
-                        color: "var(--accent-delete-foreground)",
-                        borderColor: "var(--panel-border)",
-                      }}
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <Trash2 className="size-4" /> {deletingId === it.id ? "Menghapus..." : "Hapus"}
-                      </span>
-                    </button>
+      <div className="rounded-[24px] border-4 p-4" style={{ boxShadow: "8px 8px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-extrabold">Daftar Config</div>
+            <div className="mt-1 text-xs font-semibold opacity-70">Pantau periode event, threshold reward, serta aksi edit, toggle, dan hapus dari satu panel.</div>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "#dbeafe", color: "#1d4ed8" }}>
+            <Film className="size-4" /> {items.length} item ditampilkan
+          </div>
+        </div>
+        <div className="grid gap-3">
+          {items.map((it) => (
+            <div key={it.id} className="rounded-[22px] border-4 p-4" style={{ boxShadow: "6px 6px 0 #000", background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)", opacity: loadingList ? 0.7 : 1 }}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="grid gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="text-base font-black">Config #{it.id}</div>
+                    <div className="rounded-full border-4 px-2 py-1 text-[11px] font-black" style={{ borderColor: "var(--panel-border)", background: it.is_active ? "#dcfce7" : "#f3f4f6", color: it.is_active ? "#166534" : "#374151" }}>
+                      {it.is_active ? "Aktif" : "Nonaktif"}
+                    </div>
+                    <div className="rounded-full border-4 px-2 py-1 text-[11px] font-black" style={{ borderColor: "var(--panel-border)", background: it.daily_reset ? "#dbeafe" : "#fef3c7", color: it.daily_reset ? "#1d4ed8" : "#92400e" }}>
+                      {it.daily_reset ? "Reset harian" : "Tanpa reset harian"}
+                    </div>
                   </div>
-                </td>
-              </tr>
-            ))}
-            {items.length === 0 ? (
-              <tr>
-                <td className="px-3 py-6 text-sm font-extrabold" colSpan={6}>
-                  Tidak ada data
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+                  <div className="text-sm font-semibold opacity-80">{Array.isArray(it?.thresholds) ? it.thresholds.length : 0} threshold reward</div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onEdit(it)}
+                    className="px-3 py-2 border-4 rounded-xl font-extrabold"
+                    style={{ boxShadow: "4px 4px 0 #000", background: "var(--accent-edit)", color: "var(--accent-edit-foreground)", borderColor: "var(--panel-border)" }}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Pencil className="size-4" /> Edit
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onToggle(it)}
+                    disabled={togglingId === it.id}
+                    className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
+                    style={{ boxShadow: "4px 4px 0 #000", background: it.is_active ? "#FFD803" : "#FFF", color: "#111", borderColor: "var(--panel-border)" }}
+                  >
+                    {togglingId === it.id ? "..." : it.is_active ? (
+                      <span className="inline-flex items-center gap-2">
+                        <ToggleRight className="size-4" /> Aktif
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-2">
+                        <ToggleLeft className="size-4" /> Nonaktif
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onDelete(it)}
+                    disabled={deletingId === it.id}
+                    className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
+                    style={{ boxShadow: "4px 4px 0 #000", background: "var(--accent-delete)", color: "var(--accent-delete-foreground)", borderColor: "var(--panel-border)" }}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Trash2 className="size-4" /> {deletingId === it.id ? "Menghapus..." : "Hapus"}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="rounded-[20px] border-4 p-3 text-xs" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
+                  {renderConfigSummary(it)}
+                </div>
+
+                <div className="grid gap-2">
+                  <div className="rounded-[18px] border-4 p-3" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
+                    <div className="text-xs font-black opacity-70">Mulai</div>
+                    <div className="mt-1 text-sm font-semibold">{renderDateTime(it.starts_at)}</div>
+                  </div>
+                  <div className="rounded-[18px] border-4 p-3" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
+                    <div className="text-xs font-black opacity-70">Selesai</div>
+                    <div className="mt-1 text-sm font-semibold">{renderDateTime(it.ends_at)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {items.length === 0 ? (
+            <div className="rounded-[22px] border-4 px-4 py-8 text-center text-sm font-semibold opacity-70" style={{ borderColor: "var(--panel-border)", background: "var(--background)" }}>
+              Tidak ada data
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm font-extrabold">
-          Page {page} / {totalPages}
+          Halaman {page} / {totalPages}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -943,7 +1003,7 @@ export default function WatchEventConfigsPage() {
               color: "var(--foreground)",
             }}
           >
-            Prev
+            Sebelumnya
           </button>
           <button
             type="button"
@@ -957,10 +1017,14 @@ export default function WatchEventConfigsPage() {
               color: "var(--foreground)",
             }}
           >
-            Next
+            Berikutnya
           </button>
         </div>
       </div>
     </div>
   );
 }
+
+ export default function WatchEventConfigsPage() {
+   return <WatchEventConfigsContent />;
+ }

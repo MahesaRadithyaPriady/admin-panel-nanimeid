@@ -12,6 +12,7 @@ Sistem permission-based access control untuk admin panel yang memungkinkan kontr
 - **Permission:** `overview`
 - **Routes:** 
   - `GET /admin/overview` (dashboard stats)
+  - `GET /admin/overview/stats` (statistik harian snapshot)
 - **Default Roles:** `superadmin`, `keuangan`, `uploader`
 
 ### 2. Kelola Dropdown
@@ -34,6 +35,17 @@ Sistem permission-based access control untuk admin panel yang memungkinkan kontr
   - `PUT /admin/signin-event-configs/:id` - Update config
   - `PATCH /admin/signin-event-configs/:id/toggle` - Toggle config
   - `DELETE /admin/signin-event-configs/:id` - Delete config
+- **Default Roles:** `superadmin`
+
+#### Watch Event Configs
+- **Permission:** `watch-event-configs`
+- **Routes:**
+  - `GET /admin/watch-event-configs` - List configs
+  - `GET /admin/watch-event-configs/:id` - Get config
+  - `POST /admin/watch-event-configs` - Create config
+  - `PUT /admin/watch-event-configs/:id` - Update config
+  - `PATCH /admin/watch-event-configs/:id/toggle` - Toggle config
+  - `DELETE /admin/watch-event-configs/:id` - Delete config
 - **Default Roles:** `superadmin`
 
 #### Kelola Admin
@@ -244,8 +256,10 @@ Sistem permission-based access control untuk admin panel yang memungkinkan kontr
 - **Routes:**
   - `GET /admin/settings` - Get app settings
   - `PUT /admin/settings` - Update app settings
+  - `PATCH /admin/settings/watch-lite-coin-per-minute` - Update hanya field `watch_lite_coin_per_minute`
   - `GET /admin/in-app-announcement` - Get announcement
   - `PUT /admin/in-app-announcement` - Update announcement
+  - `PATCH /admin/in-app-announcement/message` - Update hanya isi pesan announcement
   - `DELETE /admin/in-app-announcement` - Delete announcement
 - **Default Roles:** `superadmin`
 

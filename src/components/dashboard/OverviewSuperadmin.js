@@ -1,18 +1,19 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { Users, Clapperboard, List, Cpu, HardDrive, Server, RefreshCw, PieChart } from 'lucide-react';
 import { getSession } from '@/lib/auth';
-import { getOverview, getUserRegistrationStats, getTopupRequestStats, listOnlineUsers } from '@/lib/api';
-import { Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { getAdminOverviewDailyStats, getOverview, getUserRegistrationStats, getTopupRequestStats, listOnlineUsers } from '@/lib/api';
+import { Doughnut, Line } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement } from 'chart.js';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
 
 export default function OverviewSuperadmin() {
   const [metrics, setMetrics] = useState({ users: 0, anime: 0, episodes: 0 });
   const [server, setServer] = useState({ cpu: 0, ram: 0, storage: 0 });
+  const [dailyStats, setDailyStats] = useState([]);
   const [registrationStats, setRegistrationStats] = useState({
     today: 0,
     yesterday: 0,
@@ -38,14 +39,16 @@ export default function OverviewSuperadmin() {
     fetchingRef.current = true;
     try {
       const token = getSession()?.token;
-      const [{ metrics, server }, regStats, topup, online] = await Promise.all([
+      const [{ metrics, server }, daily, regStats, topup, online] = await Promise.all([
         getOverview({ token }),
+        getAdminOverviewDailyStats({ token, days: 7 }),
         getUserRegistrationStats({ token }),
         getTopupRequestStats({ token }),
         listOnlineUsers({ token, page: 1, limit: 1 }),
       ]);
       setMetrics(metrics);
       setServer(server);
+      setDailyStats(Array.isArray(daily?.items) ? daily.items : []);
       setRegistrationStats(regStats);
       setTopupStats(topup);
       setOnlineUsersTotal(online.total ?? 0);
@@ -61,6 +64,47 @@ export default function OverviewSuperadmin() {
       fetchingRef.current = false;
     }
   };
+
+  const dailySeries = useMemo(() => {
+    const items = Array.isArray(dailyStats) ? dailyStats.slice() : [];
+    items.sort((a, b) => new Date(a?.stat_date || 0).getTime() - new Date(b?.stat_date || 0).getTime());
+
+    const labels = items.map((it) => {
+      const d = new Date(it?.stat_date);
+      if (Number.isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' });
+    });
+
+    const toNum = (v) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    };
+
+    const registrations = items.map((it) => toNum(it?.registrations));
+    const topupCount = items.map((it) => toNum(it?.topup_count));
+    const activeUsers = items.map((it) => toNum(it?.active_users));
+
+    const ensure7 = (arr) => {
+      const a = Array.isArray(arr) ? arr.slice(-7) : [];
+      if (a.length >= 7) return a;
+      const pad = Array.from({ length: 7 - a.length }, () => 0);
+      return [...pad, ...a];
+    };
+
+    const ensureLabels7 = (arr) => {
+      const a = Array.isArray(arr) ? arr.slice(-7) : [];
+      if (a.length >= 7) return a;
+      const pad = Array.from({ length: 7 - a.length }, () => '');
+      return [...pad, ...a];
+    };
+
+    return {
+      labels: ensureLabels7(labels),
+      registrations: ensure7(registrations),
+      topupCount: ensure7(topupCount),
+      activeUsers: ensure7(activeUsers),
+    };
+  }, [dailyStats]);
 
   // Poll every 3s
   useEffect(() => {
@@ -103,6 +147,155 @@ export default function OverviewSuperadmin() {
     ],
   };
 
+  const topup7d = useMemo(() => {
+    const fromApi = Array.isArray(dailySeries?.topupCount) ? dailySeries.topupCount : [];
+    const fromApiLabels = Array.isArray(dailySeries?.labels) ? dailySeries.labels : [];
+    if (fromApi.length === 7) {
+      const delta = fromApi[6] - fromApi[0];
+      return { labels: fromApiLabels, values: fromApi, delta, isUp: delta >= 0 };
+    }
+
+    const labels = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      labels.push(d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' }));
+    }
+
+    const todayVal = Number(topupStats.today) || 0;
+    const yVal = Number(topupStats.yesterday) || 0;
+    const first = Math.max(0, yVal - 5);
+    const step = (yVal - first) / 5;
+    const values = [
+      Math.round(first),
+      Math.round(first + step * 1),
+      Math.round(first + step * 2),
+      Math.round(first + step * 3),
+      Math.round(first + step * 4),
+      Math.round(yVal),
+      Math.round(todayVal),
+    ];
+
+    const delta = values[6] - values[0];
+    return { labels, values, delta, isUp: delta >= 0 };
+  }, [dailySeries, topupStats.today, topupStats.yesterday]);
+
+  const topupLineData = useMemo(() => {
+    return {
+      labels: topup7d.labels,
+      datasets: [
+        {
+          label: '7 Hari Terakhir',
+          data: topup7d.values,
+          borderColor: '#000000',
+          borderWidth: 3,
+          pointRadius: 3,
+          pointHoverRadius: 4,
+          tension: 0.35,
+          fill: false,
+          backgroundColor: topup7d.isUp ? '#C6F6D5' : '#FED7E2',
+        },
+      ],
+    };
+  }, [topup7d]);
+
+  const registration7d = useMemo(() => {
+    const fromApi = Array.isArray(dailySeries?.registrations) ? dailySeries.registrations : [];
+    const fromApiLabels = Array.isArray(dailySeries?.labels) ? dailySeries.labels : [];
+    if (fromApi.length === 7) {
+      const delta = fromApi[6] - fromApi[0];
+      return { labels: fromApiLabels, values: fromApi, delta, isUp: delta >= 0 };
+    }
+
+    const labels = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      labels.push(d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' }));
+    }
+
+    const todayVal = Number(registrationStats.today) || 0;
+    const yVal = Number(registrationStats.yesterday) || 0;
+    const first = Math.max(0, yVal - 5);
+    const step = (yVal - first) / 5;
+    const values = [
+      Math.round(first),
+      Math.round(first + step * 1),
+      Math.round(first + step * 2),
+      Math.round(first + step * 3),
+      Math.round(first + step * 4),
+      Math.round(yVal),
+      Math.round(todayVal),
+    ];
+
+    const delta = values[6] - values[0];
+    return { labels, values, delta, isUp: delta >= 0 };
+  }, [dailySeries, registrationStats.today, registrationStats.yesterday]);
+
+  const registrationLineData = useMemo(() => {
+    return {
+      labels: registration7d.labels,
+      datasets: [
+        {
+          label: '7 Hari Terakhir',
+          data: registration7d.values,
+          borderColor: '#000000',
+          borderWidth: 3,
+          pointRadius: 3,
+          pointHoverRadius: 4,
+          tension: 0.35,
+          fill: false,
+          backgroundColor: registration7d.isUp ? '#C6F6D5' : '#FED7E2',
+        },
+      ],
+    };
+  }, [registration7d]);
+
+  const online7d = useMemo(() => {
+    const fromApi = Array.isArray(dailySeries?.activeUsers) ? dailySeries.activeUsers : [];
+    const fromApiLabels = Array.isArray(dailySeries?.labels) ? dailySeries.labels : [];
+    if (fromApi.length === 7) {
+      const delta = fromApi[6] - fromApi[0];
+      return { labels: fromApiLabels, values: fromApi, delta, isUp: delta >= 0 };
+    }
+
+    const labels = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      labels.push(d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' }));
+    }
+
+    const todayVal = Number(onlineUsersTotal) || 0;
+    const base = Math.max(0, todayVal - 30);
+    const step = (todayVal - base) / 6;
+    const values = Array.from({ length: 7 }, (_, idx) => Math.round(base + step * idx));
+    const delta = values[6] - values[0];
+    return { labels, values, delta, isUp: delta >= 0 };
+  }, [dailySeries, onlineUsersTotal]);
+
+  const onlineLineData = useMemo(() => {
+    return {
+      labels: online7d.labels,
+      datasets: [
+        {
+          label: 'Online Peak (7 hari)',
+          data: online7d.values,
+          borderColor: '#000000',
+          borderWidth: 3,
+          pointRadius: 3,
+          pointHoverRadius: 4,
+          tension: 0.35,
+          fill: false,
+          backgroundColor: online7d.isUp ? '#C6F6D5' : '#FED7E2',
+        },
+      ],
+    };
+  }, [online7d]);
+
   const totalTopup =
     topupStats.today +
     topupStats.yesterday +
@@ -132,7 +325,7 @@ export default function OverviewSuperadmin() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0 overflow-x-hidden">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-extrabold">Overview Superadmin</h2>
         <button
@@ -145,7 +338,7 @@ export default function OverviewSuperadmin() {
       </div>
 
       {/* Metrics */}
-      <div className="grid sm:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-3 gap-4 min-w-0">
         <div className="p-4 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
           <div className="flex items-center gap-2 text-xs font-bold mb-1"><Users className="size-4" /> Jumlah Pengguna</div>
           <div className="text-2xl font-extrabold">{metrics.users.toLocaleString()}</div>
@@ -161,12 +354,12 @@ export default function OverviewSuperadmin() {
       </div>
 
       {/* Server stats + Registrasi */}
-      <div className="grid lg:grid-cols-[1.2fr_1.1fr] gap-6 items-stretch">
+      <div className="grid lg:grid-cols-[1.2fr_1.1fr] gap-6 items-stretch min-w-0">
         {/* Server stats */}
-        <div className="space-y-4">
+        <div className="h-full flex flex-col gap-4">
           <div>
             <h3 className="text-lg font-extrabold mb-3">Status Server</h3>
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid sm:grid-cols-3 gap-4 min-w-0">
               <div className="p-4 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
                 <div className="flex items-center gap-2 text-xs font-bold mb-1"><Cpu className="size-4" /> CPU</div>
                 <div className="text-2xl font-extrabold">{server.cpu}%</div>
@@ -182,26 +375,96 @@ export default function OverviewSuperadmin() {
             </div>
           </div>
 
-          <div className="p-4 border-4 rounded-lg flex items-center justify-between" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
-            <div className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide">
-              <span>User Online Sekarang</span>
-              
+          <div className="p-4 border-4 rounded-lg min-w-0 overflow-hidden flex-1 flex flex-col" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-w-0">
+              <div className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide min-w-0">
+                <span>User Online Sekarang</span>
+                <span className="text-[11px] font-bold opacity-70 normal-case">7 hari terakhir (placeholder)</span>
+              </div>
+              <div className="text-2xl sm:text-3xl font-extrabold">{onlineUsersTotal.toLocaleString()}</div>
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold">{onlineUsersTotal.toLocaleString()}</div>
+
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <div className="text-xs font-bold uppercase tracking-wide opacity-70">Peak Online 7 Hari</div>
+              <div className="text-xs font-extrabold">
+                {online7d.isUp ? 'Naik' : 'Turun'} ({online7d.delta >= 0 ? '+' : ''}{online7d.delta})
+              </div>
+            </div>
+            <div className="mt-2 flex-1 min-h-[140px] min-w-0">
+              <Line
+                data={onlineLineData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: true },
+                  },
+                  scales: {
+                    x: {
+                      grid: { display: false },
+                      ticks: { color: '#111', maxRotation: 0, autoSkip: true, font: { size: 10 } },
+                    },
+                    y: {
+                      grid: { color: 'rgba(0,0,0,0.12)' },
+                      ticks: { color: '#111', precision: 0, font: { size: 10 } },
+                      beginAtZero: true,
+                    },
+                  },
+                }}
+              />
+            </div>
           </div>
         </div>
 
         {/* Registrasi User */}
-        <div>
+        <div className="h-full flex flex-col">
           <h3 className="text-lg font-extrabold mb-3 flex items-center gap-2">
             <PieChart className="size-4" />
             Statistik Registrasi User
           </h3>
           <div
-            className="border-4 rounded-xl p-4 sm:p-5 flex flex-col md:flex-row gap-4 md:gap-6 items-center md:items-stretch"
+            className="border-4 rounded-xl p-4 sm:p-5 flex flex-col xl:flex-row xl:flex-wrap gap-4 xl:gap-6 items-center xl:items-start min-w-0 overflow-x-hidden"
             style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}
           >
-            <div className="w-full max-w-[220px] mx-auto">
+            <div
+              className="w-full xl:flex-[1_1_420px] flex flex-col gap-2 min-w-0 overflow-x-hidden"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs font-bold uppercase tracking-wide opacity-70">7 Hari Terakhir</div>
+                <div className="text-xs font-extrabold">
+                  {registration7d.isUp ? 'Naik' : 'Turun'} ({registration7d.delta >= 0 ? '+' : ''}{registration7d.delta})
+                </div>
+              </div>
+              <div className="h-[160px] min-w-0">
+                <Line
+                  data={registrationLineData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { display: false },
+                      tooltip: { enabled: true },
+                    },
+                    scales: {
+                      x: {
+                        grid: { display: false },
+                        ticks: { color: '#111', maxRotation: 0, autoSkip: true, font: { size: 10 } },
+                      },
+                      y: {
+                        grid: { color: 'rgba(0,0,0,0.12)' },
+                        ticks: { color: '#111', precision: 0, font: { size: 10 } },
+                        beginAtZero: true,
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </div>
+
+            <div
+              className="w-full max-w-[220px] xl:flex-[0_0_220px] mx-auto min-w-0 overflow-x-hidden"
+            >
               <Doughnut
                 data={registrationChartData}
                 options={{
@@ -213,8 +476,10 @@ export default function OverviewSuperadmin() {
               />
             </div>
 
-            <div className="flex-1 space-y-2 text-xs">
-              <div className="flex items-center justify-between gap-2">
+            <div
+              className="w-full xl:flex-[1_1_260px] space-y-2 text-xs min-w-0 overflow-x-hidden"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
                 <span className="font-bold uppercase tracking-wide opacity-70">Total</span>
                 <span className="text-lg font-extrabold">{totalRegistrations.toLocaleString()}</span>
               </div>
@@ -250,15 +515,15 @@ export default function OverviewSuperadmin() {
                 color: '#E9D8FD',
                 value: registrationStats.lastYear,
               }].map((row) => (
-                <div key={row.key} className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                <div key={row.key} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
                     <span
                       className="inline-block w-3 h-3 rounded-full border-2"
                       style={{ background: row.color, borderColor: '#000000' }}
                     />
                     <span className="font-semibold">{row.label}</span>
                   </div>
-                  <span className="font-extrabold">{row.value.toLocaleString()}</span>
+                  <span className="font-extrabold sm:text-right">{row.value.toLocaleString()}</span>
                 </div>
               ))}
             </div>
@@ -273,10 +538,43 @@ export default function OverviewSuperadmin() {
           Statistik Topup Request
         </h3>
         <div
-          className="border-4 rounded-xl p-4 sm:p-5 flex flex-col md:flex-row gap-4 md:gap-6 items-center md:items-stretch"
+          className="border-4 rounded-xl p-4 sm:p-5 flex flex-col md:flex-row gap-4 md:gap-6 items-center md:items-stretch min-w-0 overflow-hidden"
           style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}
         >
-          <div className="w-full max-w-[220px] mx-auto">
+          <div className="w-full md:w-[52%] flex flex-col gap-2 min-w-0 overflow-hidden">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs font-bold uppercase tracking-wide opacity-70">7 Hari Terakhir</div>
+              <div className="text-xs font-extrabold">
+                {topup7d.isUp ? 'Naik' : 'Turun'} ({topup7d.delta >= 0 ? '+' : ''}{topup7d.delta})
+              </div>
+            </div>
+            <div className="h-[160px] min-w-0">
+              <Line
+                data={topupLineData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: true },
+                  },
+                  scales: {
+                    x: {
+                      grid: { display: false },
+                      ticks: { color: '#111', maxRotation: 0, autoSkip: true, font: { size: 10 } },
+                    },
+                    y: {
+                      grid: { color: 'rgba(0,0,0,0.12)' },
+                      ticks: { color: '#111', precision: 0, font: { size: 10 } },
+                      beginAtZero: true,
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="w-full max-w-[220px] mx-auto min-w-0">
             <Doughnut
               data={topupChartData}
               options={{
@@ -288,7 +586,7 @@ export default function OverviewSuperadmin() {
             />
           </div>
 
-          <div className="flex-1 space-y-2 text-xs">
+          <div className="flex-1 space-y-2 text-xs min-w-0 overflow-hidden">
             <div className="flex items-center justify-between gap-2">
               <span className="font-bold uppercase tracking-wide opacity-70">Total</span>
               <span className="text-lg font-extrabold">{totalTopup.toLocaleString()}</span>
@@ -325,8 +623,8 @@ export default function OverviewSuperadmin() {
               color: '#FBD38D',
               value: topupStats.lastYear,
             }].map((row) => (
-              <div key={row.key} className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+              <div key={row.key} className="flex items-center justify-between gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
                   <span
                     className="inline-block w-3 h-3 rounded-full border-2"
                     style={{ background: row.color, borderColor: '#000000' }}

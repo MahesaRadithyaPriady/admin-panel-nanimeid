@@ -7,20 +7,22 @@ Role: hanya **SUPERADMIN**.
 ## Upload & Storage
 
 - Gambar stiker dikirim lewat multipart form field `image`.
-- File fisik akan disimpan ke folder `static/uploads/stikers`.
-- Aplikasi akan membangun URL penuh menggunakan environment `CDN_BASE_URL_STORAGE` (fallback ke `URL_BASE_UPLOAD`).
-- Nilai yang disimpan di `image_url` adalah **full URL**, misalnya (contoh):
+- Client admin cukup mengirim file gambar langsung ke endpoint sticker melalui field `image`, atau mengirim URL langsung melalui field `image_url`.
+- Jika mengirim `image` (file), server akan meng-upload file tersebut ke storage/B2 dan menyimpan URL storage/CDN ke field `image_url`.
+- Jika mengirim `image_url` berupa URL `http(s)`, server akan mengunduh gambar lalu meng-upload ulang ke storage/B2. URL asli tidak disimpan.
+- Jika mengirim `image_url` berupa path static lokal (mis. `/static/...`) atau URL localhost/static server (mis. `http://localhost:3001/static/...`), server akan membaca file sumber lalu meng-upload ulang ke storage/B2.
+- Jika `image_url` sudah merupakan URL storage/CDN (prefix `CDN_BASE_URL_STORAGE`), server akan menyimpan nilai tersebut apa adanya.
+- Nilai yang disimpan di `image_url` adalah **full URL** storage/CDN, misalnya (contoh):
   - `CDN_BASE_URL_STORAGE=https://cdn.nanimeid.com`
-  - File: `static/uploads/stikers/happy_1701400000000.png`
-  - `image_url`: `https://cdn.nanimeid.com/static/uploads/stikers/happy_1701400000000.png`
+  - File storage key: `catalog/stickers/happy_1701400000000.png`
+  - `image_url`: `https://cdn.nanimeid.com/catalog/stickers/happy_1701400000000.png`
 
 > Catatan:
-> - Jika `CDN_BASE_URL_STORAGE` dan `URL_BASE_UPLOAD` tidak diset, fallback `image_url` akan berupa path relatif: `/static/uploads/stikers/..`.
-> - Endpoint HTTP final biasanya: `API_PREFIX + image_url`, misal `https://api.nanimeid.com/api/v1/static/uploads/stikers/...` bila API di-deploy terpisah dari CDN.
-> - Pastikan base URL tidak mengandung versi API (misal `.../1.0.10` atau `.../v1`) agar URL asset tidak ikut ter-versioning.
+> - `CDN_BASE_URL_STORAGE` harus terpasang agar server bisa mengenali URL storage/CDN secara konsisten.
+> - Client harus memakai `data.image_url` dari response sebagai callback URL final setelah create/update.
 
 Rekomendasi:
-- Untuk upload asset yang lebih cepat (direct-to-B2) gunakan presigned PUT URL: lihat `Admin Uploads API` bagian **Direct Upload ke B2 (Presigned PUT URL)**.
+- Untuk flow admin standar, kirim file langsung lewat field `image` atau kirim URL langsung lewat `image_url` ke endpoint sticker ini.
 
 ## Migrasi Asset Sticker ke Storage B2
 
@@ -220,7 +222,14 @@ Body (multipart form):
 - `poin_collection` (text angka, opsional, default `50`)
 - `is_active` (text `true`/`false`, opsional, default `true`)
 - `sort_order` (text angka, opsional, default `0`)
-- `image` (file, wajib) – gambar stiker (png/jpg/webp, max ~4MB)
+- `image` (file, opsional) – gambar stiker
+- `image_url` (string, opsional) – alternatif tanpa upload file
+
+Catatan create:
+- Salah satu dari `image` atau `image_url` wajib dikirim.
+- Jika `image_url` adalah URL `http(s)` non-storage/CDN, server akan download lalu upload ulang ke storage/B2.
+- Jika `image_url` adalah `/static/...` atau URL localhost/static server, server akan baca file lokal lalu upload ulang ke storage/B2.
+- Jika `image_url` sudah URL storage/CDN, nilainya dipakai apa adanya.
 
 Response 201:
 ```json
@@ -244,7 +253,9 @@ Response 201:
 
 400 error contoh:
 - `code dan name wajib`
-- `file gambar (image) wajib`
+- `file gambar (image) atau image_url wajib`
+- `image_url tidak valid`
+- `image harus berupa gambar`
 - `code sudah digunakan` (duplikat `code`)
 
 ---
@@ -266,7 +277,14 @@ Body (multipart form – semua opsional):
 - `poin_collection` (text angka)
 - `is_active` (text `true`/`false`)
 - `sort_order` (text angka)
-- `image` (file) – jika dikirim, gambar stiker akan diganti dan `image_url` diupdate
+- `image` (file) – jika dikirim, gambar stiker akan diganti dan `image_url` diupdate ke URL storage/CDN
+- `image_url` (string) – alternatif ganti gambar tanpa upload file
+
+Catatan update:
+- Jika `image_url` adalah URL `http(s)` non-storage/CDN, server akan download lalu upload ulang ke storage/B2.
+- Jika `image_url` adalah `/static/...` atau URL localhost/static server, server akan baca file lokal lalu upload ulang ke storage/B2.
+- Jika `image_url` sudah URL storage/CDN, nilainya dipakai apa adanya.
+- Jika `image` dikirim, file akan di-upload ke storage/B2 dan hasil URL storage/CDN disimpan ke `image_url`.
 
 Response 200:
 ```json

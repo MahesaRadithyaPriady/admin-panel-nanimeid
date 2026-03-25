@@ -25,6 +25,11 @@ Buat avatar border baru untuk katalog.
   - JSON (mengirim `image_url`)
   - multipart/form-data (mengunggah file gambar pada field `image`)
 
+Catatan image source:
+- Jika `image_url` berupa URL `http(s)` yang bukan URL storage/CDN, server akan download lalu upload ulang ke storage/B2.
+- Jika `image_url` berupa path static lokal (mis. `/static/...`) atau URL localhost/static server (mis. `http://localhost:3001/static/...`), server akan membaca file sumber lalu upload ulang ke storage/B2.
+- Jika `image_url` sudah berupa URL storage/CDN (prefix `CDN_BASE_URL_STORAGE`), server menyimpan nilainya apa adanya.
+
 ### Opsi 1: Body JSON (gunakan image_url)
 ```json
 {
@@ -38,7 +43,7 @@ Buat avatar border baru untuk katalog.
   "is_limited": false,
   "total_supply": null,
   "per_user_limit": 1,
-  "tier": "S+"
+  "tier": "S_PLUS"
 }
 
 ### Tata Cara Penggunaan (Ringkas)
@@ -72,12 +77,23 @@ Authorization: Bearer <ADMIN_TOKEN>
   - `title` (string) — wajib.
   - `image_url` (string URL) — wajib. URL publik gambar border.
   - `coin_price` (integer|null) — harga koin. `null` berarti tidak dijual (hadiah/event saja).
+  - `poin_collection` (integer) — poin collection untuk border. Jika tidak dikirim, server mengisi otomatis berdasarkan `tier`.
   - `is_active` (boolean) — default `true`. Jika `false`, tidak muncul di katalog publik.
   - `starts_at`, `ends_at` (ISO datetime|null) — periode penjualan (opsional). Jika terisi, pembelian hanya bisa di dalam periode.
   - `is_limited` (boolean) — jika `true`, batasi stok.
   - `total_supply` (integer|null) — stok total (jika limited). `null` berarti tanpa stok tertentu.
   - `per_user_limit` (integer) — batas pembelian per user. Default `1` (satu kepemilikan).
-  - `tier` (string enum) — salah satu dari: `C`, `B`, `A`, `S`, `S+`, `SS+`, `SSS+`. Default `C`.
+  - `tier` (string enum) — salah satu dari: `C`, `B`, `A`, `S`, `S_PLUS`, `SS_PLUS`, `SSS_PLUS`. Default `C`.
+
+Default `poin_collection` berdasarkan tier:
+
+- `SSS_PLUS`: `5000`
+- `SS_PLUS`: `3000`
+- `S_PLUS`: `2000`
+- `S`: `1000`
+- `A`: `500`
+- `B`: `250`
+- `C`: `100`
 
 ### Contoh Request (JSON)
 ```
@@ -111,7 +127,7 @@ Fields:
 - coin_price: 500
 - is_active: true
 - image: <FILE UPLOAD>  (PNG/JPG disarankan, max 10 MB)
-- tier: S+
+- tier: S_PLUS
 ```
 
 Contoh curl:
@@ -143,7 +159,7 @@ curl -X POST \
     "is_limited": false,
     "total_supply": null,
     "per_user_limit": 1,
-    "tier": "S+",
+    "tier": "S_PLUS",
     "sold_count": 0,
     "createdAt": "2025-10-08T07:30:00.000Z"
   }
@@ -186,7 +202,7 @@ Authorization: Bearer <ADMIN_TOKEN>
 {
   "status": 200,
   "message": "OK",
-  "items": [ { "id": 10, "code": "ELAINA_WHITE", "title": "Elaina White", "image_url": "https://...", "tier": "S+", "coin_price": 500, "is_active": true, "starts_at": null, "ends_at": null, "is_limited": false, "total_supply": null, "per_user_limit": 1, "sold_count": 0 } ],
+  "items": [ { "id": 10, "code": "ELAINA_WHITE", "title": "Elaina White", "image_url": "https://...", "tier": "S_PLUS", "coin_price": 500, "is_active": true, "starts_at": null, "ends_at": null, "is_limited": false, "total_supply": null, "per_user_limit": 1, "sold_count": 0 } ],
   "pagination": { "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
 }
 ```
@@ -213,6 +229,11 @@ Update avatar border (parsial field diperbolehkan).
   - JSON (mengirim subset field; `image_url` opsional)
   - multipart/form-data (unggah gambar baru pada field `image`)
 - Field yang tidak dikirim tidak diubah.
+
+Jika `image_url` dikirim saat update:
+- URL `http(s)` non-storage akan di-download lalu di-upload ulang ke storage/B2.
+- Path static lokal `/static/...` atau URL localhost/static akan dibaca dari file lokal lalu di-upload ulang ke storage/B2.
+- URL storage/CDN yang sudah valid akan disimpan apa adanya.
 
 ### Contoh
 ```
@@ -344,7 +365,7 @@ async function createAvatarBorder({ token, version = "1.0.10", payload }: {
     is_limited?: boolean;
     total_supply?: number | null;
     per_user_limit?: number;
-    tier?: "C" | "B" | "A" | "S" | "S+" | "SS+" | "SSS+";
+    tier?: "C" | "B" | "A" | "S" | "S_PLUS" | "SS_PLUS" | "SSS_PLUS";
   };
 }) {
   const res = await fetch(`/${version}/admin/avatar-borders`, {
@@ -366,7 +387,7 @@ Contoh upload file di frontend (multipart):
 async function createAvatarBorderWithFile({ token, version = "1.0.10", form }: {
   token: string;
   version?: string;
-  form: { code: string; title: string; coin_price?: number | null; is_active?: boolean; tier?: "C" | "B" | "A" | "S" | "S+" | "SS+" | "SSS+"; file: File };
+  form: { code: string; title: string; coin_price?: number | null; is_active?: boolean; tier?: "C" | "B" | "A" | "S" | "S_PLUS" | "SS_PLUS" | "SSS_PLUS"; file: File };
 }) {
   const fd = new FormData();
   fd.set("code", form.code);
