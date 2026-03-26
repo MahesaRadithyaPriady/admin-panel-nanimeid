@@ -379,7 +379,7 @@ export default function OverviewSuperadmin() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-w-0">
               <div className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide min-w-0">
                 <span>User Online Sekarang</span>
-                <span className="text-[11px] font-bold opacity-70 normal-case">7 hari terakhir (placeholder)</span>
+                <span className="text-[11px] font-bold opacity-70 normal-case">7 hari terakhir</span>
               </div>
               <div className="text-2xl sm:text-3xl font-extrabold">{onlineUsersTotal.toLocaleString()}</div>
             </div>

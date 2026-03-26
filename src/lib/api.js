@@ -112,6 +112,8 @@ const watchEventConfigsBase = () => `${getApiBase()}/admin/watch-event-configs`;
 // ===== Admin Moderation =====
 const moderationBase = () => `${getApiBase()}/admin/moderation`;
 
+const nsfwQuarantineBase = () => `${getApiBase()}/admin/nsfw-quarantine/uploads`;
+
 // ===== Admin Livechat =====
 const livechatAdminBase = () => `${getApiBase()}/admin/livechat`;
 
@@ -315,6 +317,115 @@ export async function softDeleteGlobalChat({ token, messageId }) {
     headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal soft-delete global chat');
+}
+
+export async function listNsfwQuarantineUploads({
+  token,
+  page = 1,
+  limit = 20,
+  status = '',
+  verdict = '',
+  action = '',
+  user_id = '',
+} = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 100)));
+  if (status) params.set('status', String(status));
+  if (verdict) params.set('verdict', String(verdict));
+  if (action) params.set('action', String(action));
+  if (user_id !== undefined && user_id !== null && user_id !== '') params.set('user_id', String(user_id));
+
+  const url = `${nsfwQuarantineBase()}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar gambar tertahan');
+  const d = data?.data ?? data;
+  return {
+    page: d?.page ?? page,
+    limit: d?.limit ?? limit,
+    total: d?.total ?? 0,
+    totalPages: d?.totalPages ?? undefined,
+    items: Array.isArray(d?.items) ? d.items : [],
+  };
+}
+
+export async function getNsfwQuarantineUploadDetail({ token, id } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id && id !== 0) throw new Error('ID upload tidak valid');
+  const res = await fetch(`${nsfwQuarantineBase()}/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil detail gambar tertahan');
+  return data?.data ?? data;
+}
+
+export async function reviewNsfwQuarantineUpload({ token, id, payload } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id && id !== 0) throw new Error('ID upload tidak valid');
+  const body = Object.fromEntries(
+    Object.entries(payload || {}).filter(([, value]) => value !== undefined && value !== '')
+  );
+  const res = await fetch(`${nsfwQuarantineBase()}/${id}/review`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await handleJson(res, 'Gagal menyimpan hasil peninjauan');
+  return data?.data ?? data;
+}
+
+export async function deleteNsfwQuarantineUpload({ token, id } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id && id !== 0) throw new Error('ID upload tidak valid');
+  return await handleJson(await fetch(`${nsfwQuarantineBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  }), 'Gagal menghapus gambar tertahan');
+}
+
+export async function banUserFromNsfwQuarantineUpload({ token, id, days, permanent } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id && id !== 0) throw new Error('ID upload tidak valid');
+  const body = Object.fromEntries(
+    Object.entries({ days, permanent }).filter(([, value]) => value !== undefined && value !== '')
+  );
+  return await handleJson(await fetch(`${nsfwQuarantineBase()}/${id}/ban`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  }), 'Gagal memblokir akun');
+}
+
+export async function suspendUserFromNsfwQuarantineUpload({ token, id, days } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id && id !== 0) throw new Error('ID upload tidak valid');
+  const body = Object.fromEntries(
+    Object.entries({ days }).filter(([, value]) => value !== undefined && value !== '')
+  );
+  return await handleJson(await fetch(`${nsfwQuarantineBase()}/${id}/suspend`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  }), 'Gagal menangguhkan akun');
+}
+
+export async function clearWarnedFromNsfwQuarantineUpload({ token, id } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id && id !== 0) throw new Error('ID upload tidak valid');
+  return await handleJson(await fetch(`${nsfwQuarantineBase()}/${id}/clear-warned`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  }), 'Gagal memulihkan status peringatan');
 }
 
 // ===== Admin Livechat (Ticket + Messages) =====
