@@ -705,6 +705,7 @@ export default function DaftarKontenPage() {
     thumbnail_url: '',
     image: null,
     previewUrl: '',
+    existingImageUrl: '',
     deskripsi_episode: '',
     durasi_episode: 0,
     intro_start_seconds: '',
@@ -770,6 +771,7 @@ export default function DaftarKontenPage() {
       thumbnail_url: '',
       image: null,
       previewUrl: '',
+      existingImageUrl: latest?.thumbnail_episode || '',
       deskripsi_episode: latest?.deskripsi_episode || '',
       durasi_episode: Number(latest?.durasi_episode) || 0,
       intro_start_seconds: latest?.intro_start_seconds ?? 0,
@@ -840,6 +842,21 @@ export default function DaftarKontenPage() {
     const qualities = Array.isArray(ep.qualities) ? ep.qualities : [];
     const candidate = qualities.find((q) => q?.source_quality);
     return candidate?.source_quality || '';
+  };
+
+  const getEpisodeThumbnailPreview = (episodeForm) => {
+    if (!episodeForm) return '';
+    if (episodeForm.previewUrl) return episodeForm.previewUrl;
+    if ((episodeForm?.thumbnail_mode || 'upload') === 'url') return String(episodeForm?.thumbnail_url || '').trim();
+    return String(episodeForm?.existingImageUrl || '').trim();
+  };
+
+  const getEpisodeThumbnailStatus = (episodeForm) => {
+    if (!episodeForm) return 'Belum ada thumbnail';
+    if (episodeForm.previewUrl) return 'Preview file baru';
+    if ((episodeForm?.thumbnail_mode || 'upload') === 'url' && String(episodeForm?.thumbnail_url || '').trim()) return 'Menggunakan URL thumbnail';
+    if (String(episodeForm?.existingImageUrl || '').trim()) return 'Menggunakan thumbnail episode sebelumnya';
+    return 'Belum ada thumbnail';
   };
 
   const loadRelations = async (opts = {}) => {
@@ -996,8 +1013,9 @@ export default function DaftarKontenPage() {
     }
     const tabThumbMode = (tabEpisode?.thumbnail_mode || 'upload').toString();
     const tabThumbUrl = (tabEpisode?.thumbnail_url || '').trim();
+    const tabExistingThumb = (tabEpisode?.existingImageUrl || '').trim();
     if (tabThumbMode === 'upload') {
-      if (!(tabEpisode?.image instanceof File)) {
+      if (!(tabEpisode?.image instanceof File) && !tabExistingThumb) {
         toast.error('Thumbnail episode wajib diupload');
         return;
       }
@@ -1014,7 +1032,8 @@ export default function DaftarKontenPage() {
       judul_episode: tabEpisode.judul_episode,
       nomor_episode: Number(tabEpisode.nomor_episode),
       ...(tabThumbMode === 'upload' && tabEpisode.image instanceof File ? { image: tabEpisode.image } : {}),
-      ...(tabThumbMode !== 'upload' && tabThumbUrl ? { thumbnail_episode: tabThumbUrl } : {}),
+      ...((tabThumbMode !== 'upload' && tabThumbUrl) ? { thumbnail_episode: tabThumbUrl } : {}),
+      ...((tabThumbMode === 'upload' && !(tabEpisode.image instanceof File) && tabExistingThumb) ? { thumbnail_episode: tabExistingThumb } : {}),
       deskripsi_episode: tabEpisode.deskripsi_episode || null,
       durasi_episode: Number(tabEpisode.durasi_episode) || 0,
       intro_start_seconds: Number(tabEpisode.intro_start_seconds) || 0,
@@ -1048,6 +1067,7 @@ export default function DaftarKontenPage() {
         thumbnail_url: '',
         image: null,
         previewUrl: '',
+        existingImageUrl: '',
         deskripsi_episode: '',
         durasi_episode: 0,
         intro_start_seconds: 0,
@@ -1073,7 +1093,20 @@ export default function DaftarKontenPage() {
       setItems((prev) => prev.map((a) => {
         if (a.id !== animeId) return a;
         const existing = Array.isArray(a.episodes) ? a.episodes : [];
-        const nextEpisodes = reset ? (data.items || []) : [...existing, ...(data.items || [])];
+        const existingById = new Map(existing.filter(Boolean).map((ep) => [ep.id, ep]));
+        const incoming = Array.isArray(data.items) ? data.items : [];
+        const mergedIncoming = incoming.map((ep) => {
+          const previous = existingById.get(ep?.id);
+          const hasIncomingQualities = Array.isArray(ep?.qualities) && ep.qualities.length > 0;
+          const hasPreviousQualities = Array.isArray(previous?.qualities) && previous.qualities.length > 0;
+          if (!previous) return ep;
+          return {
+            ...previous,
+            ...ep,
+            qualities: hasIncomingQualities ? ep.qualities : (hasPreviousQualities ? previous.qualities : ep?.qualities),
+          };
+        });
+        const nextEpisodes = reset ? mergedIncoming : [...existing, ...mergedIncoming];
         // de-duplicate by id
         const seen = new Set();
         const dedup = [];
@@ -1304,8 +1337,9 @@ export default function DaftarKontenPage() {
     if (!creatingForAnime || !newEpisode) return;
     const epThumbMode = (newEpisode?.thumbnail_mode || 'upload').toString();
     const epThumbUrl = (newEpisode?.thumbnail_url || '').trim();
+    const epExistingThumb = (newEpisode?.existingImageUrl || '').trim();
     if (epThumbMode === 'upload') {
-      if (!(newEpisode?.image instanceof File)) {
+      if (!(newEpisode?.image instanceof File) && !epExistingThumb) {
         toast.error('Thumbnail episode wajib diupload');
         return;
       }
@@ -1322,7 +1356,8 @@ export default function DaftarKontenPage() {
       judul_episode: newEpisode.judul_episode,
       nomor_episode: Number(newEpisode.nomor_episode),
       ...(epThumbMode === 'upload' && newEpisode.image instanceof File ? { image: newEpisode.image } : {}),
-      ...(epThumbMode !== 'upload' && epThumbUrl ? { thumbnail_episode: epThumbUrl } : {}),
+      ...((epThumbMode !== 'upload' && epThumbUrl) ? { thumbnail_episode: epThumbUrl } : {}),
+      ...((epThumbMode === 'upload' && !(newEpisode.image instanceof File) && epExistingThumb) ? { thumbnail_episode: epExistingThumb } : {}),
       deskripsi_episode: newEpisode.deskripsi_episode || null,
       durasi_episode: Number(newEpisode.durasi_episode) || 0,
       intro_start_seconds: Number(newEpisode.intro_start_seconds) || 0,
@@ -1925,8 +1960,12 @@ export default function DaftarKontenPage() {
 
               {issueSubTab === 'reports' && (
                 <>
-                  <div className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <div className="rounded-[24px] border-4 p-4" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                     <form onSubmit={onSearchIssueReports} className="grid gap-3">
+                      <div>
+                        <div className="text-lg font-extrabold">Laporan Masalah Episode</div>
+                        <div className="mt-1 text-xs font-semibold opacity-70">Filter laporan berdasarkan status, episode, user, dan alasan supaya tindak lanjut lebih cepat.</div>
+                      </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <select value={issueReportStatus} onChange={(e) => setIssueReportStatus(e.target.value)} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                           <option value="">Semua status</option>
@@ -1977,23 +2016,23 @@ export default function DaftarKontenPage() {
                     </div>
                   )}
 
-                  <div className="overflow-auto">
-                    <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <div className="rounded-[24px] border-4 p-3 overflow-auto" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                    <table className="min-w-full border-4 rounded-2xl overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                       <thead style={{ background: 'var(--panel-bg)' }}>
                         <tr>
-                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>ID</th>
-                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Status</th>
-                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>User</th>
-                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Episode</th>
-                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Reason</th>
-                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Note</th>
-                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Dibuat</th>
-                          <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
+                          <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>ID</th>
+                          <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Status</th>
+                          <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>User</th>
+                          <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Episode</th>
+                          <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Reason</th>
+                          <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Note</th>
+                          <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Dibuat</th>
+                          <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
                         {issueReports.map((it) => (
-                          <tr key={it.id}>
+                          <tr key={it.id} style={{ background: '#fff8f8' }}>
                             <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.id}</td>
                             <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.status}</td>
                             <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.user?.username ? `${it.user.username} (#${it.user_id})` : `#${it.user_id}`}</td>
@@ -2500,121 +2539,138 @@ export default function DaftarKontenPage() {
 
           {/* Form Tambah Episode (Global) */}
           {activeTab === 'episode' && (
-            <form onSubmit={(e) => { e.preventDefault(); onSubmitCreateEpisodeFromTab(); }} className="grid gap-3 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-              <div className="font-extrabold">Tambah Episode</div>
-              <div className="grid sm:grid-cols-2 gap-2">
-                <div className="relative">
-                  <div className="text-xs font-extrabold mb-1">Anime</div>
-                  <input
-                    type="text"
-                    placeholder="Cari Anime..."
-                    value={animeFilter}
-                    onChange={(e) => setAnimeFilter(e.target.value)}
-                    onFocus={() => setAnimeInputFocused(true)}
-                    onBlur={() => setTimeout(() => setAnimeInputFocused(false), 150)}
-                    className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                    style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                  />
-                  {(animeInputFocused && (animeSearchLoading || (animeSuggestions && animeSuggestions.length > 0))) && (
-                    <div className="absolute z-10 mt-1 w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
-                      {animeSearchLoading ? (
-                        <div className="px-3 py-2 text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Mencari...</div>
-                      ) : (
-                        <>
-                          {animeSuggestions.map((it) => (
-                            <button
-                              key={it.id}
-                              type="button"
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => {
-                                setTabEpisode((s) => ({ ...s, animeId: it.id }));
-                                setAnimeFilter(it.nama_anime || '');
-                                setAnimeSuggestions([]);
-                              }}
-                              className="w-full text-left px-3 py-2 hover:opacity-90 font-semibold"
-                              style={{ color: 'var(--foreground)' }}
-                            >
-                              {it.nama_anime}
-                            </button>
-                          ))}
-                          {(!animeSuggestions || animeSuggestions.length === 0) && (
-                            <div className="px-3 py-2 text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Tidak ada hasil</div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  )}
+            <form onSubmit={(e) => { e.preventDefault(); onSubmitCreateEpisodeFromTab(); }} className="grid gap-4 rounded-[26px] border-4 p-4 md:p-5" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="text-lg font-extrabold">Tambah Episode</div>
+                  <div className="mt-1 text-xs font-semibold opacity-70">Pilih anime, lanjutkan metadata episode, dan pakai thumbnail episode sebelumnya jika belum upload thumbnail baru.</div>
                 </div>
-                <div className="grid gap-1">
-                  <div className="text-xs font-extrabold">Judul Episode</div>
-                  <input type="text" value={tabEpisode?.judul_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                </div>
-                <div className="grid gap-1">
-                  <div className="text-xs font-extrabold">Nomor Episode</div>
-                  <input type="number" value={tabEpisode?.nomor_episode || 1} onChange={(e) => setTabEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                </div>
-                <div className="grid gap-1">
-                  <div className="text-xs font-extrabold">Thumbnail Episode</div>
-                  <div className="grid grid-cols-1 sm:grid-cols-[140px_minmax(0,1fr)] gap-2">
-                    <select value={tabEpisode?.thumbnail_mode || 'upload'} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_mode: e.target.value, thumbnail_url: e.target.value === 'url' ? s.thumbnail_url : '', image: e.target.value === 'upload' ? s.image : null, previewUrl: e.target.value === 'upload' ? s.previewUrl : '' }))} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                      <option value="upload">Upload</option>
-                      <option value="url">With URL</option>
-                    </select>
-                    {(tabEpisode?.thumbnail_mode || 'upload') === 'upload' ? (
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0] || null;
-                          if (!file) return setTabEpisode((s) => ({ ...s, image: null, previewUrl: '' }));
-                          const url = URL.createObjectURL(file);
-                          setTabEpisode((s) => ({ ...s, image: file, previewUrl: url }));
-                        }}
-                        className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
-                        style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                      />
-                    ) : (
-                      <input type="url" value={tabEpisode?.thumbnail_url || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_url: e.target.value }))} placeholder="https://..." className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                    )}
-                  </div>
-                  <div className="mt-1 flex items-center gap-2 text-xs" style={{ color: 'var(--foreground)' }}>
-                    <span className="font-extrabold">Preview:</span>
-                    <img src={tabEpisode.previewUrl || (((tabEpisode?.thumbnail_mode || 'upload') === 'url') ? (tabEpisode?.thumbnail_url || '') : '') || ''} alt="thumb" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
-                    {!(tabEpisode.previewUrl || (((tabEpisode?.thumbnail_mode || 'upload') === 'url') && (tabEpisode?.thumbnail_url || '').trim())) && (
-                      <span className="opacity-70">-</span>
-                    )}
-                  </div>
-                </div>
-                <div className="grid gap-1">
-                  <div className="text-xs font-extrabold">Durasi Episode (detik)</div>
-                  <input type="number" value={tabEpisode?.durasi_episode || 0} onChange={(e) => setTabEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                </div>
-                <div className="grid gap-1">
-                  <div className="text-xs font-extrabold">Intro Start (detik)</div>
-                  <input type="number" value={tabEpisode?.intro_start_seconds ?? 0} onChange={(e) => setTabEpisode((s) => ({ ...s, intro_start_seconds: Number(e.target.value) }))} placeholder="Intro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                </div>
-                <div className="grid gap-1">
-                  <div className="text-xs font-extrabold">Intro Durasi (detik)</div>
-                  <input type="number" value={tabEpisode?.intro_duration_seconds ?? 90} onChange={(e) => setTabEpisode((s) => ({ ...s, intro_duration_seconds: Number(e.target.value) }))} placeholder="Intro durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                </div>
-                <div className="grid gap-1">
-                  <div className="text-xs font-extrabold">Outro Start (detik)</div>
-                  <input type="number" value={tabEpisode?.outro_start_seconds ?? ''} onChange={(e) => setTabEpisode((s) => ({ ...s, outro_start_seconds: e.target.value === '' ? '' : Number(e.target.value) }))} placeholder="Outro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                </div>
-                <div className="grid gap-1">
-                  <div className="text-xs font-extrabold">Outro Durasi (detik)</div>
-                  <input type="number" value={tabEpisode?.outro_duration_seconds ?? 90} onChange={(e) => setTabEpisode((s) => ({ ...s, outro_duration_seconds: Number(e.target.value) }))} placeholder="Outro durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                </div>
-                <div className="grid gap-1">
-                  <div className="text-xs font-extrabold">Tanggal Rilis</div>
-                  <input type="datetime-local" value={tabEpisode?.tanggal_rilis_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: 'var(--panel-border)', background: '#ede9fe', color: '#6d28d9' }}>
+                  {tabEpisode?.animeId ? `Anime #${tabEpisode.animeId}` : 'Belum pilih anime'}
                 </div>
               </div>
-              <div className="pt-1">
-                <div className="font-extrabold mb-2">Qualities</div>
+              <div className="grid xl:grid-cols-[minmax(0,1.2fr)_320px] gap-4 items-start">
+                <div className="grid sm:grid-cols-2 gap-3 rounded-[24px] border-4 p-4" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+                  <div className="relative">
+                    <div className="text-xs font-extrabold mb-1">Anime</div>
+                    <input
+                      type="text"
+                      placeholder="Cari Anime..."
+                      value={animeFilter}
+                      onChange={(e) => setAnimeFilter(e.target.value)}
+                      onFocus={() => setAnimeInputFocused(true)}
+                      onBlur={() => setTimeout(() => setAnimeInputFocused(false), 150)}
+                      className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
+                      style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    />
+                    {(animeInputFocused && (animeSearchLoading || (animeSuggestions && animeSuggestions.length > 0))) && (
+                      <div className="absolute z-10 mt-1 w-full border-4 rounded-2xl overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+                        {animeSearchLoading ? (
+                          <div className="px-3 py-2 text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Mencari...</div>
+                        ) : (
+                          <>
+                            {animeSuggestions.map((it) => (
+                              <button
+                                key={it.id}
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                  setTabEpisode((s) => ({ ...s, animeId: it.id }));
+                                  setAnimeFilter(it.nama_anime || '');
+                                  setAnimeSuggestions([]);
+                                }}
+                                className="w-full text-left px-3 py-3 hover:opacity-90 font-semibold border-b-2 last:border-b-0"
+                                style={{ color: 'var(--foreground)', borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
+                              >
+                                {it.nama_anime}
+                              </button>
+                            ))}
+                            {(!animeSuggestions || animeSuggestions.length === 0) && (
+                              <div className="px-3 py-2 text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Tidak ada hasil</div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Judul Episode</div>
+                    <input type="text" value={tabEpisode?.judul_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Nomor Episode</div>
+                    <input type="number" value={tabEpisode?.nomor_episode || 1} onChange={(e) => setTabEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Thumbnail Episode</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-[140px_minmax(0,1fr)] gap-2">
+                      <select value={tabEpisode?.thumbnail_mode || 'upload'} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_mode: e.target.value, thumbnail_url: e.target.value === 'url' ? s.thumbnail_url : '', image: e.target.value === 'upload' ? s.image : null, previewUrl: e.target.value === 'upload' ? s.previewUrl : '' }))} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                        <option value="upload">Upload</option>
+                        <option value="url">With URL</option>
+                      </select>
+                      {(tabEpisode?.thumbnail_mode || 'upload') === 'upload' ? (
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            if (!file) return setTabEpisode((s) => ({ ...s, image: null, previewUrl: '' }));
+                            const url = URL.createObjectURL(file);
+                            setTabEpisode((s) => ({ ...s, image: file, previewUrl: url }));
+                          }}
+                          className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
+                          style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                        />
+                      ) : (
+                        <input type="url" value={tabEpisode?.thumbnail_url || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, thumbnail_url: e.target.value }))} placeholder="https://..." className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                      )}
+                    </div>
+                    <div className="text-[11px] font-semibold opacity-70">Jika belum upload file baru, thumbnail episode sebelumnya akan dipakai otomatis saat simpan.</div>
+                  </div>
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Durasi Episode (detik)</div>
+                    <input type="number" value={tabEpisode?.durasi_episode || 0} onChange={(e) => setTabEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Intro Start (detik)</div>
+                    <input type="number" value={tabEpisode?.intro_start_seconds ?? 0} onChange={(e) => setTabEpisode((s) => ({ ...s, intro_start_seconds: Number(e.target.value) }))} placeholder="Intro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Intro Durasi (detik)</div>
+                    <input type="number" value={tabEpisode?.intro_duration_seconds ?? 90} onChange={(e) => setTabEpisode((s) => ({ ...s, intro_duration_seconds: Number(e.target.value) }))} placeholder="Intro durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Outro Start (detik)</div>
+                    <input type="number" value={tabEpisode?.outro_start_seconds ?? ''} onChange={(e) => setTabEpisode((s) => ({ ...s, outro_start_seconds: e.target.value === '' ? '' : Number(e.target.value) }))} placeholder="Outro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Outro Durasi (detik)</div>
+                    <input type="number" value={tabEpisode?.outro_duration_seconds ?? 90} onChange={(e) => setTabEpisode((s) => ({ ...s, outro_duration_seconds: Number(e.target.value) }))} placeholder="Outro durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
+                  <div className="grid gap-1">
+                    <div className="text-xs font-extrabold">Tanggal Rilis</div>
+                    <input type="datetime-local" value={tabEpisode?.tanggal_rilis_episode || ''} onChange={(e) => setTabEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  </div>
+                </div>
+                <div className="grid gap-3 rounded-[24px] border-4 p-4" style={{ background: 'linear-gradient(180deg, #ede9fe 0%, var(--panel-bg) 100%)', borderColor: 'var(--panel-border)' }}>
+                  <div className="text-xs font-black uppercase tracking-wide opacity-70">Preview Thumbnail</div>
+                  {getEpisodeThumbnailPreview(tabEpisode) ? (
+                    <img src={getEpisodeThumbnailPreview(tabEpisode)} alt="thumb" className="w-full h-48 object-contain border-4 rounded-2xl" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }} />
+                  ) : (
+                    <div className="grid place-items-center h-48 border-4 rounded-2xl text-sm font-semibold opacity-70" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>Belum ada thumbnail siap kirim</div>
+                  )}
+                  <div className="text-sm font-extrabold">{getEpisodeThumbnailStatus(tabEpisode)}</div>
+                  <div className="text-xs font-semibold opacity-70">Preview ini sama dengan sumber thumbnail yang akan dipakai saat submit episode.</div>
+                </div>
+              </div>
+              <div className="grid gap-3 rounded-[24px] border-4 p-4" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="font-extrabold">Qualities</div>
+                  <div className="text-xs font-black rounded-full border-4 px-3 py-2" style={{ borderColor: 'var(--panel-border)', background: '#dbeafe', color: '#1d4ed8' }}>{(tabEpisode?.qualities || []).length} item</div>
+                </div>
                 <div className="space-y-2">
                   {(tabEpisode?.qualities || []).map((q, idx) => (
-                    <div key={idx} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] gap-2">
+                    <div key={idx} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] gap-2 rounded-2xl border-4 p-3" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
                       <div className="grid gap-1">
                         <div className="text-xs font-extrabold">Nama Quality</div>
                         <input type="text" value={q.nama_quality} onChange={(e) => updateTabQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
@@ -2652,7 +2708,15 @@ export default function DaftarKontenPage() {
           {/* Tab: Request Anime */}
           {activeTab === 'requests' && (
             <div className="space-y-4">
-              <div className="flex flex-wrap gap-2">
+              <div className="rounded-[24px] border-4 p-4" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                  <div>
+                    <div className="text-lg font-extrabold">Request Anime</div>
+                    <div className="mt-1 text-xs font-semibold opacity-70">Pantau request user, ambil tiket yang belum ditangani, dan hapus entri yang tidak diperlukan.</div>
+                  </div>
+                  <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: 'var(--panel-border)', background: '#fef3c7', color: '#92400e' }}>Total request: {reqTotal}</div>
+                </div>
+                <div className="flex flex-wrap gap-2">
                 {['', ...REQUEST_STATUSES].map((statusKey) => {
                   const meta = REQUEST_STATUS_META[statusKey || 'ALL'];
                   const active = reqStatus === statusKey;
@@ -2673,25 +2737,26 @@ export default function DaftarKontenPage() {
                     </button>
                   );
                 })}
+                </div>
               </div>
 
-              <div className="overflow-auto">
-                <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <div className="rounded-[24px] border-4 p-3 overflow-auto" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                <table className="min-w-full border-4 rounded-2xl overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                   <thead style={{ background: 'var(--panel-bg)' }}>
                     <tr>
-                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>ID</th>
-                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Nama</th>
-                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Season</th>
-                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Status</th>
-                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>User</th>
-                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Admin</th>
-                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Note</th>
-                      <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
+                      <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>ID</th>
+                      <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Nama</th>
+                      <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Season</th>
+                      <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Status</th>
+                      <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>User</th>
+                      <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Admin</th>
+                      <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Note</th>
+                      <th className="text-left px-3 py-3 border-b-4 text-[11px] uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
                     {reqItems.map((it) => (
-                      <tr key={it.id}>
+                      <tr key={it.id} style={{ background: '#fffef7' }}>
                         <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.id}</td>
                         <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.nama_anime}</td>
                         <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.season ?? '-'}</td>
@@ -2807,8 +2872,14 @@ export default function DaftarKontenPage() {
                                   <button type="button" onClick={() => startCreateEpisode(it.id)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>+ Tambah Episode</button>
                                 </div>
                                 {creatingForAnime === it.id && newEpisode && (
-                                  <form onSubmit={onSubmitCreateEpisode} className="p-3 border-4 rounded-lg space-y-2" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                                    <div className="font-extrabold">Tambah Episode</div>
+                                  <form onSubmit={onSubmitCreateEpisode} className="grid gap-3 rounded-[24px] border-4 p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(180deg, var(--panel-bg) 0%, #ede9fe 100%)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                                    <div className="flex flex-wrap items-start justify-between gap-2">
+                                      <div>
+                                        <div className="font-extrabold">Tambah Episode</div>
+                                        <div className="mt-1 text-xs font-semibold opacity-70">Kalau thumbnail baru belum dipilih, sistem akan kirim thumbnail episode sebelumnya ke backend.</div>
+                                      </div>
+                                      <div className="text-xs font-black rounded-full border-4 px-3 py-2" style={{ borderColor: 'var(--panel-border)', background: '#fff7cc', color: '#92400e' }}>Episode #{newEpisode.nomor_episode}</div>
+                                    </div>
                                     <div className="grid gap-1">
                                       <div className="text-xs font-extrabold">Video Player</div>
                                       <video
@@ -2820,99 +2891,107 @@ export default function DaftarKontenPage() {
                                         style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}
                                       />
                                     </div>
-                                    <div className="grid sm:grid-cols-2 gap-2">
-                                      <div className="grid gap-1">
-                                        <div className="text-xs font-extrabold">Judul Episode</div>
-                                        <input type="text" value={newEpisode.judul_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                      </div>
-                                      <div className="grid gap-1">
-                                        <div className="text-xs font-extrabold">Nomor Episode</div>
-                                        <input type="number" value={newEpisode.nomor_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                      </div>
-                                      <div className="grid gap-1">
-                                        <div className="text-xs font-extrabold">Thumbnail Episode</div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-[140px_minmax(0,1fr)] gap-2">
-                                          <select value={newEpisode?.thumbnail_mode || 'upload'} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_mode: e.target.value, thumbnail_url: e.target.value === 'url' ? s.thumbnail_url : '', image: e.target.value === 'upload' ? s.image : null, previewUrl: e.target.value === 'upload' ? s.previewUrl : '' }))} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                                            <option value="upload">Upload</option>
-                                            <option value="url">With URL</option>
-                                          </select>
-                                          {(newEpisode?.thumbnail_mode || 'upload') === 'upload' ? (
-                                            <input
-                                              type="file"
-                                              accept="image/*"
-                                              onChange={(e) => {
-                                                const file = e.target.files?.[0] || null;
-                                                if (!file) return setNewEpisode((s) => ({ ...s, image: null, previewUrl: '' }));
-                                                const url = URL.createObjectURL(file);
-                                                setNewEpisode((s) => ({ ...s, image: file, previewUrl: url }));
-                                              }}
-                                              className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
-                                              style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                                            />
-                                          ) : (
-                                            <input type="url" value={newEpisode?.thumbnail_url || ''} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_url: e.target.value }))} placeholder="https://..." className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                          )}
+                                    <div className="grid xl:grid-cols-[minmax(0,1.2fr)_320px] gap-3 items-start">
+                                      <div className="grid sm:grid-cols-2 gap-2 rounded-[20px] border-4 p-3" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
+                                        <div className="grid gap-1">
+                                          <div className="text-xs font-extrabold">Judul Episode</div>
+                                          <input type="text" value={newEpisode.judul_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, judul_episode: e.target.value }))} placeholder="Judul episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                         </div>
-                                        <div className="mt-1 flex items-center gap-2 text-xs" style={{ color: 'var(--foreground)' }}>
-                                          <span className="font-extrabold">Preview:</span>
-                                          <img src={newEpisode.previewUrl || ((newEpisode?.thumbnail_mode || 'upload') === 'url' ? (newEpisode?.thumbnail_url || '') : newEpisode.existingImageUrl) || ''} alt="thumb" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
-                                          {!(newEpisode.previewUrl || newEpisode.existingImageUrl || (((newEpisode?.thumbnail_mode || 'upload') === 'url') && (newEpisode?.thumbnail_url || '').trim())) && (
-                                            <span className="opacity-70">-</span>
-                                          )}
+                                        <div className="grid gap-1">
+                                          <div className="text-xs font-extrabold">Nomor Episode</div>
+                                          <input type="number" value={newEpisode.nomor_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, nomor_episode: Number(e.target.value) }))} placeholder="Nomor episode" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        </div>
+                                        <div className="grid gap-1">
+                                          <div className="text-xs font-extrabold">Thumbnail Episode</div>
+                                          <div className="grid grid-cols-1 sm:grid-cols-[140px_minmax(0,1fr)] gap-2">
+                                            <select value={newEpisode?.thumbnail_mode || 'upload'} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_mode: e.target.value, thumbnail_url: e.target.value === 'url' ? s.thumbnail_url : '', image: e.target.value === 'upload' ? s.image : null, previewUrl: e.target.value === 'upload' ? s.previewUrl : '' }))} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                                              <option value="upload">Upload</option>
+                                              <option value="url">With URL</option>
+                                            </select>
+                                            {(newEpisode?.thumbnail_mode || 'upload') === 'upload' ? (
+                                              <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                  const file = e.target.files?.[0] || null;
+                                                  if (!file) return setNewEpisode((s) => ({ ...s, image: null, previewUrl: '' }));
+                                                  const url = URL.createObjectURL(file);
+                                                  setNewEpisode((s) => ({ ...s, image: file, previewUrl: url }));
+                                                }}
+                                                className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
+                                                style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                                              />
+                                            ) : (
+                                              <input type="url" value={newEpisode?.thumbnail_url || ''} onChange={(e) => setNewEpisode((s) => ({ ...s, thumbnail_url: e.target.value }))} placeholder="https://..." className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                            )}
+                                          </div>
+                                          <div className="text-[11px] font-semibold opacity-70">Preview akan fallback ke thumbnail episode terakhir bila file baru belum dipilih.</div>
+                                        </div>
+                                        <div className="grid gap-1">
+                                          <div className="text-xs font-extrabold">Durasi Episode (detik)</div>
+                                          <input type="number" value={newEpisode.durasi_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        </div>
+                                        <div className="grid gap-1">
+                                          <div className="text-xs font-extrabold">Intro Start (detik)</div>
+                                          <input type="number" value={newEpisode.intro_start_seconds ?? 0} onChange={(e) => setNewEpisode((s) => ({ ...s, intro_start_seconds: Number(e.target.value) }))} placeholder="Intro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const t = Math.floor(Number(episodeVideoRef.current?.currentTime) || 0);
+                                              setNewEpisode((s) => ({ ...s, intro_start_seconds: t }));
+                                            }}
+                                            className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                                            style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                                          >
+                                            Track
+                                          </button>
+                                        </div>
+                                        <div className="grid gap-1">
+                                          <div className="text-xs font-extrabold">Intro Durasi (detik)</div>
+                                          <input type="number" value={newEpisode.intro_duration_seconds ?? 90} onChange={(e) => setNewEpisode((s) => ({ ...s, intro_duration_seconds: Number(e.target.value) }))} placeholder="Intro durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        </div>
+                                        <div className="grid gap-1">
+                                          <div className="text-xs font-extrabold">Outro Start (detik)</div>
+                                          <input type="number" value={newEpisode.outro_start_seconds ?? ''} onChange={(e) => setNewEpisode((s) => ({ ...s, outro_start_seconds: e.target.value === '' ? '' : Number(e.target.value) }))} placeholder="Outro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const t = Math.floor(Number(episodeVideoRef.current?.currentTime) || 0);
+                                              setNewEpisode((s) => ({ ...s, outro_start_seconds: t }));
+                                            }}
+                                            className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                                            style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                                          >
+                                            Track
+                                          </button>
+                                        </div>
+                                        <div className="grid gap-1">
+                                          <div className="text-xs font-extrabold">Outro Durasi (detik)</div>
+                                          <input type="number" value={newEpisode.outro_duration_seconds ?? 90} onChange={(e) => setNewEpisode((s) => ({ ...s, outro_duration_seconds: Number(e.target.value) }))} placeholder="Outro durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                        </div>
+                                        <div className="grid gap-1">
+                                          <div className="text-xs font-extrabold">Tanggal Rilis</div>
+                                          <input type="datetime-local" value={newEpisode.tanggal_rilis_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                         </div>
                                       </div>
-                                      <div className="grid gap-1">
-                                        <div className="text-xs font-extrabold">Durasi Episode (detik)</div>
-                                        <input type="number" value={newEpisode.durasi_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, durasi_episode: Number(e.target.value) }))} placeholder="Durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                      </div>
-                                      <div className="grid gap-1">
-                                        <div className="text-xs font-extrabold">Intro Start (detik)</div>
-                                        <input type="number" value={newEpisode.intro_start_seconds ?? 0} onChange={(e) => setNewEpisode((s) => ({ ...s, intro_start_seconds: Number(e.target.value) }))} placeholder="Intro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const t = Math.floor(Number(episodeVideoRef.current?.currentTime) || 0);
-                                            setNewEpisode((s) => ({ ...s, intro_start_seconds: t }));
-                                          }}
-                                          className="px-3 py-2 border-4 rounded-lg font-extrabold"
-                                          style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                                        >
-                                          Track
-                                        </button>
-                                      </div>
-                                      <div className="grid gap-1">
-                                        <div className="text-xs font-extrabold">Intro Durasi (detik)</div>
-                                        <input type="number" value={newEpisode.intro_duration_seconds ?? 90} onChange={(e) => setNewEpisode((s) => ({ ...s, intro_duration_seconds: Number(e.target.value) }))} placeholder="Intro durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                      </div>
-                                      <div className="grid gap-1">
-                                        <div className="text-xs font-extrabold">Outro Start (detik)</div>
-                                        <input type="number" value={newEpisode.outro_start_seconds ?? ''} onChange={(e) => setNewEpisode((s) => ({ ...s, outro_start_seconds: e.target.value === '' ? '' : Number(e.target.value) }))} placeholder="Outro start (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const t = Math.floor(Number(episodeVideoRef.current?.currentTime) || 0);
-                                            setNewEpisode((s) => ({ ...s, outro_start_seconds: t }));
-                                          }}
-                                          className="px-3 py-2 border-4 rounded-lg font-extrabold"
-                                          style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                                        >
-                                          Track
-                                        </button>
-                                      </div>
-                                      <div className="grid gap-1">
-                                        <div className="text-xs font-extrabold">Outro Durasi (detik)</div>
-                                        <input type="number" value={newEpisode.outro_duration_seconds ?? 90} onChange={(e) => setNewEpisode((s) => ({ ...s, outro_duration_seconds: Number(e.target.value) }))} placeholder="Outro durasi (detik)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                      </div>
-                                      <div className="grid gap-1">
-                                        <div className="text-xs font-extrabold">Tanggal Rilis</div>
-                                        <input type="datetime-local" value={newEpisode.tanggal_rilis_episode} onChange={(e) => setNewEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                      <div className="grid gap-3 rounded-[20px] border-4 p-3" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
+                                        <div className="text-xs font-black uppercase tracking-wide opacity-70">Preview Thumbnail</div>
+                                        {getEpisodeThumbnailPreview(newEpisode) ? (
+                                          <img src={getEpisodeThumbnailPreview(newEpisode)} alt="thumb" className="w-full h-48 object-contain border-4 rounded-2xl" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }} />
+                                        ) : (
+                                          <div className="grid place-items-center h-48 border-4 rounded-2xl text-sm font-semibold opacity-70" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>Belum ada thumbnail siap kirim</div>
+                                        )}
+                                        <div className="text-sm font-extrabold">{getEpisodeThumbnailStatus(newEpisode)}</div>
                                       </div>
                                     </div>
-                                    <div className="pt-1">
-                                      <div className="font-extrabold mb-2">Qualities</div>
+                                    <div className="grid gap-3 rounded-[20px] border-4 p-3" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
+                                      <div className="flex items-center justify-between gap-2">
+                                        <div className="font-extrabold">Qualities</div>
+                                        <div className="text-xs font-black rounded-full border-4 px-3 py-2" style={{ borderColor: 'var(--panel-border)', background: '#dbeafe', color: '#1d4ed8' }}>{(newEpisode.qualities || []).length} item</div>
+                                      </div>
                                       <div className="space-y-2">
                                         {(newEpisode.qualities || []).map((q, idx) => (
-                                          <div key={idx} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] gap-2">
+                                          <div key={idx} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] gap-2 rounded-2xl border-4 p-3" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
                                             <div className="grid gap-1">
                                               <div className="text-xs font-extrabold">Nama Quality</div>
                                               <input type="text" value={q.nama_quality} onChange={(e) => updateNewQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
