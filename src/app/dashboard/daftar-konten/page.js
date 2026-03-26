@@ -2032,7 +2032,7 @@ export default function DaftarKontenPage() {
                       </thead>
                       <tbody>
                         {issueReports.map((it) => (
-                          <tr key={it.id} style={{ background: '#fff8f8' }}>
+                          <tr key={it.id} style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
                             <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.id}</td>
                             <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.status}</td>
                             <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.user?.username ? `${it.user.username} (#${it.user_id})` : `#${it.user_id}`}</td>
@@ -2756,7 +2756,7 @@ export default function DaftarKontenPage() {
                   </thead>
                   <tbody>
                     {reqItems.map((it) => (
-                      <tr key={it.id} style={{ background: '#fffef7' }}>
+                      <tr key={it.id} style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
                         <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.id}</td>
                         <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.nama_anime}</td>
                         <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.season ?? '-'}</td>
