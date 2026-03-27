@@ -1406,6 +1406,17 @@ export default function DaftarKontenPage() {
     return val;
   };
 
+  const normalizeCommaText = (val) => {
+    if (val === null || val === undefined) return undefined;
+    const raw = String(val).trim();
+    if (!raw) return undefined;
+    return raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(',');
+  };
+
   const normalizeStatus = (s) => {
     const t = (s || '').toString().trim().toLowerCase();
     if (t === 'ongoing') return 'Ongoing';
@@ -1429,8 +1440,8 @@ export default function DaftarKontenPage() {
     const optional = {
       content_type: (form.content_type || '').trim() || undefined,
       is_21_plus: form.is_21_plus !== undefined ? !!form.is_21_plus : undefined,
-      tags_anime: parseMaybeArray(form.tags_anime),
-      genre_anime: parseMaybeArray(form.genre_anime),
+      tags_anime: normalizeCommaText(form.tags_anime),
+      genre_anime: normalizeCommaText(form.genre_anime),
       studio_anime: parseMaybeArray(form.studio_anime),
       fakta_menarik: parseMaybeArray(form.fakta_menarik),
       tanggal_rilis_anime: form.tanggal_rilis_anime || undefined,
