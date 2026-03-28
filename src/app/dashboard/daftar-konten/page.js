@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { Plus, Pencil, Trash2, List, ChevronDown, ChevronRight, ChevronUp, Film, ListChecks, BadgeCheck, Save } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listAnime, createAnime, updateAnime, deleteAnime, listEpisodes, createEpisode, updateEpisode, deleteEpisode, searchAnime, listAnimeAliases, getAnimeDetail, listAnimeRequests, deleteAnimeRequest, takeAnimeRequest, listEpisodeVideoIssueReasons, createEpisodeVideoIssueReason, updateEpisodeVideoIssueReason, deleteEpisodeVideoIssueReason, listEpisodeVideoIssueReports, updateEpisodeVideoIssueReport, updateEpisodeVideoIssueReportStatus, deleteEpisodeVideoIssueReport } from '@/lib/api';
+import { listAnime, createAnime, updateAnime, deleteAnime, listEpisodes, createEpisode, updateEpisode, deleteEpisode, searchAnime, listAnimeAliases, getAnimeDetail, listAnimeRequests, deleteAnimeRequest, takeAnimeRequest, updateAnimeRequest, listEpisodeVideoIssueReasons, createEpisodeVideoIssueReason, updateEpisodeVideoIssueReason, deleteEpisodeVideoIssueReason, listEpisodeVideoIssueReports, updateEpisodeVideoIssueReport, updateEpisodeVideoIssueReportStatus, deleteEpisodeVideoIssueReport } from '@/lib/api';
 
 function parseAliasNamesForUi(val) {
   const raw = String(val || '').trim();
@@ -436,6 +436,7 @@ export default function DaftarKontenPage() {
   const [reqUserId, setReqUserId] = useState('');
   const [reqAdminId, setReqAdminId] = useState('');
   const [reqTakingId, setReqTakingId] = useState(null);
+  const [reqUpdatingId, setReqUpdatingId] = useState(null);
   const [reqConfirmOpen, setReqConfirmOpen] = useState(false);
   const [reqConfirmTarget, setReqConfirmTarget] = useState(null);
   const [reqDeleting, setReqDeleting] = useState(false);
@@ -493,6 +494,22 @@ export default function DaftarKontenPage() {
       toast.error(err?.message || 'Gagal mengambil request');
     } finally {
       setReqTakingId(null);
+    }
+  };
+
+  const onChangeRequestStatus = async (it, nextStatus) => {
+    const token = getSession()?.token;
+    if (!token) return toast.error('Token tidak tersedia');
+    if (!it?.id) return;
+    try {
+      setReqUpdatingId(`${it.id}:${nextStatus}`);
+      const res = await updateAnimeRequest({ token, id: it.id, payload: { status: nextStatus } });
+      toast.success(res?.message || 'Status request diperbarui');
+      await loadAnimeRequests();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal memperbarui status request');
+    } finally {
+      setReqUpdatingId(null);
     }
   };
 
@@ -2786,6 +2803,38 @@ export default function DaftarKontenPage() {
                             >
                               {reqTakingId === it.id ? 'Mengambil...' : (it.admin_id ? 'Sudah diambil' : 'Ambil')}
                             </button>
+
+                            {!!it.admin_id && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => onChangeRequestStatus(it, 'COMPLETED')}
+                                  disabled={reqUpdatingId === `${it.id}:COMPLETED` || reqLoading}
+                                  className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60"
+                                  style={{ boxShadow: '3px 3px 0 #000', background: '#BBF7D0', color: '#14532D', borderColor: 'var(--panel-border)' }}
+                                >
+                                  {reqUpdatingId === `${it.id}:COMPLETED` ? '...' : 'Upload selesai'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onChangeRequestStatus(it, 'REJECTED')}
+                                  disabled={reqUpdatingId === `${it.id}:REJECTED` || reqLoading}
+                                  className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60"
+                                  style={{ boxShadow: '3px 3px 0 #000', background: '#E9D5FF', color: '#581C87', borderColor: 'var(--panel-border)' }}
+                                >
+                                  {reqUpdatingId === `${it.id}:REJECTED` ? '...' : 'Tolak'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onChangeRequestStatus(it, 'UNDER_REVIEW')}
+                                  disabled={reqUpdatingId === `${it.id}:UNDER_REVIEW` || reqLoading}
+                                  className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60"
+                                  style={{ boxShadow: '3px 3px 0 #000', background: '#DBEAFE', color: '#1E3A8A', borderColor: 'var(--panel-border)' }}
+                                >
+                                  {reqUpdatingId === `${it.id}:UNDER_REVIEW` ? '...' : 'Review'}
+                                </button>
+                              </>
+                            )}
                             <button type="button" onClick={() => onRequestDeleteReq(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}><Trash2 className="size-4" /></button>
                           </div>
                         </td>
