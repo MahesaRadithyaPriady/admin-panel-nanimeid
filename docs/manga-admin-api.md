@@ -25,8 +25,7 @@ Catatan upload:
   - Roles: SUPERADMIN, UPLOADER
   - Header: `Content-Type: multipart/form-data`
   - Upload: field `cover` (single image, opsional)
-  - Untuk flow admin standar, client cukup mengirim file cover langsung ke endpoint ini melalui field `cover`, atau mengirim URL langsung melalui `cover_manga`.
-  - Alternatif (tanpa upload file): kirim `cover_manga` berisi URL cover
+  - Alternatif (tanpa upload file): kirim `cover_manga` berisi URL cover (mis. URL CDN/B2 hasil presigned upload)
   - Jika `cover_manga` adalah URL `http(s)` non-storage/CDN, server akan download lalu upload ulang ke storage/B2.
   - Jika `cover_manga` adalah path `/static/...` atau URL localhost/static server, server akan membaca file lokal lalu upload ulang ke storage/B2.
   - Jika `cover_manga` sudah URL storage/CDN, nilainya disimpan apa adanya.
@@ -45,7 +44,6 @@ Catatan upload:
   - Header: `Content-Type: multipart/form-data`
   - Body: any fields from POST (partial update), termasuk `rating_manga`(string)
   - Upload (opsional): field `cover` untuk mengganti cover
-  - Untuk flow admin standar, client cukup mengirim file cover baru langsung melalui field `cover`, atau mengirim URL baru langsung melalui `cover_manga`.
   - Alternatif (tanpa upload file): kirim `cover_manga` (URL) untuk mengganti cover
   - Jika `cover_manga` adalah URL `http(s)` non-storage/CDN, server akan download lalu upload ulang ke storage/B2.
   - Jika `cover_manga` adalah path `/static/...` atau URL localhost/static server, server akan membaca file lokal lalu upload ulang ke storage/B2.
@@ -255,6 +253,17 @@ Catatan upload:
   - Contoh penggunaan UI:
     - Saat `status=RUNNING` dan `current_chapter_label="1"`, tampilkan: `Sedang grab chapter 1`.
     - Saat field berubah ke `current_chapter_label="2"`, update UI menjadi: `Sedang grab chapter 2`.
+
+- POST `/admin/manga/:mangaId/komiku/grab-jobs/:jobId/continue`
+  - Roles: SUPERADMIN only
+  - Deskripsi: melanjutkan job grab yang statusnya `FAILED | PARTIAL | COMPLETED` dengan cara **resume**.
+    - Chapter yang sudah `COMPLETED` akan di-skip.
+    - Chapter yang `FAILED` akan di-skip, kecuali `retry_failed=true`.
+  - Body (JSON):
+    - `retry_failed` (boolean, default false): jika true, chapter yang sebelumnya `FAILED` akan dicoba ulang.
+  - Resp: `202 Accepted` `{ ok, job_id, manga_id, queued, retry_failed }`
+  - Error:
+    - `409 job_already_running` jika job masih RUNNING
 
 - GET `/admin/manga/:mangaId/chapters/:chapterNumber/pages`
   - Roles: SUPERADMIN, UPLOADER

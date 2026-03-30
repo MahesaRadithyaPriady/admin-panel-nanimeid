@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Activity, BadgeCheck, BookOpen, Clock3, LoaderCircle, RefreshCcw, Sparkles, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import { Activity, BadgeCheck, BookOpen, Clock3, LoaderCircle, RefreshCcw, Sparkles, AlertTriangle, CheckCircle2, XCircle, Wrench } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listGlobalMangaGrabStatus } from '@/lib/api';
+import { listGlobalMangaGrabStatus, continueMangaKomikuGrabJob } from '@/lib/api';
 
 const STATUS_OPTIONS = ['', 'PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'PARTIAL'];
 const LIMIT_OPTIONS = [10, 20, 30, 50, 100];
@@ -20,6 +20,7 @@ export default function MangaGrabListPage() {
   const [loadingList, setLoadingList] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [fixingKey, setFixingKey] = useState('');
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -60,6 +61,26 @@ export default function MangaGrabListPage() {
       return acc;
     }, { total: 0, RUNNING: 0, PENDING: 0, COMPLETED: 0, FAILED: 0, PARTIAL: 0 });
   }, [items]);
+
+  const onFixGrabStack = async ({ mangaId, jobId, status: jobStatus }) => {
+    const token = getSession()?.token;
+    if (!token) return toast.error('Token tidak tersedia');
+    if (!mangaId && mangaId !== 0) return toast.error('manga_id tidak valid');
+    if (!jobId && jobId !== 0) return toast.error('job_id tidak valid');
+    const statusUpper = String(jobStatus || '').toUpperCase();
+    const retry_failed = statusUpper === 'FAILED' || statusUpper === 'PARTIAL';
+    const key = `${mangaId}:${jobId}`;
+    try {
+      setFixingKey(key);
+      const res = await continueMangaKomikuGrabJob({ token, mangaId, jobId, retry_failed });
+      toast.success(res?.message || 'Job dimasukkan kembali ke antrean');
+      await loadItems({ silent: true });
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menjalankan perbaikan job');
+    } finally {
+      setFixingKey('');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -168,6 +189,8 @@ export default function MangaGrabListPage() {
                 const job = entry?.job || {};
                 const progress = computeProgress(job);
                 const tone = getStatusTone(job?.status);
+                const canFix = ['FAILED', 'PARTIAL', 'COMPLETED'].includes(String(job?.status || '').toUpperCase());
+                const fixKey = `${manga?.id}:${job?.id}`;
                 return (
                   <div key={`${job?.id || 'job'}-${manga?.id || index}`} className="rounded-[28px] border-4 overflow-hidden" style={{ boxShadow: '10px 10px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                     <div className="grid gap-0 lg:grid-cols-[220px_minmax(0,1fr)]">
@@ -196,16 +219,30 @@ export default function MangaGrabListPage() {
                             <div className="mt-1 text-lg font-black">{formatStage(job?.current_stage)}</div>
                             <div className="mt-1 text-sm font-semibold opacity-70">{formatHumanStatus(job)}</div>
                           </div>
-                          {manga?.id ? (
-                            <button
-                              type="button"
-                              onClick={() => router.push(`/dashboard/manga-admin/${manga.id}`)}
-                              className="rounded-2xl border-4 px-4 py-2 font-black"
-                              style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)', background: 'var(--background)', color: 'var(--foreground)' }}
-                            >
-                              Buka Manga
-                            </button>
-                          ) : null}
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            {canFix && manga?.id && job?.id ? (
+                              <button
+                                type="button"
+                                onClick={() => onFixGrabStack({ mangaId: manga.id, jobId: job.id, status: job?.status })}
+                                disabled={fixingKey === fixKey || loadingList}
+                                className="inline-flex items-center gap-2 rounded-2xl border-4 px-4 py-2 font-black disabled:opacity-60"
+                                style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)', background: '#fef3c7', color: '#92400e' }}
+                              >
+                                <Wrench className={`size-4 ${fixingKey === fixKey ? 'animate-spin' : ''}`} />
+                                {fixingKey === fixKey ? 'Memperbaiki...' : 'Fix grab stack'}
+                              </button>
+                            ) : null}
+                            {manga?.id ? (
+                              <button
+                                type="button"
+                                onClick={() => router.push(`/dashboard/manga-admin/${manga.id}`)}
+                                className="rounded-2xl border-4 px-4 py-2 font-black"
+                                style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)', background: 'var(--background)', color: 'var(--foreground)' }}
+                              >
+                                Buka Manga
+                              </button>
+                            ) : null}
+                          </div>
                         </div>
 
                         <div className="space-y-2">

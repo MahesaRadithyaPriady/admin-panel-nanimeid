@@ -1095,15 +1095,6 @@ export async function createEpisode({ token, animeId, payload }) {
   if (!token) throw new Error('Token tidak tersedia');
   if (!animeId && animeId !== 0) throw new Error('animeId tidak valid');
   const p0 = payload || {};
-  if (p0?.thumbnail_episode && !(p0?.image instanceof File)) {
-    const { image: _image, ...rest } = p0;
-    const res = await fetch(`${animeBase()}/${animeId}/episodes`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(Object.fromEntries(Object.entries(rest).filter(([_, v]) => v !== undefined))),
-    });
-    return await handleJson(res, 'Gagal membuat episode');
-  }
   const fd = new FormData();
   const p = p0;
   if (p?.image instanceof File) fd.set('image', p.image);
@@ -1133,15 +1124,6 @@ export async function getEpisodeDetail({ token, id }) {
 export async function updateEpisode({ token, id, payload }) {
   if (!token) throw new Error('Token tidak tersedia');
   const p0 = payload || {};
-  if (p0?.thumbnail_episode && !(p0?.image instanceof File)) {
-    const { image: _image, ...rest } = p0;
-    const res = await fetch(`${episodesBase()}/${id}`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(Object.fromEntries(Object.entries(rest).filter(([_, v]) => v !== undefined))),
-    });
-    return await handleJson(res, 'Gagal memperbarui episode');
-  }
   const fd = new FormData();
   const p = p0;
   if (p?.image instanceof File) fd.set('image', p.image);
@@ -3103,6 +3085,18 @@ export async function getMangaKomikuGrabJob({ token, mangaId, jobId }) {
     headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal mengambil progres grab manga');
+}
+
+export async function continueMangaKomikuGrabJob({ token, mangaId, jobId, retry_failed = false }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!mangaId && mangaId !== 0) throw new Error('mangaId tidak valid');
+  if (!jobId && jobId !== 0) throw new Error('jobId tidak valid');
+  const res = await fetch(`${mangaBase()}/${mangaId}/komiku/grab-jobs/${jobId}/continue`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ retry_failed: !!retry_failed }),
+  });
+  return await handleJson(res, 'Gagal melanjutkan job grab manga');
 }
 
 export async function listGlobalMangaGrabStatus({ token, status, limit = 20 } = {}) {

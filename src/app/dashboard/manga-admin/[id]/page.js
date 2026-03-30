@@ -16,7 +16,7 @@ export default function MangaDetailPage() {
 
   const [loadingItem, setLoadingItem] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ judul_manga: '', sinopsis_manga: '', genre_manga: '', type_manga: 'MANGA', author: '', artist: '', label_manga: '', tanggal_rilis_manga: '', rating_manga: '' });
+  const [form, setForm] = useState({ judul_manga: '', sinopsis_manga: '', genre_manga: '', type_manga: 'MANGA', status_manga: 'ONGOING', author: '', artist: '', label_manga: '', tanggal_rilis_manga: '', rating_manga: '' });
 
   const [chapters, setChapters] = useState([]);
   const [loadingChapters, setLoadingChapters] = useState(false);
@@ -51,6 +51,7 @@ export default function MangaDetailPage() {
           sinopsis_manga: it?.sinopsis_manga || '',
           genre_manga: Array.isArray(it?.genre_manga) ? it.genre_manga.join(',') : (it?.genre_manga || ''),
           type_manga: (it?.type_manga || 'MANGA').toUpperCase(),
+          status_manga: String(it?.status_manga || 'ONGOING').toUpperCase(),
           author: it?.author || '',
           artist: it?.artist || '',
           label_manga: it?.label_manga || '',
@@ -335,6 +336,14 @@ export default function MangaDetailPage() {
                     <option value="COMIC">COMIC</option>
                   </select>
                 </L>
+                <L label="Status">
+                  <select value={form.status_manga} onChange={(e)=>updateField('status_manga', e.target.value)} className="sel">
+                    <option value="ONGOING">ONGOING</option>
+                    <option value="COMPLETED">COMPLETED</option>
+                    <option value="HIATUS">HIATUS</option>
+                    <option value="UPCOMING">UPCOMING</option>
+                  </select>
+                </L>
                 <L label="Author"><input value={form.author} onChange={(e)=>updateField('author', e.target.value)} className="inp" /></L>
                 <L label="Artist"><input value={form.artist} onChange={(e)=>updateField('artist', e.target.value)} className="inp" /></L>
                 <L label="Label"><input value={form.label_manga} onChange={(e)=>updateField('label_manga', e.target.value)} className="inp" /></L>
@@ -434,6 +443,7 @@ function buildMangaUpdate(form) {
   str('judul_manga'); str('sinopsis_manga');
   if (typeof form?.genre_manga === 'string') { const arr = form.genre_manga.split(',').map(s=>s.trim()).filter(Boolean); out.genre_manga = arr; }
   if (form?.type_manga) out.type_manga = String(form.type_manga).toUpperCase();
+  if (form?.status_manga) out.status_manga = String(form.status_manga).toUpperCase();
   str('author'); str('artist'); str('label_manga');
   if (form?.tanggal_rilis_manga) out.tanggal_rilis_manga = form.tanggal_rilis_manga;
   str('rating_manga');
