@@ -1095,6 +1095,18 @@ export async function createEpisode({ token, animeId, payload }) {
   if (!token) throw new Error('Token tidak tersedia');
   if (!animeId && animeId !== 0) throw new Error('animeId tidak valid');
   const p0 = payload || {};
+  // NOTE: Some backends parse qualities more reliably on create when using JSON
+  // if no file upload is involved.
+  if (!(p0?.image instanceof File)) {
+    const { image: _image, ...rest } = p0;
+    const body = Object.fromEntries(Object.entries(rest).filter(([_, v]) => v !== undefined));
+    const res = await fetch(`${animeBase()}/${animeId}/episodes`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {}),
+    });
+    return await handleJson(res, 'Gagal membuat episode');
+  }
   const fd = new FormData();
   const p = p0;
   if (p?.image instanceof File) fd.set('image', p.image);
