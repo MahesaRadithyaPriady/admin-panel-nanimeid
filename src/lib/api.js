@@ -3257,3 +3257,156 @@ export async function debitUserWallet({ token, userId, amount, note = '' }) {
   });
   return await handleJson(res, 'Gagal debit koin user');
 }
+
+// ===== Debug Log / Request Profiler APIs =====
+const debugLogBase = () => `${getApiBase()}/debug-log`;
+
+// 1) System Stats Snapshot
+export async function getDebugLogStats({ token } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${debugLogBase()}/stats`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil statistik debug log');
+  return data?.data ?? data;
+}
+
+// 2) Live Request Log (Memory Buffer)
+export async function getDebugLogLive({ token, limit = 100, route, method, userId, minDurationMs, status, from, to } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 2000)));
+  if (route) params.set('route', route);
+  if (method) params.set('method', method);
+  if (userId) params.set('userId', userId);
+  if (minDurationMs !== undefined && minDurationMs !== null) params.set('minDurationMs', String(minDurationMs));
+  if (status) params.set('status', String(status));
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  const url = `${debugLogBase()}/live?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil live request log');
+  return {
+    count: data?.count ?? 0,
+    data: Array.isArray(data?.data) ? data.data : [],
+  };
+}
+
+// 3) Route Summary (Rekap per Endpoint)
+export async function getDebugLogSummary({ token, limit = 100, minDurationMs = 0, from, to } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (limit) params.set('limit', String(limit));
+  if (minDurationMs !== undefined && minDurationMs !== null) params.set('minDurationMs', String(minDurationMs));
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  const url = `${debugLogBase()}/summary?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil route summary');
+  return {
+    count: data?.count ?? 0,
+    data: Array.isArray(data?.data) ? data.data : [],
+  };
+}
+
+// 4) Heavy Endpoints (Paling Lambat)
+export async function getDebugLogHeavy({ token, limit = 20, minAvgMs = 0 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (limit) params.set('limit', String(limit));
+  if (minAvgMs !== undefined && minAvgMs !== null) params.set('minAvgMs', String(minAvgMs));
+  const url = `${debugLogBase()}/heavy?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil heavy endpoints');
+  return {
+    count: data?.count ?? 0,
+    data: Array.isArray(data?.data) ? data.data : [],
+  };
+}
+
+// 5) Error Requests (4xx / 5xx)
+export async function getDebugLogErrors({ token, limit = 100, status, from, to } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (limit) params.set('limit', String(limit));
+  if (status) params.set('status', String(status));
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  const url = `${debugLogBase()}/errors?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil error requests');
+  return {
+    count: data?.count ?? 0,
+    data: Array.isArray(data?.data) ? data.data : [],
+  };
+}
+
+// 6) Request Log per User
+export async function getDebugLogByUser({ token, userId, limit = 100, from, to, minDurationMs } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!userId && userId !== 0) throw new Error('User ID tidak valid');
+  const params = new URLSearchParams();
+  if (limit) params.set('limit', String(limit));
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  if (minDurationMs !== undefined && minDurationMs !== null) params.set('minDurationMs', String(minDurationMs));
+  const url = `${debugLogBase()}/user/${userId}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil request log user');
+  return {
+    count: data?.count ?? 0,
+    userId: data?.userId ?? userId,
+    data: Array.isArray(data?.data) ? data.data : [],
+  };
+}
+
+// 7) Daftar File Log di Disk
+export async function getDebugLogFiles({ token } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${debugLogBase()}/files`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil daftar file log');
+  return {
+    dir: data?.dir ?? '',
+    count: data?.count ?? 0,
+    data: Array.isArray(data?.data) ? data.data : [],
+  };
+}
+
+// 8) Baca File Log dari Disk
+export async function getDebugLogFile({ token, filename, tail = 500, route, method, userId, minDurationMs, status } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!filename) throw new Error('Filename tidak valid');
+  const params = new URLSearchParams();
+  if (tail) params.set('tail', String(tail));
+  if (route) params.set('route', route);
+  if (method) params.set('method', method);
+  if (userId) params.set('userId', userId);
+  if (minDurationMs !== undefined && minDurationMs !== null) params.set('minDurationMs', String(minDurationMs));
+  if (status) params.set('status', String(status));
+  const url = `${debugLogBase()}/file/${encodeURIComponent(filename)}?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal membaca file log');
+  return {
+    file: data?.file ?? filename,
+    count: data?.count ?? 0,
+    data: Array.isArray(data?.data) ? data.data : [],
+  };
+}
+
+// 9) Export Memory Buffer (Download NDJSON)
+export async function exportDebugLog({ token, route, method, userId, minDurationMs, from, to } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (route) params.set('route', route);
+  if (method) params.set('method', method);
+  if (userId) params.set('userId', userId);
+  if (minDurationMs !== undefined && minDurationMs !== null) params.set('minDurationMs', String(minDurationMs));
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  const url = `${debugLogBase()}/export?${params.toString()}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error('Gagal export debug log');
+  return await res.text();
+}

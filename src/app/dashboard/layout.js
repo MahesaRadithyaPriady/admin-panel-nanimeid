@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText } from 'lucide-react';
+import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import Header from '@/components/dashboard/Header';
 import Sidebar from '@/components/dashboard/Sidebar';
@@ -186,6 +186,7 @@ export default function DashboardLayout({ children }) {
           { key: 'moderation', permissionKey: 'moderation', label: 'Moderasi', icon: Shield, roles: ['superadmin'], href: '/dashboard/moderation' },
           { key: 'livechat', permissionKey: 'livechat', label: 'Live Chat', icon: MessageSquareText, roles: ['superadmin'], href: '/dashboard/livechat' },
           { key: 'konfigurasi-event', permissionKey: 'event-configs', label: 'Konfigurasi Event', icon: ListChecks, roles: ['superadmin'], href: '/dashboard/konfigurasi-event' },
+          { key: 'analytics-logs', label: 'Analytics Logs', icon: Activity, roles: ['superadmin'], href: '/dashboard/analytics-logs' },
         ]
       },
 
