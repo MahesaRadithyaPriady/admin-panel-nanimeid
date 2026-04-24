@@ -100,7 +100,7 @@ export default function Sidebar({ menus, currentPath, collapsed = false, onToggl
         {!collapsed && (
           <div className="leading-tight">
             <div className="text-sm font-extrabold">NanimeID</div>
-            <div className="text-[11px] font-bold opacity-70">Panel V1.2</div>
+            <div className="text-[11px] font-bold opacity-70">Panel V1.3</div>
           </div>
         )}
         <button

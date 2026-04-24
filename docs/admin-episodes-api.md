@@ -10,8 +10,6 @@ Endpoint untuk mengelola Episode anime beserta Qualities-nya. Semua endpoint dil
   - Prisma models: `prisma/schema.prisma` (`Anime`, `Episode`, `EpisodeQuality`)
 
 Catatan upload:
-- Client admin **tidak perlu** upload thumbnail episode ke endpoint presigned upload seperti `/upload/admin/presigned-put`.
-- Untuk create/update episode, kirim file gambar langsung ke endpoint episode melalui field multipart `image`, atau kirim URL langsung melalui field `thumbnail_episode`.
 - Jika mengirim `thumbnail_episode` berupa URL `http(s)`, server akan **mengunduh** gambar dari URL tersebut lalu **meng-upload ulang** ke storage menggunakan **signed URL** (PUT).
   - **URL asli tidak disimpan**.
   - Client wajib menggunakan **URL callback** dari response (`item.thumbnail_episode`) sebagai URL thumbnail yang valid (URL storage/CDN).
@@ -53,9 +51,30 @@ Response 200:
       "outro_start_seconds": 1330,
       "outro_duration_seconds": 90,
       "tanggal_rilis_episode": "2025-08-31T12:00:00.000Z",
+      "hls_master_url": null,
       "qualities": [
-        { "id": 1, "episode_id": 10, "nama_quality": "720p", "source_quality": "https://cdn/video720.mp4" },
-        { "id": 2, "episode_id": 10, "nama_quality": "1080p", "source_quality": "https://cdn/video1080.mp4" }
+        {
+          "id": 1,
+          "episode_id": 10,
+          "nama_quality": "720p",
+          "source_quality": "https://cdn/video720.mp4",
+          "hls_status": "PENDING",
+          "hls_url": null,
+          "hls_size": null,
+          "hls_encoded_at": null,
+          "hls_error": null
+        },
+        {
+          "id": 2,
+          "episode_id": 10,
+          "nama_quality": "1080p",
+          "source_quality": "https://cdn/video1080.mp4",
+          "hls_status": "DONE",
+          "hls_url": "https://cdn.example.com/hls/ep1_1080p/index.m3u8",
+          "hls_size": 524288000,
+          "hls_encoded_at": "2024-01-15T10:30:00.000Z",
+          "hls_error": null
+        }
       ]
     }
   ]
@@ -79,7 +98,6 @@ Headers:
 Body (multipart form):
 
 - `image` (file, opsional) — thumbnail episode (hanya file gambar)
-- Client admin cukup mengirim file langsung di field `image` ke endpoint ini.
 - Alternatif (tanpa upload file): kirim `thumbnail_episode` berisi URL thumbnail.
   - Jika `thumbnail_episode` adalah URL `http(s)`, server akan **download** dan **re-upload** ke storage.
   - Jika `thumbnail_episode` adalah path static lokal (mis. `/static/...`) atau URL localhost/static server (mis. `http://localhost:3001/static/...`), server akan membaca file sumber tersebut lalu **re-upload** ke storage.
@@ -198,7 +216,6 @@ Headers:
 Body (multipart form, partial allowed):
 
 - `image` (file gambar, opsional) — thumbnail episode baru
-- Client admin cukup mengirim file thumbnail baru langsung di field `image` ke endpoint ini.
 - `thumbnail_episode` (string URL, opsional) — thumbnail episode baru (alternatif tanpa upload file)
 - Field lain sama seperti create, semua opsional
 

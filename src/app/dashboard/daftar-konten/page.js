@@ -1198,9 +1198,10 @@ export default function DaftarKontenPage() {
       intro_duration_seconds: ep.intro_duration_seconds ?? 90,
       outro_start_seconds: ep.outro_start_seconds ?? 0,
       outro_duration_seconds: ep.outro_duration_seconds ?? 90,
-      tanggal_rilis_episode: ep.tanggal_rilis_episode ? new Date(ep.tanggal_rilis_episode).toISOString().slice(0, 16) : '', // yyyy-mm-ddThh:mm
+      tanggal_rilis_episode: (() => { const d = ep.tanggal_rilis_episode ? new Date(ep.tanggal_rilis_episode) : null; return d && !isNaN(d.getTime()) ? d.toISOString().slice(0, 16) : ''; })(), // yyyy-mm-ddThh:mm
+      hls_master_url: ep.hls_master_url || null,
       qualities: Array.isArray(ep.qualities)
-        ? ep.qualities.map((q) => ({ id: q.id, nama_quality: q.nama_quality || '', source_quality: q.source_quality || '' }))
+        ? ep.qualities.map((q) => ({ id: q.id, nama_quality: q.nama_quality || '', source_quality: q.source_quality || '', hls_status: q.hls_status || null, hls_url: q.hls_url || null, hls_size: q.hls_size || null, hls_encoded_at: q.hls_encoded_at || null, hls_error: q.hls_error || null }))
         : [],
     });
   };
@@ -3186,20 +3187,44 @@ export default function DaftarKontenPage() {
                                         <input type="datetime-local" value={editingEpisode.tanggal_rilis_episode} onChange={(e) => setEditingEpisode((s) => ({ ...s, tanggal_rilis_episode: e.target.value }))} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                                       </div>
                                     </div>
+                                    {editingEpisode.hls_master_url && (
+                                      <div className="grid gap-1">
+                                        <div className="text-xs font-extrabold">HLS Master URL</div>
+                                        <div className="px-3 py-2 border-4 rounded-lg font-semibold text-xs break-all select-all" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>{editingEpisode.hls_master_url}</div>
+                                      </div>
+                                    )}
                                     <div className="pt-1">
                                       <div className="font-extrabold mb-2">Qualities</div>
                                       <div className="space-y-2">
                                         {(editingEpisode.qualities || []).map((q, idx) => (
-                                          <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto] gap-2">
-                                            <div className="grid gap-1">
-                                              <div className="text-xs font-extrabold">Nama Quality</div>
-                                              <input type="text" value={q.nama_quality} onChange={(e) => updateQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                          <div key={idx} className="border-4 rounded-lg p-3 space-y-2" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+                                            <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-2">
+                                              <div className="grid gap-1">
+                                                <div className="text-xs font-extrabold">Nama Quality</div>
+                                                <input type="text" value={q.nama_quality} onChange={(e) => updateQualityField(idx, 'nama_quality', e.target.value)} placeholder="Nama quality (480p/720p/1080p)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                              </div>
+                                              <div className="grid gap-1">
+                                                <div className="text-xs font-extrabold">Source URL</div>
+                                                <input type="url" value={q.source_quality} onChange={(e) => updateQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                                              </div>
+                                              <button type="button" onClick={() => removeQuality(idx)} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Hapus</button>
                                             </div>
-                                            <div className="grid gap-1">
-                                              <div className="text-xs font-extrabold">Source URL</div>
-                                              <input type="url" value={q.source_quality} onChange={(e) => updateQualityField(idx, 'source_quality', e.target.value)} placeholder="Source URL" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                                            </div>
-                                            <button type="button" onClick={() => removeQuality(idx)} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Hapus</button>
+                                            {q.hls_status && (
+                                              <div className="space-y-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                  <span className="text-xs font-extrabold">HLS Status:</span>
+                                                  <span className={`px-2 py-0.5 border-2 rounded-full text-xs font-extrabold ${ q.hls_status === 'DONE' ? 'bg-green-100 text-green-700 border-green-300' : q.hls_status === 'PENDING' ? 'bg-yellow-100 text-yellow-700 border-yellow-300' : q.hls_status === 'PROCESSING' ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-red-100 text-red-700 border-red-300' }`}>{q.hls_status}</span>
+                                                  {q.hls_size && <span className="text-xs opacity-70">{(q.hls_size / 1024 / 1024).toFixed(1)} MB</span>}
+                                                  {q.hls_encoded_at && <span className="text-xs opacity-70">{new Date(q.hls_encoded_at).toLocaleString('id-ID')}</span>}
+                                                </div>
+                                                {q.hls_url && (
+                                                  <div className="text-xs font-extrabold">HLS URL: <span className="font-normal break-all select-all opacity-80">{q.hls_url}</span></div>
+                                                )}
+                                                {q.hls_error && (
+                                                  <div className="text-xs text-red-600 font-semibold">Error: {q.hls_error}</div>
+                                                )}
+                                              </div>
+                                            )}
                                           </div>
                                         ))}
                                       </div>

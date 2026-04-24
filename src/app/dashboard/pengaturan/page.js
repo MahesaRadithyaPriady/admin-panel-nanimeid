@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Settings, AlertTriangle, Download, BadgeDollarSign, BellRing, Coins, RefreshCcw, Save, Sparkles } from 'lucide-react';
+import { Settings, AlertTriangle, Download, BadgeDollarSign, BellRing, Coins, RefreshCcw, Save, Sparkles, Eye, EyeOff, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { deleteInAppAnnouncement, getInAppAnnouncement, getSettings, updateInAppAnnouncementMessage, updateSettings, updateWatchLiteCoinPerMinute } from '@/lib/api';
+import { deleteInAppAnnouncement, getInAppAnnouncement, getAdminSettings, updateInAppAnnouncementMessage, updateAdminSettings, updateWatchLiteCoinPerMinute } from '@/lib/api';
 
 function mapSettingsFromApi(s) {
   return {
@@ -18,6 +18,18 @@ function mapSettingsFromApi(s) {
       ? s.paid_qualities.filter(Boolean).join(', ')
       : '',
     watchLiteCoinPerMinute: Number.isFinite(Number(s?.watch_lite_coin_per_minute)) ? String(Number(s.watch_lite_coin_per_minute)) : '0',
+    // Feature toggles
+    featureNobarEnabled: !!s?.feature_nobar_enabled,
+    featureNobarMessage: s?.feature_nobar_message ?? '',
+    featureReadModeEnabled: !!s?.feature_read_mode_enabled,
+    featureReadModeMessage: s?.feature_read_mode_message ?? '',
+    featureDownloadEpisodeEnabled: !!s?.feature_download_episode_enabled,
+    featureDownloadEpisodeMessage: s?.feature_download_episode_message ?? '',
+    featureDownloadBatchEnabled: !!s?.feature_download_batch_enabled,
+    featureDownloadBatchMessage: s?.feature_download_batch_message ?? '',
+    // Force update
+    forceUpdateEnabled: !!s?.force_update_enabled,
+    forceUpdateVersion: s?.force_update_version ?? '',
   };
 }
 
@@ -40,6 +52,18 @@ export default function PengaturanPage() {
     paidQualityEnabled: false,
     paidQuality: '', // comma-separated input representing an array
     watchLiteCoinPerMinute: '0',
+    // Feature toggles
+    featureNobarEnabled: false,
+    featureNobarMessage: '',
+    featureReadModeEnabled: false,
+    featureReadModeMessage: '',
+    featureDownloadEpisodeEnabled: false,
+    featureDownloadEpisodeMessage: '',
+    featureDownloadBatchEnabled: false,
+    featureDownloadBatchMessage: '',
+    // Force update
+    forceUpdateEnabled: false,
+    forceUpdateVersion: '',
   });
   const [announcement, setAnnouncement] = useState({
     message: '',
@@ -54,7 +78,7 @@ export default function PengaturanPage() {
         setLoadingSettings(true);
         const token = getSession()?.token;
         const [s, a] = await Promise.all([
-          getSettings({ token }),
+          getAdminSettings({ token }),
           getInAppAnnouncement({ token }),
         ]);
         if (s) setSettings(mapSettingsFromApi(s));
@@ -110,8 +134,20 @@ export default function PengaturanPage() {
         maintenance_message: settings.maintenanceMessage?.trim() || null,
         downloads_enabled: !settings.disableDownload,
         paid_qualities: settings.paidQualityEnabled ? qualitiesUnique : [],
+        // Feature toggles
+        feature_nobar_enabled: !!settings.featureNobarEnabled,
+        feature_nobar_message: settings.featureNobarMessage?.trim() || null,
+        feature_read_mode_enabled: !!settings.featureReadModeEnabled,
+        feature_read_mode_message: settings.featureReadModeMessage?.trim() || null,
+        feature_download_episode_enabled: !!settings.featureDownloadEpisodeEnabled,
+        feature_download_episode_message: settings.featureDownloadEpisodeMessage?.trim() || null,
+        feature_download_batch_enabled: !!settings.featureDownloadBatchEnabled,
+        feature_download_batch_message: settings.featureDownloadBatchMessage?.trim() || null,
+        // Force update
+        force_update_enabled: !!settings.forceUpdateEnabled,
+        force_update_version: settings.forceUpdateVersion?.trim() || null,
       };
-      const updated = await updateSettings({ token, payload });
+      const updated = await updateAdminSettings({ token, payload });
       if (updated) setSettings((prev) => ({ ...mapSettingsFromApi(updated), watchLiteCoinPerMinute: prev.watchLiteCoinPerMinute }));
       toast.success('Pengaturan utama disimpan');
     } catch (err) {
@@ -305,6 +341,214 @@ export default function PengaturanPage() {
                     <div className="text-xs opacity-70 mt-1">Pisahkan dengan koma. Contoh: 720p, 1080p, 4K.</div>
                   </div>
                 </div>
+
+                <div className="border-4 rounded-2xl p-4 space-y-3" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-extrabold"><RefreshCcw className="size-4" /> Force Update</div>
+                      <div className="text-xs opacity-70 mt-1">Paksa user untuk update ke versi minimum aplikasi.</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggle('forceUpdateEnabled')}
+                      className="px-3 py-2 border-4 rounded-xl font-extrabold"
+                      style={{ 
+                        boxShadow: '4px 4px 0 #000', 
+                        background: settings.forceUpdateEnabled ? '#EF4444' : 'var(--panel-bg)', 
+                        color: settings.forceUpdateEnabled ? 'white' : 'var(--foreground)', 
+                        borderColor: 'var(--panel-border)' 
+                      }}
+                      disabled={loadingSettings}
+                    >
+                      {settings.forceUpdateEnabled ? 'AKTIF' : 'NONAKTIF'}
+                    </button>
+                  </div>
+                  {settings.forceUpdateEnabled && (
+                    <div>
+                      <label className="text-xs font-bold">Versi Minimum</label>
+                      <input
+                        value={settings.forceUpdateVersion}
+                        onChange={(e) => setSettings((s) => ({ ...s, forceUpdateVersion: e.target.value }))}
+                        placeholder="Contoh: 2.5.0"
+                        className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold text-sm"
+                        style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                        disabled={loadingSettings}
+                      />
+                      <div className="text-xs opacity-70 mt-1">Format: x.y.z (contoh: 2.5.0). User dengan versi lebih rendah akan diminta update.</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="p-5 sm:p-6 border-4 rounded-[24px] space-y-5" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="inline-flex items-center gap-2 text-sm font-extrabold"><ToggleLeft className="size-4" /> Feature Toggles</div>
+                <div className="text-sm opacity-75 mt-1">Aktifkan/nonaktifkan fitur aplikasi untuk semua user.</div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Nonton Bareng */}
+              <div className="border-4 rounded-2xl p-4 space-y-3" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-extrabold">
+                      {settings.featureNobarEnabled ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                      Nonton Bareng
+                    </div>
+                    <div className="text-xs opacity-70 mt-1">Fitur nonton bareng dengan teman-teman.</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggle('featureNobarEnabled')}
+                    className="px-3 py-2 border-4 rounded-xl font-extrabold"
+                    style={{ 
+                      boxShadow: '4px 4px 0 #000', 
+                      background: settings.featureNobarEnabled ? '#22C55E' : 'var(--panel-bg)', 
+                      color: settings.featureNobarEnabled ? 'white' : 'var(--foreground)', 
+                      borderColor: 'var(--panel-border)' 
+                    }}
+                    disabled={loadingSettings}
+                  >
+                    {settings.featureNobarEnabled ? 'AKTIF' : 'NONAKTIF'}
+                  </button>
+                </div>
+                {!settings.featureNobarEnabled && (
+                  <div>
+                    <label className="text-xs font-bold">Pesan Nonaktif (opsional)</label>
+                    <input
+                      value={settings.featureNobarMessage}
+                      onChange={(e) => setSettings((s) => ({ ...s, featureNobarMessage: e.target.value }))}
+                      placeholder="Alasan kenapa fitur nobar dinonaktifkan"
+                      className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold text-sm"
+                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                      disabled={loadingSettings}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Mode Baca */}
+              <div className="border-4 rounded-2xl p-4 space-y-3" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-extrabold">
+                      {settings.featureReadModeEnabled ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                      Mode Baca
+                    </div>
+                    <div className="text-xs opacity-70 mt-1">Mode baca manga/novel yang nyaman.</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggle('featureReadModeEnabled')}
+                    className="px-3 py-2 border-4 rounded-xl font-extrabold"
+                    style={{ 
+                      boxShadow: '4px 4px 0 #000', 
+                      background: settings.featureReadModeEnabled ? '#22C55E' : 'var(--panel-bg)', 
+                      color: settings.featureReadModeEnabled ? 'white' : 'var(--foreground)', 
+                      borderColor: 'var(--panel-border)' 
+                    }}
+                    disabled={loadingSettings}
+                  >
+                    {settings.featureReadModeEnabled ? 'AKTIF' : 'NONAKTIF'}
+                  </button>
+                </div>
+                {!settings.featureReadModeEnabled && (
+                  <div>
+                    <label className="text-xs font-bold">Pesan Nonaktif (opsional)</label>
+                    <input
+                      value={settings.featureReadModeMessage}
+                      onChange={(e) => setSettings((s) => ({ ...s, featureReadModeMessage: e.target.value }))}
+                      placeholder="Alasan kenapa mode baca dinonaktifkan"
+                      className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold text-sm"
+                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                      disabled={loadingSettings}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Download Episode */}
+              <div className="border-4 rounded-2xl p-4 space-y-3" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-extrabold">
+                      {settings.featureDownloadEpisodeEnabled ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                      Download Episode
+                    </div>
+                    <div className="text-xs opacity-70 mt-1">Download episode anime individual.</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggle('featureDownloadEpisodeEnabled')}
+                    className="px-3 py-2 border-4 rounded-xl font-extrabold"
+                    style={{ 
+                      boxShadow: '4px 4px 0 #000', 
+                      background: settings.featureDownloadEpisodeEnabled ? '#22C55E' : 'var(--panel-bg)', 
+                      color: settings.featureDownloadEpisodeEnabled ? 'white' : 'var(--foreground)', 
+                      borderColor: 'var(--panel-border)' 
+                    }}
+                    disabled={loadingSettings}
+                  >
+                    {settings.featureDownloadEpisodeEnabled ? 'AKTIF' : 'NONAKTIF'}
+                  </button>
+                </div>
+                {!settings.featureDownloadEpisodeEnabled && (
+                  <div>
+                    <label className="text-xs font-bold">Pesan Nonaktif (opsional)</label>
+                    <input
+                      value={settings.featureDownloadEpisodeMessage}
+                      onChange={(e) => setSettings((s) => ({ ...s, featureDownloadEpisodeMessage: e.target.value }))}
+                      placeholder="Alasan kenapa download episode dinonaktifkan"
+                      className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold text-sm"
+                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                      disabled={loadingSettings}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Download Batch */}
+              <div className="border-4 rounded-2xl p-4 space-y-3" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-extrabold">
+                      {settings.featureDownloadBatchEnabled ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                      Download Batch
+                    </div>
+                    <div className="text-xs opacity-70 mt-1">Download multiple episodes sekaligus.</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggle('featureDownloadBatchEnabled')}
+                    className="px-3 py-2 border-4 rounded-xl font-extrabold"
+                    style={{ 
+                      boxShadow: '4px 4px 0 #000', 
+                      background: settings.featureDownloadBatchEnabled ? '#22C55E' : 'var(--panel-bg)', 
+                      color: settings.featureDownloadBatchEnabled ? 'white' : 'var(--foreground)', 
+                      borderColor: 'var(--panel-border)' 
+                    }}
+                    disabled={loadingSettings}
+                  >
+                    {settings.featureDownloadBatchEnabled ? 'AKTIF' : 'NONAKTIF'}
+                  </button>
+                </div>
+                {!settings.featureDownloadBatchEnabled && (
+                  <div>
+                    <label className="text-xs font-bold">Pesan Nonaktif (opsional)</label>
+                    <input
+                      value={settings.featureDownloadBatchMessage}
+                      onChange={(e) => setSettings((s) => ({ ...s, featureDownloadBatchMessage: e.target.value }))}
+                      placeholder="Alasan kenapa download batch dinonaktifkan"
+                      className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold text-sm"
+                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                      disabled={loadingSettings}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </section>

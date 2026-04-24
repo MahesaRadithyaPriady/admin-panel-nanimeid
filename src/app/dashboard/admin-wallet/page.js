@@ -1,10 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Wallet, Search, RefreshCcw, PlusCircle, MinusCircle } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { Wallet, Search, RefreshCcw, PlusCircle, MinusCircle, TrendingUp, Users as UserIcon, ArrowUpCircle, ArrowDownCircle, Calendar, Filter, Globe } from "lucide-react";
+import { useSession } from '@/hooks/useSession';
+import { getSession } from '@/lib/auth';
 import { getUserWallet, getUserWalletTransactions, adminWalletCredit, adminWalletDebit, creditUserWallet, debitUserWallet } from "@/lib/api";
 
 export default function AdminWalletPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useSession();
+
+  useEffect(() => {
+    if (!authLoading && !user) router.replace('/');
+  }, [authLoading, user, router]);
+
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(false);
   const [userInfo, setUserInfo] = useState(null); // { user, wallet }
@@ -12,22 +23,12 @@ export default function AdminWalletPage() {
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
-
   const [submitting, setSubmitting] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   function getToken() {
-    try {
-      const t = localStorage.getItem('access_token');
-      if (t) return t;
-      const raw = localStorage.getItem('nanimeid_admin_session');
-      if (raw) {
-        const s = JSON.parse(raw);
-        if (s?.access_token) return s.access_token;
-        if (s?.token) return s.token;
-        if (s?.auth?.access_token) return s.auth.access_token;
-      }
-    } catch {}
-    return '';
+    const session = getSession();
+    return session?.token || '';
   }
 
   async function loadAll() {
@@ -156,149 +157,311 @@ export default function AdminWalletPage() {
     }
   }
 
+  if (authLoading || !user) return null;
+
+  const formatNumber = (num) => {
+    return new Intl.NumberFormat('id-ID').format(num);
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleString('id-ID');
+  };
+
+  const getTransactionIcon = (type) => {
+    if (type?.toLowerCase().includes('credit') || type?.toLowerCase().includes('kredit')) {
+      return <ArrowUpCircle className="size-4 text-green-600" />;
+    }
+    return <ArrowDownCircle className="size-4 text-red-600" />;
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-extrabold flex items-center gap-2"><Wallet className="size-5" /> Admin Wallet</h2>
-        <button onClick={loadAll} disabled={loading} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
-          <RefreshCcw className="size-4 inline-block mr-1" /> {loading ? 'Memuat...' : 'Refresh'}
-        </button>
-      </div>
-
-      {/* Search by User ID */}
-      <form onSubmit={onSearch} className="grid sm:grid-cols-[1fr_140px] gap-3">
-        <div className="grid gap-1">
-          <div className="text-xs font-extrabold">User ID</div>
-          <input type="number" min="1" placeholder="Masukkan User ID" value={userId} onChange={(e) => setUserId(e.target.value)} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+      {/* Header */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+        <div className="grid gap-2">
+          <div className="inline-flex w-fit items-center gap-2 px-3 py-2 border-4 rounded-full font-extrabold text-sm" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            <Wallet className="size-4" /> Admin Wallet
+          </div>
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-black leading-tight">Kelola koin user dan transaksi.</h2>
+            <p className="text-sm sm:text-base opacity-80 mt-2 max-w-3xl">Monitor saldo, kredit/debit koin, dan lihat riwayat transaksi user.</p>
+          </div>
         </div>
-        <button type="submit" className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
-          <Search className="size-4 inline-block mr-1" /> Cari
-        </button>
-      </form>
+        <div className="flex flex-wrap items-center justify-start lg:justify-end gap-2">
+          <button 
+            type="button" 
+            onClick={() => setShowFilters(!showFilters)} 
+            className="px-3 py-2 border-4 rounded-lg font-extrabold"
+            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+          >
+            <Filter className="size-4 inline-block mr-1" /> Filter
+          </button>
+          <button 
+            type="button" 
+            onClick={loadAll} 
+            disabled={loading} 
+            className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" 
+            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}
+          >
+            <RefreshCcw className="size-4 inline-block mr-1" /> {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
+      </div>
 
-      {/* User Wallet Summary */}
-      <div className="border-4 rounded-lg p-4 grid gap-3" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-        <div className="font-extrabold mb-1">Ringkasan</div>
-        {userInfo ? (
-          <div className="grid sm:grid-cols-2 gap-2 text-sm">
-            <div className="col-span-2 flex items-center gap-3">
-              {userInfo.user?.profile?.avatar_url ? (
-                <img src={userInfo.user.profile.avatar_url} alt="avatar" className="w-10 h-10 object-cover border-4 rounded" style={{ borderColor: 'var(--panel-border)' }} />
-              ) : null}
-              <div className="font-extrabold">{userInfo.user?.username || '-'} <span className="opacity-70 text-xs">(ID: {userInfo.user?.id ?? '-'})</span></div>
+      {/* Stats Cards */}
+      {userInfo && (
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #FDE68A 0%, #FCD34D 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
+            <div className="flex items-center gap-2">
+              <Wallet className="size-5" />
+              <div className="text-xs font-black uppercase tracking-wide opacity-80">Saldo Koin</div>
             </div>
-            <div><span className="opacity-70">Email:</span> {userInfo.user?.email || '-'}</div>
-            <div><span className="opacity-70">Nama:</span> {userInfo.user?.profile?.full_name || '-'}</div>
-            <div className="col-span-2 font-extrabold text-lg">Saldo Koin: {userInfo.wallet?.balance_coins ?? 0}</div>
+            <div className="mt-2 text-3xl font-black">{formatNumber(userInfo.wallet?.balance_coins || 0)}</div>
+            <div className="text-sm font-semibold opacity-80 mt-1">{userInfo.user?.username}</div>
           </div>
-        ) : (
-          <div className="text-sm opacity-70">Belum ada data. Cari user terlebih dahulu.</div>
-        )}
+          
+          <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #BFDBFE 0%, #93C5FD 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
+            <div className="flex items-center gap-2">
+              <UserIcon className="size-5" />
+              <div className="text-xs font-black uppercase tracking-wide opacity-80">User ID</div>
+            </div>
+            <div className="mt-2 text-3xl font-black">#{userInfo.user?.id || '-'}</div>
+            <div className="text-sm font-semibold opacity-80 mt-1">{userInfo.user?.email || '-'}</div>
+          </div>
+          
+          <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #C7F9CC 0%, #86EFAC 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="size-5" />
+              <div className="text-xs font-black uppercase tracking-wide opacity-80">Total Transaksi</div>
+            </div>
+            <div className="mt-2 text-3xl font-black">{formatNumber(tx.total || 0)}</div>
+            <div className="text-sm font-semibold opacity-80 mt-1">Semua waktu</div>
+          </div>
+        </div>
+      )}
+
+      {/* Search Section */}
+      <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+        <form onSubmit={onSearch} className="grid gap-4 md:grid-cols-[1fr_200px]">
+          <div>
+            <label className="text-xs font-bold">User ID</label>
+            <input 
+              type="number" 
+              min="1" 
+              placeholder="Masukkan User ID" 
+              value={userId} 
+              onChange={(e) => setUserId(e.target.value)} 
+              className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" 
+              style={{ boxShadow: '3px 3px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} 
+            />
+          </div>
+          <div className="flex items-end">
+            <button 
+              type="submit" 
+              className="w-full px-4 py-2 border-4 rounded-xl font-extrabold" 
+              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}
+            >
+              <Search className="size-4 inline-block mr-1" /> Cari User
+            </button>
+          </div>
+        </form>
       </div>
 
-      {/* Credit/Debit (Global by userId) */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <form onSubmit={onCreditGlobal} className="grid gap-2 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-          <div className="font-extrabold flex items-center gap-2"><PlusCircle className="size-4" /> Kredit Koin (Global)</div>
-          <div className="grid gap-1">
-            <div className="text-xs font-extrabold">User ID</div>
-            <input name="userId" type="number" placeholder="User ID" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+      {/* User Info Card */}
+      {userInfo && (
+        <div className="border-4 rounded-2xl p-6" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-extrabold text-lg">Informasi User</h3>
+            <div className="text-2xl font-black text-yellow-500">
+              {formatNumber(userInfo.wallet?.balance_coins || 0)} coins
+            </div>
           </div>
-          <div className="grid gap-1">
-            <div className="text-xs font-extrabold">Jumlah Koin</div>
-            <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+          <div className="flex items-center gap-4">
+            {userInfo.user?.profile?.avatar_url ? (
+              <img src={userInfo.user.profile.avatar_url} alt="avatar" className="w-16 h-16 object-cover border-4 rounded-xl" style={{ borderColor: 'var(--panel-border)' }} />
+            ) : (
+              <div className="w-16 h-16 border-4 rounded-xl flex items-center justify-center" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
+                <UserIcon className="size-6 opacity-50" />
+              </div>
+            )}
+            <div className="grid gap-1">
+              <div className="font-extrabold text-lg">{userInfo.user?.username || '-'}</div>
+              <div className="text-sm opacity-70">ID: {userInfo.user?.id ?? '-'}</div>
+              <div className="text-sm opacity-70">{userInfo.user?.email || '-'}</div>
+              <div className="text-sm opacity-70">{userInfo.user?.profile?.full_name || '-'}</div>
+            </div>
           </div>
-          <div className="grid gap-1">
-            <div className="text-xs font-extrabold">Catatan</div>
-            <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-          </div>
-          <button type="submit" disabled={submitting} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>Kreditkan</button>
-        </form>
+        </div>
+      )}
 
-        <form onSubmit={onDebitGlobal} className="grid gap-2 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-          <div className="font-extrabold flex items-center gap-2"><MinusCircle className="size-4" /> Debit Koin (Global)</div>
-          <div className="grid gap-1">
-            <div className="text-xs font-extrabold">User ID</div>
-            <input name="userId" type="number" placeholder="User ID" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+      {/* Transaction Actions */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Global Actions */}
+        <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <h3 className="font-extrabold mb-4 flex items-center gap-2">
+            <Globe className="size-4" /> Transaksi Global
+          </h3>
+          <div className="grid gap-4">
+            <form onSubmit={onCreditGlobal} className="space-y-3">
+              <div>
+                <label className="text-xs font-bold">User ID</label>
+                <input name="userId" type="number" placeholder="User ID" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+              </div>
+              <div>
+                <label className="text-xs font-bold">Jumlah Koin</label>
+                <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+              </div>
+              <div>
+                <label className="text-xs font-bold">Catatan</label>
+                <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              </div>
+              <button type="submit" disabled={submitting} className="w-full px-4 py-3 border-4 rounded-xl font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: '#22C55E', borderColor: 'var(--panel-border)', color: 'white' }}>
+                <PlusCircle className="size-4 inline-block mr-1" /> {submitting ? 'Processing...' : 'Kreditkan'}
+              </button>
+            </form>
+            
+            <form onSubmit={onDebitGlobal} className="space-y-3">
+              <div>
+                <label className="text-xs font-bold">User ID</label>
+                <input name="userId" type="number" placeholder="User ID" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+              </div>
+              <div>
+                <label className="text-xs font-bold">Jumlah Koin</label>
+                <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+              </div>
+              <div>
+                <label className="text-xs font-bold">Catatan</label>
+                <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              </div>
+              <button type="submit" disabled={submitting} className="w-full px-4 py-3 border-4 rounded-xl font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: '#EF4444', borderColor: 'var(--panel-border)', color: 'white' }}>
+                <MinusCircle className="size-4 inline-block mr-1" /> {submitting ? 'Processing...' : 'Debetkan'}
+              </button>
+            </form>
           </div>
-          <div className="grid gap-1">
-            <div className="text-xs font-extrabold">Jumlah Koin</div>
-            <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
-          </div>
-          <div className="grid gap-1">
-            <div className="text-xs font-extrabold">Catatan</div>
-            <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-          </div>
-          <button type="submit" disabled={submitting} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>Debetkan</button>
-        </form>
-      </div>
+        </div>
 
-      {/* Credit/Debit for loaded user */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <form onSubmit={onCreditUser} className="grid gap-2 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-          <div className="font-extrabold">Kredit Koin (User saat ini)</div>
-          <div className="grid gap-1">
-            <div className="text-xs font-extrabold">Jumlah Koin</div>
-            <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
-          </div>
-          <div className="grid gap-1">
-            <div className="text-xs font-extrabold">Catatan</div>
-            <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-          </div>
-          <button type="submit" disabled={submitting || !userId} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>Kreditkan</button>
-        </form>
-
-        <form onSubmit={onDebitUser} className="grid gap-2 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-          <div className="font-extrabold">Debit Koin (User saat ini)</div>
-          <div className="grid gap-1">
-            <div className="text-xs font-extrabold">Jumlah Koin</div>
-            <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
-          </div>
-          <div className="grid gap-1">
-            <div className="text-xs font-extrabold">Catatan</div>
-            <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-          </div>
-          <button type="submit" disabled={submitting || !userId} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>Debetkan</button>
-        </form>
+        {/* Current User Actions */}
+        <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <h3 className="font-extrabold mb-4 flex items-center gap-2">
+            <UserIcon className="size-4" /> Transaksi User Saat Ini
+          </h3>
+          {!userId ? (
+            <div className="text-center py-8 opacity-70">
+              <UserIcon className="size-8 mx-auto mb-2 opacity-50" />
+              <p>Pilih user terlebih dahulu</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              <form onSubmit={onCreditUser} className="space-y-3">
+                <div>
+                  <label className="text-xs font-bold">Jumlah Koin</label>
+                  <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+                </div>
+                <div>
+                  <label className="text-xs font-bold">Catatan</label>
+                  <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <button type="submit" disabled={submitting} className="w-full px-4 py-3 border-4 rounded-xl font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: '#22C55E', borderColor: 'var(--panel-border)', color: 'white' }}>
+                  <PlusCircle className="size-4 inline-block mr-1" /> {submitting ? 'Processing...' : 'Kreditkan'}
+                </button>
+              </form>
+              
+              <form onSubmit={onDebitUser} className="space-y-3">
+                <div>
+                  <label className="text-xs font-bold">Jumlah Koin</label>
+                  <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+                </div>
+                <div>
+                  <label className="text-xs font-bold">Catatan</label>
+                  <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <button type="submit" disabled={submitting} className="w-full px-4 py-3 border-4 rounded-xl font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: '#EF4444', borderColor: 'var(--panel-border)', color: 'white' }}>
+                  <MinusCircle className="size-4 inline-block mr-1" /> {submitting ? 'Processing...' : 'Debetkan'}
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Transactions Table */}
-      <div className="overflow-auto">
-        <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-          <thead style={{ background: 'var(--panel-bg)' }}>
-            <tr>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>ID</th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Type</th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Amount</th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Ref</th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Tanggal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tx.items.map((it) => (
-              <tr key={it.id}>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>{it.id}</td>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>{it.type}</td>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>{it.amount}</td>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>{it.ref}</td>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>{it.createdAt ? new Date(it.createdAt).toLocaleString() : '-'}</td>
+      <div className="border-4 rounded-2xl overflow-hidden" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+        <div className="p-4 border-b" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
+          <h3 className="font-extrabold flex items-center gap-2">
+            <Calendar className="size-4" /> Riwayat Transaksi
+          </h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr style={{ background: 'var(--background)' }}>
+                <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">ID</th>
+                <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Tipe</th>
+                <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Jumlah</th>
+                <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Referensi</th>
+                <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Tanggal</th>
               </tr>
-            ))}
-            {tx.items.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-sm opacity-70">{loading ? 'Memuat...' : 'Tidak ada transaksi.'}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {tx.items.map((transaction) => (
+                <tr key={transaction.id} className="border-t" style={{ borderColor: 'var(--panel-border)' }}>
+                  <td className="px-4 py-3 font-mono text-sm">#{transaction.id}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {getTransactionIcon(transaction.type)}
+                      <span className="font-semibold">{transaction.type}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {transaction.amount > 0 ? '+' : ''}{formatNumber(transaction.amount)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm">{transaction.ref || '-'}</td>
+                  <td className="px-4 py-3 text-sm">{transaction.createdAt ? formatDate(transaction.createdAt) : '-'}</td>
+                </tr>
+              ))}
+              {tx.items.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm opacity-70">
+                    {loading ? 'Loading...' : 'Tidak ada transaksi'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center gap-2">
-        <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Prev</button>
-        <div className="text-sm font-extrabold">Page {page} / {tx.totalPages || 1}</div>
-        <button disabled={page >= (tx.totalPages || 1)} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Next</button>
-      </div>
+      {tx.totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm opacity-70">
+            Menampilkan {tx.items.length} dari {formatNumber(tx.total)} transaksi
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page <= 1}
+              className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
+              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            >
+              Previous
+            </button>
+            <span className="px-3 py-2 text-sm font-semibold">
+              {page} / {tx.totalPages}
+            </span>
+            <button
+              onClick={() => setPage(Math.min(tx.totalPages, page + 1))}
+              disabled={page >= tx.totalPages}
+              className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
+              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

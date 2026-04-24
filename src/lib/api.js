@@ -3410,3 +3410,332 @@ export async function exportDebugLog({ token, route, method, userId, minDuration
   if (!res.ok) throw new Error('Gagal export debug log');
   return await res.text();
 }
+
+// ===== Client Logs API =====
+const clientLogsBase = () => `${getApiBase()}/client-logs`;
+const adminClientLogsBase = () => `${getApiBase()}/admin/client-logs`;
+
+// Get all client logs with filters
+export async function getClientLogs({ token, skip = 0, take = 50, status, userId, level, source, q } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (skip !== undefined) params.set('skip', String(skip));
+  if (take !== undefined) params.set('take', String(take));
+  if (status) params.set('status', status);
+  if (userId) params.set('userId', String(userId));
+  if (level) params.set('level', level);
+  if (source) params.set('source', source);
+  if (q) params.set('q', q);
+  
+  const res = await fetch(`${adminClientLogsBase()}?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil client logs');
+  return data?.data ?? data;
+}
+
+// Get client logs statistics
+export async function getClientLogsStats({ token, startDate, endDate, userId, level, source } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (startDate) params.set('startDate', startDate);
+  if (endDate) params.set('endDate', endDate);
+  if (userId) params.set('userId', String(userId));
+  if (level) params.set('level', level);
+  if (source) params.set('source', source);
+  
+  const res = await fetch(`${adminClientLogsBase()}/stats/aggregate?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil statistik client logs');
+  return data?.data ?? data;
+}
+
+// Get client logs metadata (sources and levels)
+export async function getClientLogsMetadata({ token } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${adminClientLogsBase()}/metadata`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil metadata client logs');
+  return data?.data ?? data;
+}
+
+// Get single client log detail
+export async function getClientLogDetail({ token, id } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id) throw new Error('ID log wajib diisi');
+  
+  const res = await fetch(`${adminClientLogsBase()}/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil detail client log');
+  return data?.data ?? data;
+}
+
+// Get logs by user
+export async function getClientLogsByUser({ token, userId, skip = 0, take = 50 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!userId) throw new Error('User ID wajib diisi');
+  
+  const params = new URLSearchParams();
+  if (skip !== undefined) params.set('skip', String(skip));
+  if (take !== undefined) params.set('take', String(take));
+  
+  const res = await fetch(`${adminClientLogsBase()}/user/${userId}?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil client logs user');
+  return data?.data ?? data;
+}
+
+// Update log status
+export async function updateClientLogStatus({ token, id, status, admin_notes } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id) throw new Error('ID log wajib diisi');
+  if (!status) throw new Error('Status wajib diisi');
+  
+  const res = await fetch(`${adminClientLogsBase()}/${id}`, {
+    method: 'PUT',
+    headers: { 
+      Authorization: `Bearer ${token}`, 
+      'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({ status, admin_notes }),
+  });
+  const data = await handleJson(res, 'Gagal update status client log');
+  return data?.data ?? data;
+}
+
+// Bulk update status
+export async function bulkUpdateClientLogStatus({ token, ids, status, admin_notes } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!ids || !Array.isArray(ids) || ids.length === 0) throw new Error('IDs array wajib diisi');
+  if (!status) throw new Error('Status wajib diisi');
+  
+  const res = await fetch(`${adminClientLogsBase()}/bulk/status`, {
+    method: 'PATCH',
+    headers: { 
+      Authorization: `Bearer ${token}`, 
+      'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({ ids, status, admin_notes }),
+  });
+  const data = await handleJson(res, 'Gagal bulk update status client logs');
+  return data?.data ?? data;
+}
+
+// Delete single log
+export async function deleteClientLog({ token, id } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id) throw new Error('ID log wajib diisi');
+  
+  const res = await fetch(`${adminClientLogsBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal hapus client log');
+  return data?.data ?? data;
+}
+
+// Bulk delete logs
+export async function bulkDeleteClientLogs({ token, ids } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!ids || !Array.isArray(ids) || ids.length === 0) throw new Error('IDs array wajib diisi');
+  
+  const res = await fetch(`${adminClientLogsBase()}/bulk/delete`, {
+    method: 'POST',
+    headers: { 
+      Authorization: `Bearer ${token}`, 
+      'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({ ids }),
+  });
+  const data = await handleJson(res, 'Gagal bulk hapus client logs');
+  return data?.data ?? data;
+}
+
+// Export logs
+export async function exportClientLogs({ token, startDate, endDate, status, level, source, userId } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (startDate) params.set('startDate', startDate);
+  if (endDate) params.set('endDate', endDate);
+  if (status) params.set('status', status);
+  if (level) params.set('level', level);
+  if (source) params.set('source', source);
+  if (userId) params.set('userId', String(userId));
+  
+  const res = await fetch(`${adminClientLogsBase()}/export?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Gagal export client logs');
+  return await res.text();
+}
+
+// Cleanup old logs (SUPERADMIN only)
+export async function cleanupOldClientLogs({ token, days = 30 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  
+  const res = await fetch(`${adminClientLogsBase()}/cleanup/old`, {
+    method: 'POST',
+    headers: { 
+      Authorization: `Bearer ${token}`, 
+      'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({ days }),
+  });
+  const data = await handleJson(res, 'Gagal cleanup old client logs');
+  return data?.data ?? data;
+}
+
+// ===== Leaderboard API =====
+const leaderboardBase = () => `${getApiBase()}/admin/leaderboard`;
+
+// Get leaderboard stats overview
+export async function getLeaderboardStats({ token } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${leaderboardBase()}/stats`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil leaderboard stats');
+  return data?.data ?? data;
+}
+
+// Get available months for monthly summary
+export async function getLeaderboardAvailableMonths({ token } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${leaderboardBase()}/monthly-summary/available-months`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil available months');
+  return data?.data ?? data;
+}
+
+// Get monthly summary leaderboard
+export async function getLeaderboardMonthlySummary({ token, year, month, page = 1, limit = 10 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (year) params.set('year', String(year));
+  if (month) params.set('month', String(month));
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  
+  const res = await fetch(`${leaderboardBase()}/monthly-summary?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil monthly summary');
+  return data?.data ?? data;
+}
+
+// Get leaderboard by period (daily, weekly, monthly)
+export async function getLeaderboardByPeriod({ token, period, page = 1, limit = 50 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!period) throw new Error('Period wajib diisi');
+  
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  
+  const res = await fetch(`${leaderboardBase()}/${period}?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil leaderboard period');
+  return data?.data ?? data;
+}
+
+// Get leaderboard by period with full collections
+export async function getLeaderboardByPeriodWithCollections({ token, period, page = 1, limit = 20 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!period) throw new Error('Period wajib diisi');
+  
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  
+  const res = await fetch(`${leaderboardBase()}/${period}/collections?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil leaderboard collections');
+  return data?.data ?? data;
+}
+
+// Get user leaderboard history
+export async function getUserLeaderboardHistory({ token, userId, periods = 3 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!userId) throw new Error('User ID wajib diisi');
+  
+  const params = new URLSearchParams();
+  if (periods) params.set('periods', String(periods));
+  
+  const res = await fetch(`${leaderboardBase()}/users/${userId}/history?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil user leaderboard history');
+  return data?.data ?? data;
+}
+
+// Get coin leaderboard
+export async function getCoinLeaderboard({ token, page = 1, limit = 50, minCoins = 0, maxCoins, search } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  if (minCoins !== undefined) params.set('minCoins', String(minCoins));
+  if (maxCoins !== undefined) params.set('maxCoins', String(maxCoins));
+  if (search) params.set('search', search);
+  
+  const res = await fetch(`${leaderboardBase()}/coins?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil coin leaderboard');
+  return data?.data ?? data;
+}
+
+// Get sharp token leaderboard
+export async function getSharpTokenLeaderboard({ token, page = 1, limit = 50, minTokens = 0, maxTokens, search } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  if (minTokens !== undefined) params.set('minTokens', String(minTokens));
+  if (maxTokens !== undefined) params.set('maxTokens', String(maxTokens));
+  if (search) params.set('search', search);
+  
+  const res = await fetch(`${leaderboardBase()}/sharp-tokens?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil sharp token leaderboard');
+  return data?.data ?? data;
+}
+
+// ===== Admin Settings API =====
+const adminSettingsBase = () => `${getApiBase()}/admin/settings`;
+
+// Get all admin settings
+export async function getAdminSettings({ token } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${adminSettingsBase()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil settings');
+  return data?.settings ?? data;
+}
+
+// Update admin settings
+export async function updateAdminSettings({ token, payload } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${adminSettingsBase()}`, {
+    method: 'PUT',
+    headers: { 
+      Authorization: `Bearer ${token}`, 
+      'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await handleJson(res, 'Gagal update settings');
+  return data?.settings ?? data;
+}
+
