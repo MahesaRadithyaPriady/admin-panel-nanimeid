@@ -1559,12 +1559,9 @@ export default function DaftarKontenPage() {
 
   const onEdit = (it) => {
     setMode('edit');
-    setAliasSearch('');
-    setAliasLookup([]);
-    setNewAliasInput('');
     setForm({
       id: it.id,
-      nama_anime: it.nama_anime || '',
+      nama_anime: it.nama_anime || it.judul_anime || '',
       cover_mode: 'upload',
       cover_url: '',
       image: null,
@@ -1580,7 +1577,7 @@ export default function DaftarKontenPage() {
       genre_anime: Array.isArray(it.genre_anime) ? it.genre_anime.join(', ') : (it.genre_anime || ''),
       studio_anime: Array.isArray(it.studio_anime) ? it.studio_anime.join(', ') : (it.studio_anime || ''),
       fakta_menarik: Array.isArray(it.fakta_menarik) ? it.fakta_menarik.join(', ') : (it.fakta_menarik || ''),
-      tanggal_rilis_anime: it.tanggal_rilis_anime ? new Date(it.tanggal_rilis_anime).toISOString().slice(0, 10) : '', // yyyy-mm-dd
+      tanggal_rilis_anime: (() => { const d = it.tanggal_rilis_anime ? new Date(it.tanggal_rilis_anime) : null; return d && !isNaN(d.getTime()) ? d.toISOString().slice(0, 10) : ''; })(),
       aliases: Array.isArray(it.aliases)
         ? it.aliases.map((a) => (typeof a === 'string' ? a : (a?.alias || ''))).filter(Boolean).join('\n')
         : '',
@@ -1597,7 +1594,6 @@ export default function DaftarKontenPage() {
       schedule_jam: '',
       schedule_is_active: true,
     });
-    // Fetch latest aliases from API detail to ensure up-to-date
     (async () => {
       try {
         const token = getSession()?.token;
@@ -1611,7 +1607,6 @@ export default function DaftarKontenPage() {
                   if (typeof a === 'string') return a;
                   if (a && typeof a === 'object') {
                     const obj = { alias: a.alias || '', ...(a.language ? { language: a.language } : {}), ...(a.type ? { type: a.type } : {}), ...(typeof a.priority === 'number' ? { priority: a.priority } : {}) };
-                    // If has any metadata, render as JSON; else just alias string
                     if (obj.language || obj.type || Object.prototype.hasOwnProperty.call(obj, 'priority')) return JSON.stringify(obj);
                     return obj.alias;
                   }
@@ -1620,15 +1615,19 @@ export default function DaftarKontenPage() {
                 .filter(Boolean)
                 .join('\n')
             : '';
-          setForm((f) => ({ ...f, aliases: aliasesStr, alias_priority: f.alias_priority || (() => {
-            const prs = Array.isArray(al)
-              ? al
-                  .map((a) => (a && typeof a === 'object' && typeof a.priority === 'number' ? a.priority : undefined))
-                  .filter((n) => typeof n === 'number')
-              : [];
-            if (!prs.length) return '';
-            return String(Math.min(...prs));
-          })() }));
+          setForm((f) => ({
+            ...f,
+            aliases: aliasesStr,
+            alias_priority: f.alias_priority || (() => {
+              const prs = Array.isArray(al)
+                ? al
+                    .map((a) => (a && typeof a === 'object' && typeof a.priority === 'number' ? a.priority : undefined))
+                    .filter((n) => typeof n === 'number')
+                : [];
+              if (!prs.length) return '';
+              return String(Math.min(...prs));
+            })(),
+          }));
         }
 
         const schedules = Array.isArray(detail?.item?.schedules) ? detail.item.schedules : detail?.schedules;
@@ -1644,7 +1643,6 @@ export default function DaftarKontenPage() {
           }
         }
       } catch (_) {
-        // Ignore fetch error for aliases, keep existing prefilled value
       }
     })();
   };
