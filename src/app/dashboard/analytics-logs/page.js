@@ -490,9 +490,11 @@ export default function AnalyticsLogsPage() {
             <th className="text-left py-3 px-2 font-bold">Method</th>
             <th className="text-left py-3 px-2 font-bold">Route</th>
             <th className="text-right py-3 px-2 font-bold">Count</th>
-            <th className="text-right py-3 px-2 font-bold">Avg CPU</th>
+            <th className="text-right py-3 px-2 font-bold">Avg CPU (Norm)</th>
+            <th className="text-right py-3 px-2 font-bold">Avg CPU (Raw)</th>
             <th className="text-right py-3 px-2 font-bold">Avg (ms)</th>
             <th className="text-right py-3 px-2 font-bold">Avg Heap</th>
+            <th className="text-right py-3 px-2 font-bold">Avg Concurrent</th>
           </tr>
         </thead>
         <tbody>
@@ -514,8 +516,10 @@ export default function AnalyticsLogsPage() {
                   {route.avgCpuPct?.toFixed(1)}%
                 </span>
               </td>
+              <td className="py-3 px-2 text-right font-mono">{route.avgRawCpuPct?.toFixed(1)}%</td>
               <td className="py-3 px-2 text-right font-mono">{route.avg_ms}</td>
               <td className="py-3 px-2 text-right font-mono">{route.avgHeapMB?.toFixed(1)} MB</td>
+              <td className="py-3 px-2 text-right font-mono">{route.avgConcurrentRequests?.toFixed(1)}</td>
             </tr>
           ))}
         </tbody>
@@ -665,7 +669,9 @@ export default function AnalyticsLogsPage() {
             <th className="text-right py-3 px-2 font-bold">Count</th>
             <th className="text-right py-3 px-2 font-bold">Avg (ms)</th>
             <th className="text-right py-3 px-2 font-bold">Avg Heap</th>
-            <th className="text-right py-3 px-2 font-bold">Avg CPU</th>
+            <th className="text-right py-3 px-2 font-bold">Avg CPU (Norm)</th>
+            <th className="text-right py-3 px-2 font-bold">Avg CPU (Raw)</th>
+            <th className="text-right py-3 px-2 font-bold">Avg Concurrent</th>
           </tr>
         </thead>
         <tbody>
@@ -685,6 +691,8 @@ export default function AnalyticsLogsPage() {
               <td className="py-3 px-2 text-right font-mono">{s.avg_ms}</td>
               <td className="py-3 px-2 text-right font-mono">{s.avgHeapMB?.toFixed(1)} MB</td>
               <td className="py-3 px-2 text-right font-mono">{s.avgCpuPct?.toFixed(1)}%</td>
+              <td className="py-3 px-2 text-right font-mono">{s.avgRawCpuPct?.toFixed(1)}%</td>
+              <td className="py-3 px-2 text-right font-mono">{s.avgConcurrentRequests?.toFixed(1)}</td>
             </tr>
           ))}
         </tbody>
