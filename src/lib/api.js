@@ -3309,6 +3309,21 @@ export async function getDebugLogSummary({ token, limit = 100, minDurationMs = 0
   };
 }
 
+// 3A) CPU Heavy Routes (derived from summary)
+export async function getDebugLogCpuRoutes({ token, limit = 100, minDurationMs = 0, from, to } = {}) {
+  const summary = await getDebugLogSummary({ token, limit, minDurationMs, from, to });
+  const rows = Array.isArray(summary?.data) ? [...summary.data] : [];
+  rows.sort((a, b) => {
+    const cpuDiff = (Number(b?.avgCpuPct) || 0) - (Number(a?.avgCpuPct) || 0);
+    if (cpuDiff !== 0) return cpuDiff;
+    return (Number(b?.avg_ms) || 0) - (Number(a?.avg_ms) || 0);
+  });
+  return {
+    count: rows.length,
+    data: rows,
+  };
+}
+
 // 4) Heavy Endpoints (Paling Lambat)
 export async function getDebugLogHeavy({ token, limit = 20, minAvgMs = 0 } = {}) {
   if (!token) throw new Error('Token tidak tersedia');

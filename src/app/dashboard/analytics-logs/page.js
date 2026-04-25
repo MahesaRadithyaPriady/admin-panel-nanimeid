@@ -32,6 +32,7 @@ import {
 import { 
   getDebugLogStats, 
   getDebugLogLive, 
+  getDebugLogCpuRoutes,
   getDebugLogHeavy, 
   getDebugLogErrors, 
   getDebugLogSummary,
@@ -44,6 +45,7 @@ import { toast } from 'react-hot-toast';
 const TABS = [
   { key: 'overview', label: 'Overview', icon: Activity },
   { key: 'live', label: 'Live Logs', icon: Zap },
+  { key: 'cpu', label: 'CPU Routes', icon: Cpu },
   { key: 'heavy', label: 'Heavy Endpoints', icon: TrendingUp },
   { key: 'errors', label: 'Errors', icon: AlertTriangle },
   { key: 'summary', label: 'Route Summary', icon: Route },
@@ -102,6 +104,7 @@ export default function AnalyticsLogsPage() {
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState(null);
   const [liveLogs, setLiveLogs] = useState([]);
+  const [cpuRoutes, setCpuRoutes] = useState([]);
   const [heavyEndpoints, setHeavyEndpoints] = useState([]);
   const [errors, setErrors] = useState([]);
   const [summary, setSummary] = useState([]);
@@ -170,6 +173,26 @@ export default function AnalyticsLogsPage() {
       setLoading(false);
     }
   }, [token, filters.limit]);
+
+  const loadCpuRoutes = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const params = {
+        token,
+        limit: filters.limit || 100,
+        ...(filters.minDurationMs && { minDurationMs: Number(filters.minDurationMs) }),
+        ...(filters.from && { from: filters.from }),
+        ...(filters.to && { to: filters.to }),
+      };
+      const data = await getDebugLogCpuRoutes(params);
+      setCpuRoutes(data.data || []);
+    } catch (err) {
+      toast.error(err?.message || 'Gagal memuat CPU routes');
+    } finally {
+      setLoading(false);
+    }
+  }, [token, filters]);
 
   const loadErrors = useCallback(async () => {
     if (!token) return;
@@ -283,6 +306,9 @@ export default function AnalyticsLogsPage() {
       case 'live':
         loadLiveLogs();
         break;
+      case 'cpu':
+        loadCpuRoutes();
+        break;
       case 'heavy':
         loadHeavy();
         break;
@@ -296,7 +322,7 @@ export default function AnalyticsLogsPage() {
         loadFiles();
         break;
     }
-  }, [activeTab, token, loadLiveLogs, loadHeavy, loadErrors, loadSummary, loadFiles]);
+  }, [activeTab, token, loadLiveLogs, loadCpuRoutes, loadHeavy, loadErrors, loadSummary, loadFiles]);
 
   useEffect(() => {
     if (selectedFile && activeTab === 'files') {
@@ -311,6 +337,9 @@ export default function AnalyticsLogsPage() {
         break;
       case 'live':
         loadLiveLogs();
+        break;
+      case 'cpu':
+        loadCpuRoutes();
         break;
       case 'heavy':
         loadHeavy();
@@ -448,6 +477,53 @@ export default function AnalyticsLogsPage() {
         <div className="text-center py-12 opacity-50">
           <Zap className="size-12 mx-auto mb-3" />
           <p className="font-bold">Tidak ada data live log</p>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderCpuRoutesTable = () => (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b-2" style={{ borderColor: 'var(--panel-border)' }}>
+            <th className="text-left py-3 px-2 font-bold">Method</th>
+            <th className="text-left py-3 px-2 font-bold">Route</th>
+            <th className="text-right py-3 px-2 font-bold">Count</th>
+            <th className="text-right py-3 px-2 font-bold">Avg CPU</th>
+            <th className="text-right py-3 px-2 font-bold">Avg (ms)</th>
+            <th className="text-right py-3 px-2 font-bold">Avg Heap</th>
+          </tr>
+        </thead>
+        <tbody>
+          {cpuRoutes.map((route, idx) => (
+            <tr 
+              key={idx}
+              className="border-b hover:brightness-95 transition-all"
+              style={{ borderColor: 'var(--panel-border)' }}
+            >
+              <td className="py-3 px-2">
+                <span className={`px-2 py-1 rounded-md text-xs font-black border-2 ${METHOD_COLORS[route.method] || 'bg-gray-100 text-gray-700 border-gray-300'}`}>
+                  {route.method}
+                </span>
+              </td>
+              <td className="py-3 px-2 font-semibold max-w-sm truncate" title={route.route}>{route.route}</td>
+              <td className="py-3 px-2 text-right font-mono font-bold">{route.count?.toLocaleString()}</td>
+              <td className="py-3 px-2 text-right font-mono">
+                <span className={route.avgCpuPct > 70 ? 'text-red-600 font-black' : route.avgCpuPct > 30 ? 'text-yellow-600 font-black' : 'text-green-600 font-bold'}>
+                  {route.avgCpuPct?.toFixed(1)}%
+                </span>
+              </td>
+              <td className="py-3 px-2 text-right font-mono">{route.avg_ms}</td>
+              <td className="py-3 px-2 text-right font-mono">{route.avgHeapMB?.toFixed(1)} MB</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {cpuRoutes.length === 0 && (
+        <div className="text-center py-12 opacity-50">
+          <Cpu className="size-12 mx-auto mb-3" />
+          <p className="font-bold">Tidak ada data CPU routes</p>
         </div>
       )}
     </div>
@@ -1085,6 +1161,7 @@ export default function AnalyticsLogsPage() {
           <>
             {activeTab === 'overview' && renderOverview()}
             {activeTab === 'live' && renderLiveTable()}
+            {activeTab === 'cpu' && renderCpuRoutesTable()}
             {activeTab === 'heavy' && renderHeavyTable()}
             {activeTab === 'errors' && renderErrorsTable()}
             {activeTab === 'summary' && renderSummaryTable()}
