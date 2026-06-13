@@ -305,17 +305,17 @@ function buildMangaPayload(form) {
 }
 
 const styles = `
-.inp { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
-.sel { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
-.lbl { font-size: 0.875rem; font-weight: 800; }
-.btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
-.btn-act { padding:0.25rem 0.5rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }
-.btn-link { padding:0.25rem 0.5rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--accent-edit); color: var(--accent-edit-foreground); border-color: var(--panel-border); }
-.tbl { min-width: 100%; border-width:4px; border-radius:0.5rem; overflow:hidden; box-shadow:6px 6px 0 #000; border-color: var(--panel-border); color: var(--foreground); }
+.inp { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 2px; border-radius: 0.5rem; font-weight: 600; background: var(--background); color: var(--foreground); border-color: var(--panel-border); }
+.sel { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 2px; border-radius: 0.5rem; font-weight: 600; background: var(--background); color: var(--foreground); border-color: var(--panel-border); }
+.lbl { font-size: 0.875rem; font-weight: 700; color: var(--foreground); }
+.btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:2px; border-radius:0.5rem; font-weight:700; box-shadow:3px 3px 0 rgba(0,0,0,0.15); background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
+.btn-act { padding:0.25rem 0.5rem; border-width:2px; border-radius:0.5rem; font-weight:600; box-shadow:2px 2px 0 rgba(0,0,0,0.15); background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }
+.btn-link { padding:0.25rem 0.5rem; border-width:2px; border-radius:0.5rem; font-weight:600; box-shadow:2px 2px 0 rgba(0,0,0,0.15); background: var(--accent-edit); color: var(--accent-edit-foreground); border-color: var(--panel-border); }
+.tbl { min-width: 100%; border-width:2px; border-radius:0.5rem; overflow:hidden; box-shadow:3px 3px 0 rgba(0,0,0,0.15); border-color: var(--panel-border); color: var(--foreground); }
 .tbl thead { background: var(--panel-bg); }
-.th { text-align:left; padding:0.5rem 0.75rem; border-bottom-width:4px; border-color: var(--panel-border); }
-.td { padding:0.5rem 0.75rem; border-bottom-width:4px; border-color: var(--panel-border); font-weight:600; }
-.td-empty { padding:1.5rem; text-align:center; font-size:0.875rem; opacity:0.7; }
+.th { text-align:left; padding:0.5rem 0.75rem; border-bottom-width:2px; border-color: var(--panel-border); }
+.td { padding:0.5rem 0.75rem; border-bottom-width:2px; border-color: var(--panel-border); font-weight:600; }
+.td-empty { padding:1.5rem; text-align:center; font-size:0.875rem; opacity:0.7; color: var(--foreground); }
 `;
 if (typeof document !== 'undefined' && !document.getElementById('manga-admin-styles')) {
   const style = document.createElement('style');

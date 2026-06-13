@@ -3,15 +3,34 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Plus, Pencil, Trash2, Shield, Search, RefreshCcw, Users, UserCog, Mail, KeyRound } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Plus, Pencil, Trash2, Shield, Search, RefreshCcw, Users, UserCog, Mail, KeyRound, ChevronLeft, ChevronRight, Crown, Wallet, Upload } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { listAdmins, createAdmin, updateAdmin, deleteAdmin } from '@/lib/api';
 
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: 'easeOut' }
+  }
+};
+
 const ROLE_TONES = {
-  SUPERADMIN: { background: '#fde68a', color: '#92400e' },
-  KEUANGAN: { background: '#dbeafe', color: '#1d4ed8' },
-  UPLOADER: { background: '#dcfce7', color: '#166534' },
+  SUPERADMIN: { bg: 'from-amber-500 to-orange-500', text: 'text-white', icon: Crown },
+  KEUANGAN: { bg: 'from-blue-500 to-cyan-500', text: 'text-white', icon: Wallet },
+  UPLOADER: { bg: 'from-emerald-500 to-teal-500', text: 'text-white', icon: Upload },
 };
 
 function Field({ label, children }) {
@@ -24,29 +43,32 @@ function Field({ label, children }) {
 }
 
 function SummaryCard({ label, value, tone = 'neutral' }) {
-  const palette = {
-    neutral: { background: '#f3f4f6', color: '#111827' },
-    superadmin: { background: '#fde68a', color: '#92400e' },
-    keuangan: { background: '#dbeafe', color: '#1d4ed8' },
-    uploader: { background: '#dcfce7', color: '#166534' },
+  const gradients = {
+    neutral: 'from-gray-500 to-gray-600',
+    superadmin: 'from-amber-500 to-orange-500',
+    keuangan: 'from-blue-500 to-cyan-500',
+    uploader: 'from-emerald-500 to-teal-500',
   };
 
-  const style = palette[tone] || palette.neutral;
-
   return (
-    <div className="rounded-[22px] border-4 p-4" style={{ borderColor: 'var(--panel-border)', background: style.background, color: style.color }}>
-      <div className="text-xs font-black uppercase tracking-wide opacity-75">{label}</div>
-      <div className="mt-2 text-2xl font-black leading-none">{value}</div>
+    <div className="glass-card rounded-2xl p-4 relative overflow-hidden group hover:shadow-lg transition-all duration-300 border-2" style={{ borderColor: 'var(--panel-border)', boxShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
+      <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${gradients[tone]} opacity-20 rounded-full blur-2xl -mr-6 -mt-6 group-hover:scale-150 transition-transform duration-500`} />
+      <div className="relative z-10">
+        <div className="text-xs font-bold text-[var(--foreground)]/60 uppercase tracking-wide">{label}</div>
+        <div className="mt-1 text-2xl font-black text-[var(--foreground)]">{value}</div>
+      </div>
     </div>
   );
 }
 
 function RoleBadge({ role }) {
   const key = String(role || 'UPLOADER').toUpperCase();
-  const tone = ROLE_TONES[key] || { background: '#e5e7eb', color: '#111827' };
+  const tone = ROLE_TONES[key] || { bg: 'from-gray-400 to-gray-500', text: 'text-white' };
+  const Icon = tone.icon || Shield;
 
   return (
-    <span className="inline-flex items-center rounded-full border-4 px-3 py-1 text-xs font-black" style={{ borderColor: 'var(--panel-border)', background: tone.background, color: tone.color }}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${tone.bg} ${tone.text} border-2`} style={{ borderColor: 'rgba(0,0,0,0.2)', boxShadow: '2px 2px 0 rgba(0,0,0,0.2)' }}>
+      <Icon className="w-3 h-3" />
       {key}
     </span>
   );
@@ -297,31 +319,34 @@ export default function KelolaAdminPage() {
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0">
       {loading || !user ? null : (
         <>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="rounded-[28px] border-4 p-5 md:p-6" style={{ boxShadow: '10px 10px 0 #000', background: 'linear-gradient(135deg, var(--panel-bg) 0%, #ede9fe 100%)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-              <div className="flex flex-wrap items-start justify-between gap-4">
+          {/* Header & Stats - Glassbrutalism Style */}
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+            {/* Header Card - Glassbrutalism */}
+            <div className="glass-card rounded-2xl sm:rounded-3xl border-2 p-5 sm:p-6 relative overflow-hidden" style={{ boxShadow: '8px 8px 0 rgba(0,0,0,0.3)' }}>
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-1 text-xs font-black" style={{ borderColor: 'var(--panel-border)', background: '#ddd6fe', color: '#5b21b6' }}>
-                    <Shield className="size-4" /> Manajemen Admin
+                  <div className="inline-flex items-center gap-2 rounded-full border-2 px-3 py-1.5 text-xs font-bold backdrop-blur-sm" style={{ borderColor: 'var(--panel-border)', background: 'rgba(139, 92, 246, 0.2)', color: '#8b5cf6' }}>
+                    <Shield className="w-4 h-4" /> Manajemen Admin
                   </div>
                   <div>
-                    <h2 className="text-2xl md:text-3xl font-black flex items-center gap-3"><Users className="size-7" /> Kelola Admin</h2>
-                    <p className="mt-2 max-w-2xl text-sm md:text-base font-semibold opacity-80">
-                      Kelola akun admin, atur role dan permission akses, lalu pantau daftar tim dari satu halaman yang lebih rapi dan mudah dipakai.
+                    <h2 className="text-2xl sm:text-3xl font-black flex items-center gap-3 text-[var(--foreground)]"><Users className="w-7 h-7" /> Kelola Admin</h2>
+                    <p className="mt-2 max-w-2xl text-sm sm:text-base font-medium opacity-70">
+                      Kelola akun admin, atur role dan permission akses, lalu pantau daftar tim.
                     </p>
                   </div>
                 </div>
-                <button type="button" onClick={() => loadAdmins()} disabled={loadingList} className="inline-flex items-center gap-2 rounded-2xl border-4 px-4 py-3 font-black disabled:opacity-60" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--accent-primary)', color: 'var(--accent-primary-foreground)', borderColor: 'var(--panel-border)' }}>
-                  <RefreshCcw className={`size-4 ${loadingList ? 'animate-spin' : ''}`} />
-                  {loadingList ? 'Memuat...' : 'Refresh'}
+                <button type="button" onClick={() => loadAdmins()} disabled={loadingList} className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-3 font-bold disabled:opacity-60 transition-all hover:translate-y-[-2px]" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.3)', background: 'var(--accent-primary)', color: 'var(--accent-primary-foreground)', borderColor: 'var(--panel-border)' }}>
+                  <RefreshCcw className={`w-4 h-4 ${loadingList ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">{loadingList ? 'Memuat...' : 'Refresh'}</span>
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 rounded-[28px] border-4 p-5" style={{ boxShadow: '10px 10px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            {/* Stats Cards - Glassbrutalism */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3">
               <SummaryCard label="Total" value={summary.total} tone="neutral" />
               <SummaryCard label="Superadmin" value={summary.SUPERADMIN} tone="superadmin" />
               <SummaryCard label="Keuangan" value={summary.KEUANGAN} tone="keuangan" />
@@ -331,26 +356,29 @@ export default function KelolaAdminPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-[460px_minmax(0,1fr)]">
+          {/* Main Content - Glassbrutalism */}
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,400px)_minmax(0,1fr)]">
+            {/* Left Panel */}
             <div className="space-y-4">
-              <form onSubmit={onSearch} className="rounded-[24px] border-4 p-4" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                <div className="flex items-center gap-2 text-sm font-black opacity-70"><Search className="size-4" /> Pencarian Admin</div>
-                <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_130px]">
+              {/* Search */}
+              <form onSubmit={onSearch} className="glass-card rounded-2xl border-2 p-4" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.3)', borderColor: 'var(--panel-border)' }}>
+                <div className="flex items-center gap-2 text-sm font-bold text-[var(--foreground)]/70 mb-3"><Search className="w-4 h-4" /> Pencarian Admin</div>
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
-                    placeholder="Cari username atau email admin"
-                    className="w-full min-w-0 px-3 py-3 border-4 rounded-2xl font-semibold"
-                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    placeholder="Cari username atau email"
+                    className="flex-1 px-3 py-2.5 border-2 rounded-xl font-semibold text-sm bg-[var(--background)] border-[var(--panel-border)] text-[var(--foreground)] outline-none focus:border-[var(--accent-primary)] transition-colors"
+                    style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.2)' }}
                   />
-                  <button type="submit" disabled={loadingList} className="border-4 rounded-2xl font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)', background: 'var(--accent-primary)', color: 'var(--accent-primary-foreground)' }}>
-                    {loadingList ? 'Memuat...' : 'Cari'}
+                  <button type="submit" disabled={loadingList} className="px-4 py-2.5 border-2 rounded-xl font-bold disabled:opacity-60 transition-all hover:translate-y-[-2px] text-sm" style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.3)', borderColor: 'var(--panel-border)', background: 'var(--accent-primary)', color: 'var(--accent-primary-foreground)' }}>
+                    {loadingList ? '...' : 'Cari'}
                   </button>
                 </div>
               </form>
 
-              <form onSubmit={onSubmit} className="rounded-[24px] border-4 p-4 space-y-4" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <form onSubmit={onSubmit} className="glass-card rounded-2xl border-2 p-4 space-y-4" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.3)', borderColor: 'var(--panel-border)' }}>
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="text-sm font-black opacity-70">Profil Admin</div>
@@ -463,9 +491,10 @@ export default function KelolaAdminPage() {
               </form>
             </div>
 
+            {/* Right Panel - Admin List */}
             <div className="space-y-4">
               {admins.map((u) => (
-                <div key={u.id} className="rounded-[24px] border-4 p-4" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                <div key={u.id} className="glass-card rounded-2xl border-2 p-4 sm:p-5" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.3)', borderColor: 'var(--panel-border)' }}>
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0 space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
@@ -528,18 +557,39 @@ export default function KelolaAdminPage() {
               ))}
 
               {admins.length === 0 ? (
-                <div className="rounded-[24px] border-4 p-8 text-center" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                  <div className="text-lg font-black">{loadingList ? 'Memuat admin...' : 'Belum ada admin.'}</div>
-                  <div className="mt-2 text-sm font-semibold opacity-75">Coba ubah kata kunci pencarian atau tambahkan admin baru dari panel sebelah kiri.</div>
+                <div className="glass-card rounded-2xl border-2 p-8 text-center" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.3)', borderColor: 'var(--panel-border)' }}>
+                  <div className="text-lg font-bold text-[var(--foreground)]">{loadingList ? 'Memuat admin...' : 'Belum ada admin.'}</div>
+                  <div className="mt-2 text-sm text-[var(--foreground)]/60">Coba ubah kata kunci pencarian atau tambahkan admin baru.</div>
                 </div>
               ) : null}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 rounded-2xl disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Sebelumnya</button>
-            <div className="text-sm font-extrabold">Halaman {page} / {totalPages}</div>
-            <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 rounded-2xl disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Berikutnya</button>
+          {/* Pagination - Glassbrutalism */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="text-sm font-bold text-[var(--foreground)]/60">
+              Halaman {page} / {totalPages}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="flex items-center gap-1 px-4 py-2.5 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] transition-all hover:translate-y-[-2px]"
+                style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.3)' }}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Sebelumnya</span>
+              </button>
+              <button
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="flex items-center gap-1 px-4 py-2.5 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] transition-all hover:translate-y-[-2px]"
+                style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.3)' }}
+              >
+                <span className="hidden sm:inline">Berikutnya</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
       {/* Confirm Delete Modal */}
@@ -547,23 +597,23 @@ export default function KelolaAdminPage() {
         <div className="fixed inset-0 z-50 grid place-items-center">
           <div className="absolute inset-0 bg-black/40" onClick={onCancelDelete} />
           <div
-            className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6"
-            style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            className="relative z-10 w-[92%] max-w-md glass-card border-2 rounded-2xl p-4 sm:p-6"
+            style={{ boxShadow: '8px 8px 0 rgba(0,0,0,0.3)', borderColor: 'var(--panel-border)' }}
           >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 rounded-md" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}>
-                <Trash2 className="size-5" />
+            <div className="flex items-center gap-3 mb-4">
+              <div className="grid place-items-center w-10 h-10 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 border-2" style={{ borderColor: 'rgba(0,0,0,0.2)', boxShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
+                <Trash2 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-extrabold">Hapus Admin?</h3>
-                <p className="text-sm opacity-80 break-words">{confirmTarget?.email} (username: {confirmTarget?.username})</p>
+                <h3 className="text-lg font-bold text-[var(--foreground)]">Hapus Admin?</h3>
+                <p className="text-sm text-[var(--foreground)]/60 break-words">{confirmTarget?.email}</p>
               </div>
             </div>
             <div className="flex items-center justify-end gap-2">
-              <button onClick={onCancelDelete} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <button onClick={onCancelDelete} className="px-4 py-2 rounded-xl bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] text-sm font-bold hover:bg-[var(--accent-primary)]/10 transition-colors" style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
                 Batal
               </button>
-              <button onClick={onConfirmDelete} className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}>
+              <button onClick={onConfirmDelete} className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white text-sm font-bold hover:brightness-110 transition-all" style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.3)' }}>
                 Ya, Hapus
               </button>
             </div>

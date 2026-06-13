@@ -177,11 +177,11 @@ export default function ChapterPagesPage() {
 
 // Local styles (consistent with other admin pages)
 const styles = `
-.inp { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
-.btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
-.btn-pri { padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-primary); color: var(--accent-primary-foreground); border-color: var(--panel-border); }
-.btn-act { padding:0.25rem 0.5rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }
-.btn-pg { padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; background:#fff; font-weight:800; box-shadow:4px 4px 0 #000; }
+.inp { padding: 0.5rem 0.75rem; border-width: 2px; border-radius: 0.5rem; font-weight: 600; background: var(--background); color: var(--foreground); border-color: var(--panel-border); }
+.btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:2px; border-radius:0.5rem; font-weight:700; box-shadow:3px 3px 0 rgba(0,0,0,0.15); background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
+.btn-pri { padding:0.5rem 0.75rem; border-width:2px; border-radius:0.5rem; font-weight:700; box-shadow:3px 3px 0 rgba(0,0,0,0.15); background: var(--accent-primary); color: var(--accent-primary-foreground); border-color: var(--panel-border); }
+.btn-act { padding:0.25rem 0.5rem; border-width:2px; border-radius:0.5rem; font-weight:600; box-shadow:2px 2px 0 rgba(0,0,0,0.15); background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }
+.btn-pg { padding:0.5rem 0.75rem; border-width:2px; border-radius:0.5rem; background: var(--panel-bg); color: var(--foreground); font-weight:700; box-shadow:3px 3px 0 rgba(0,0,0,0.15); border-color: var(--panel-border); }
 `;
 if (typeof document !== 'undefined' && !document.getElementById('chapter-pages-styles')) {
   const style = document.createElement('style');

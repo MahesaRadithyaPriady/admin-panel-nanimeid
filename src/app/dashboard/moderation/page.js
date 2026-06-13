@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Shield, MessageCircle, Globe2, Trash2, RefreshCw, Search, Image, Eye, CheckCircle2, XCircle, Ban, ShieldCheck, Clock3, User } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Shield, MessageCircle, Globe2, Trash2, RefreshCw, Search, Image, Eye, CheckCircle2, XCircle, Ban, ShieldCheck, Clock3, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import {
@@ -19,6 +20,24 @@ import {
   softDeleteComment,
   softDeleteGlobalChat,
 } from '@/lib/api';
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: 'easeOut' }
+  }
+};
 
 const QUARANTINE_STATUS_OPTIONS = [
   { value: 'PENDING_REVIEW', label: 'Menunggu peninjauan' },

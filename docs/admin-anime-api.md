@@ -238,6 +238,39 @@ GET /admin/anime?page=1&limit=20&q=naruto&status=ONGOING&genre=Action&includeEpi
 Authorization: Bearer <ADMIN_JWT>
 ```
 
+## Statistik Anime per Status (SUPERADMIN | UPLOADER)
+- Method: GET
+- Path: `/anime/stats`
+- Deskripsi: Mendapatkan count/jumlah anime per status untuk dashboard. Berguna untuk menampilkan badge counter di UI (misal: Berlangsung: 15, Selesai: 45).
+
+- Response 200:
+```json
+{
+  "message": "OK",
+  "counts": {
+    "ONGOING": 15,
+    "COMPLETED": 45,
+    "HIATUS": 3,
+    "UPCOMING": 8
+  },
+  "total": 71
+}
+```
+
+- Field:
+  - `counts`: Object dengan key status anime dan value jumlah anime
+  - `total`: Total keseluruhan anime
+
+- Error:
+  - 401/403: tidak ada token atau role tidak diizinkan
+  - 500: error tak terduga
+
+### Contoh
+```
+GET /admin/anime/stats
+Authorization: Bearer <ADMIN_JWT>
+```
+
 ## Cari Anime (SUPERADMIN | UPLOADER)
 - Method: GET
 - Path: `/anime/search`
@@ -380,8 +413,10 @@ Naruto TV
 - 500: error tak terduga
 
 ## Lokasi Kode
-- Route: `src/routes/admin.routes.js` (GET `/admin/anime`, GET `/admin/anime/search`, GET `/admin/anime/aliases`, POST `/admin/anime`, GET/PUT/DELETE `/admin/anime/:id`)
-- Controller: `src/controllers/adminAnime.controller.js` (fungsi `listAnimeAdmin`, `searchAnimeAdmin`, `listAnimeAliasesAdmin`, `createAnimeAdmin`, `getAnimeAdminById`, `updateAnimeAdmin`, `deleteAnimeAdmin`)
+- Route: `src/routes/admin.routes.js`
+  - Anime: GET `/admin/anime`, GET `/admin/anime/stats`, GET `/admin/anime/search`, GET `/admin/anime/aliases`, POST `/admin/anime`, GET/PUT/DELETE `/admin/anime/:id`
+  - Episodes: GET `/admin/anime/:animeId/episodes`, POST `/admin/anime/:animeId/episodes`, POST `/admin/anime/:animeId/episodes/batch`, GET/PUT/DELETE `/admin/episodes/:id`, POST `/admin/episodes/:id/video`
+- Controller: `src/controllers/adminAnime.controller.js` (fungsi `listAnimeAdmin`, `getAnimeStatsAdmin`, `searchAnimeAdmin`, `listAnimeAliasesAdmin`, `createAnimeAdmin`, `getAnimeAdminById`, `updateAnimeAdmin`, `deleteAnimeAdmin`, `listEpisodesAdmin`, `createEpisodeAdmin`, `batchCreateEpisodesAdmin`, `getEpisodeAdminById`, `updateEpisodeAdmin`, `deleteEpisodeAdmin`, `setEpisodeVideoAdmin`)
 
 ---
 

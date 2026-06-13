@@ -1,11 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "react-hot-toast";
-import { CalendarCheck2, Coins, Gift, ListChecks, Plus, Pencil, Trash2, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
-import { useSession } from "@/hooks/useSession";
-import { getSession } from "@/lib/auth";
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { motion } from 'framer-motion';
+import { Flame, Gift, Plus, Pencil, Trash2, RefreshCw, Power, ChevronLeft, ChevronRight, Calendar, ToggleLeft, ToggleRight } from 'lucide-react';
+import { useSession } from '@/hooks/useSession';
+import { getSession } from '@/lib/auth';
 import {
   listSigninEventConfigs,
   createSigninEventConfig,
@@ -15,7 +16,8 @@ import {
   listAvatarBorders,
   listStickers,
   listBadges,
-} from "@/lib/api";
+} from '@/lib/api';
+import { ANIMATIONS, STYLES } from '../konfigurasi-event/constants';
 
 const REWARD_TYPES = ["NONE", "BORDER", "STICKER", "SUPERBADGE"];
 
@@ -350,129 +352,76 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
   if (loading || !user) return null;
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div
-          className="rounded-[28px] border-4 p-5 md:p-6"
-          style={{
-            boxShadow: "10px 10px 0 #000",
-            background: "linear-gradient(135deg, var(--panel-bg) 0%, #fef3c7 100%)",
-            borderColor: "var(--panel-border)",
-            color: "var(--foreground)",
-          }}
-        >
-          <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-1 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "#fff7cc", color: "#92400e" }}>
-            <CalendarCheck2 className="size-4" /> Sign-In Event
+    <motion.div variants={ANIMATIONS.container} initial="hidden" animate="visible" className="space-y-5">
+      {/* Header & Stats */}
+      <motion.div variants={ANIMATIONS.item} className="space-y-4">
+        <div className={`${STYLES.card} p-5 sm:p-6`} style={STYLES.cardShadow}>
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center">
+                  <Flame className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-xs font-medium text-[var(--foreground)]/50 uppercase tracking-wide">Login Streak</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-[var(--foreground)] flex items-center gap-2">
+                <Calendar className="w-6 h-6" /> Konfigurasi Event Masuk
+              </h2>
+              <p className="mt-2 text-sm text-[var(--foreground)]/60 max-w-lg">
+                Atur login streak harian, reward coin, hadiah item, dan periode aktif event.
+              </p>
+            </div>
+            <button onClick={async () => { await loadList(); await loadLookups(); }} disabled={loadingList}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] font-bold text-sm hover:bg-[var(--accent-primary)]/10 transition-colors disabled:opacity-50"
+              style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)' }}>
+              <RefreshCw className={`w-4 h-4 ${loadingList ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{loadingList ? 'Memuat...' : 'Refresh'}</span>
+            </button>
           </div>
-          <h2 className="mt-4 text-2xl md:text-3xl font-black flex items-center gap-3">
-            <ListChecks className="size-7" /> Konfigurasi Event Masuk
-          </h2>
-          <p className="mt-3 max-w-3xl text-sm md:text-base font-semibold opacity-80">
-            Atur login streak harian, reward coin, hadiah item, dan periode aktif event dalam satu panel yang lebih mudah dipantau.
-          </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 rounded-[28px] border-4 p-5" style={{ boxShadow: "10px 10px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
-          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#f3f4f6" }}>
-            <div className="text-xs font-black uppercase tracking-wide opacity-70">Total Config</div>
-            <div className="mt-2 text-2xl font-black">{total}</div>
-          </div>
-          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#dcfce7", color: "#166534" }}>
-            <div className="text-xs font-black uppercase tracking-wide opacity-70">Aktif</div>
-            <div className="mt-2 text-2xl font-black">{activeCount}</div>
-          </div>
-          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#ede9fe", color: "#6d28d9" }}>
-            <div className="text-xs font-black uppercase tracking-wide opacity-70">Mode Form</div>
-            <div className="mt-2 text-sm font-black">{mode === "add" ? "Tambah Baru" : `Edit #${form.id}`}</div>
-          </div>
-          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#dbeafe", color: "#1d4ed8" }}>
-            <div className="text-xs font-black uppercase tracking-wide opacity-70">Hari Event</div>
-            <div className="mt-2 text-2xl font-black">{normalizedDaysTotal}</div>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard label="Total Config" value={total} />
+          <StatCard label="Aktif" value={activeCount} tone="active" />
+          <StatCard label="Mode" value={mode === 'add' ? 'Tambah' : `Edit #${form.id}`} />
+          <StatCard label="Hari Event" value={normalizedDaysTotal} />
         </div>
-      </div>
+      </motion.div>
 
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)", color: "var(--foreground)" }}>
-          <Gift className="size-4" /> Event login, reward item, dan coin harian
+      {/* Filter */}
+      <motion.div variants={ANIMATIONS.item} className={`${STYLES.card} p-4`} style={STYLES.cardShadow}>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="text-sm font-bold text-[var(--foreground)]/70">Filter Config</div>
+          <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-3">
+            <select value={filterActive} onChange={(e) => { setPage(1); setFilterActive(e.target.value); }}
+              className="px-3 py-2 rounded-xl border-2 bg-[var(--panel-bg)] text-[var(--foreground)] text-sm font-bold"
+              style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', borderColor: 'var(--panel-border)' }}>
+              <option value="">Semua</option>
+              <option value="true">Aktif saja</option>
+              <option value="false">Nonaktif saja</option>
+            </select>
+            <div className="text-sm font-bold text-[var(--foreground)]/60">
+              Total: <span className="text-[var(--accent-primary)]">{total}</span> config
+            </div>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={async () => {
-            await loadList();
-            await loadLookups();
-          }}
-          className="px-4 py-3 border-4 rounded-2xl font-extrabold"
-          style={{
-            boxShadow: "6px 6px 0 #000",
-            background: "var(--panel-bg)",
-            borderColor: "var(--panel-border)",
-            color: "var(--foreground)",
-          }}
-        >
-          <span className="inline-flex items-center gap-2">
-            <RefreshCw className="size-4" /> Muat Ulang
-          </span>
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div
-        className="p-4 border-4 rounded-[24px]"
-        style={{
-          boxShadow: "8px 8px 0 #000",
-          background: "var(--panel-bg)",
-          borderColor: "var(--panel-border)",
-          color: "var(--foreground)",
-        }}
-      >
-        <div className="mb-3 text-sm font-black opacity-75">Filter Config</div>
-        <div className="grid sm:grid-cols-[220px_1fr] gap-3 items-center">
-          <select
-            value={filterActive}
-            onChange={(e) => {
-              setPage(1);
-              setFilterActive(e.target.value);
-            }}
-            className="px-3 py-2 border-4 rounded-lg font-extrabold"
-            style={{
-              boxShadow: "4px 4px 0 #000",
-              background: "var(--panel-bg)",
-              borderColor: "var(--panel-border)",
-              color: "var(--foreground)",
-            }}
-          >
-            <option value="">Semua</option>
-            <option value="true">Aktif saja</option>
-            <option value="false">Nonaktif saja</option>
-          </select>
-          <div className="text-sm font-extrabold">Total: {total}</div>
-        </div>
-      </div>
+      </motion.div>
 
       {/* Form */}
-      <div
-        className="p-4 border-4 rounded-[24px] space-y-4"
-        style={{
-          boxShadow: "8px 8px 0 #000",
-          background: "var(--panel-bg)",
-          borderColor: "var(--panel-border)",
-          color: "var(--foreground)",
-        }}
-      >
+      <motion.div variants={ANIMATIONS.item} className={`${STYLES.card} p-4 sm:p-5`} style={STYLES.cardShadow}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-sm font-extrabold">{mode === "add" ? "Tambah Config" : `Edit Config #${form.id}`}</div>
             <div className="mt-1 text-xs font-semibold opacity-70">Tentukan jumlah hari, reward coin, tipe hadiah, dan periode event.</div>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "#fff7cc", color: "#92400e" }}>
-            <Coins className="size-4" /> Lookup siap: {loadingLookups ? "memuat..." : `${borderOptions.length + stickerOptions.length + badgeOptions.length} item`}
+          <div className="inline-flex items-center gap-2 rounded-full border-2 px-3 py-2 text-xs font-bold" style={{ borderColor: 'var(--panel-border)', background: '#dbeafe', color: '#1e40af' }}>
+            <Gift className="w-4 h-4" /> {loadingLookups ? 'memuat...' : `${borderOptions.length + stickerOptions.length + badgeOptions.length} item`}
           </div>
         </div>
 
         <form onSubmit={onSubmit} className="grid gap-3 min-w-0">
           <div className="grid gap-3 min-w-0">
-            <div className="rounded-[22px] border-4 p-4 grid gap-3 content-start min-w-0" style={{ boxShadow: "6px 6px 0 #000", background: "#fff7cc", borderColor: "var(--panel-border)", color: "#92400e" }}>
+            <div className={`${STYLES.card} p-4 grid gap-3 content-start min-w-0`} style={STYLES.cardShadow}>
               <label className="flex items-center gap-2 text-sm font-semibold">
                 <input
                   type="checkbox"
@@ -483,42 +432,42 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
               </label>
 
               <label className="grid gap-1">
-                <span className="text-xs font-extrabold">Jumlah hari</span>
+                <span className="text-xs font-extrabold text-[var(--foreground)]">Jumlah hari</span>
                 <input
                   type="number"
                   min={1}
                   value={form.days_total}
                   onChange={(e) => setForm((f) => ({ ...f, days_total: e.target.value }))}
                   placeholder="Contoh: 7"
-                  className="w-full max-w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold"
-                  style={{ boxShadow: "4px 4px 0 #000", background: "#fff", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
+                  className="w-full max-w-full min-w-0 px-3 py-2 border-2 rounded-xl font-bold text-sm"
+                  style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 />
               </label>
 
-              <div className="rounded-2xl border-4 px-3 py-2 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "rgba(255,255,255,0.7)", color: "#92400e" }}>
+              <div className="rounded-xl border-2 px-3 py-2 text-xs font-bold" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)', color: 'var(--foreground)' }}>
                 {normalizedDaysTotal} hari reward login akan ditampilkan di editor.
               </div>
             </div>
 
             <div className="grid gap-3 xl:grid-cols-2 min-w-0">
-              <label className="grid gap-1 rounded-[22px] border-4 p-4 min-w-0" style={{ boxShadow: "6px 6px 0 #000", background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
-                <span className="text-xs font-extrabold">Mulai (opsional)</span>
+              <label className={`${STYLES.card} p-4 grid gap-1 min-w-0`} style={STYLES.cardShadow}>
+                <span className="text-xs font-bold text-[var(--foreground)]/70">Mulai (opsional)</span>
                 <input
                   type="datetime-local"
                   value={form.starts_at}
                   onChange={(e) => setForm((f) => ({ ...f, starts_at: e.target.value }))}
-                  className="block w-full max-w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold text-sm"
-                  style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
+                  className="block w-full max-w-full min-w-0 px-3 py-2 border-2 rounded-xl font-bold text-sm"
+                  style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 />
               </label>
-              <label className="grid gap-1 rounded-[22px] border-4 p-4 min-w-0" style={{ boxShadow: "6px 6px 0 #000", background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
-                <span className="text-xs font-extrabold">Selesai (opsional)</span>
+              <label className={`${STYLES.card} p-4 grid gap-1 min-w-0`} style={STYLES.cardShadow}>
+                <span className="text-xs font-bold text-[var(--foreground)]/70">Selesai (opsional)</span>
                 <input
                   type="datetime-local"
                   value={form.ends_at}
                   onChange={(e) => setForm((f) => ({ ...f, ends_at: e.target.value }))}
-                  className="block w-full max-w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold text-sm"
-                  style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
+                  className="block w-full max-w-full min-w-0 px-3 py-2 border-2 rounded-xl font-bold text-sm"
+                  style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 />
               </label>
             </div>
@@ -534,31 +483,31 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                 <div key={idx} className="rounded-[22px] border-4 p-4 space-y-3 min-w-0 overflow-hidden" style={{ boxShadow: "6px 6px 0 #000", background: idx % 2 === 0 ? "var(--background)" : "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
                   <div className="flex items-center justify-between gap-2 min-w-0 flex-wrap">
                     <div className="text-sm font-black min-w-0">Hari #{idx + 1}</div>
-                    <div className="text-[11px] font-black rounded-full border-4 px-2 py-1" style={{ borderColor: "var(--panel-border)", background: "#fff7cc", color: "#92400e" }}>
+                    <span className="px-2 py-0.5 rounded-full bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] text-[11px] font-bold">
                       Login reward
-                    </div>
+                    </span>
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-2 min-w-0">
                     <label className="grid gap-1 min-w-0">
-                      <span className="text-xs font-extrabold">Coin reward</span>
+                      <span className="text-xs font-bold text-[var(--foreground)]/70">Coin reward</span>
                       <input
                         type="number"
                         min={0}
                         value={normalizedCoins[idx]}
                         onChange={(e) => setDayField(idx, { coin: e.target.value })}
-                        className="w-full max-w-full min-w-0 px-3 py-2 border-4 rounded-xl font-semibold"
-                        style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
+                        className="w-full max-w-full min-w-0 px-3 py-2 border-2 rounded-xl font-bold text-sm"
+                        style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                       />
                     </label>
 
                     <label className="grid gap-1 min-w-0">
-                      <span className="text-xs font-extrabold">Tipe hadiah</span>
+                      <span className="text-xs font-bold text-[var(--foreground)]/70">Tipe hadiah</span>
                       <select
                         value={t}
                         onChange={(e) => setDayField(idx, { type: e.target.value })}
-                        className="w-full max-w-full min-w-0 px-3 py-2 border-4 rounded-xl font-extrabold"
-                        style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
+                        className="w-full max-w-full min-w-0 px-3 py-2 border-2 rounded-xl font-bold text-sm"
+                        style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                       >
                         {REWARD_TYPES.map((rt) => (
                           <option key={rt} value={rt}>
@@ -570,13 +519,13 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                   </div>
 
                   <label className="grid gap-1 min-w-0">
-                    <span className="text-xs font-extrabold">Item hadiah</span>
+                    <span className="text-xs font-bold text-[var(--foreground)]/70">Item hadiah</span>
                     {needsId ? (
                       <select
                         value={normalizedIds[idx]}
                         onChange={(e) => setDayField(idx, { id: e.target.value })}
-                        className="w-full max-w-full min-w-0 px-3 py-2 border-4 rounded-xl font-extrabold"
-                        style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
+                        className="w-full max-w-full min-w-0 px-3 py-2 border-2 rounded-xl font-bold text-sm"
+                        style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                       >
                         <option value={0}>Pilih item</option>
                         {opts.map((o) => (
@@ -631,18 +580,13 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
             ) : null}
           </div>
         </form>
-      </div>
+      </motion.div>
 
-      {/* List table */}
-      <div className="rounded-[24px] border-4 p-4" style={{ boxShadow: "8px 8px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-extrabold">Daftar Config</div>
-            <div className="mt-1 text-xs font-semibold opacity-70">Lihat config aktif/nonaktif, edit, toggle, atau hapus langsung dari satu panel.</div>
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "#dbeafe", color: "#1d4ed8" }}>
-            <ListChecks className="size-4" /> {items.length} item ditampilkan
-          </div>
+      {/* Config List */}
+      <motion.div variants={ANIMATIONS.item} className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-sm font-bold text-[var(--foreground)]/70">Daftar Config ({items.length} item)</h3>
+          <p className="text-xs text-[var(--foreground)]/50">Lihat, edit, toggle, atau hapus config</p>
         </div>
         <div className="grid gap-3">
           {items.map((it) => {
@@ -653,10 +597,12 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="grid gap-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="text-base font-black">Config #{it.id}</div>
-                      <div className="rounded-full border-4 px-2 py-1 text-[11px] font-black" style={{ borderColor: "var(--panel-border)", background: it.is_active ? "#dcfce7" : "#f3f4f6", color: it.is_active ? "#166534" : "#374151" }}>
-                        {it.is_active ? "Aktif" : "Nonaktif"}
-                      </div>
+                      <span className="px-2 py-0.5 rounded-md bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] text-xs font-black">Config #{it.id}</span>
+                      {it.is_active ? (
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-bold flex items-center gap-1"><Power className="w-3 h-3" /> Aktif</span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full bg-gray-400/10 text-gray-500 text-xs font-bold flex items-center gap-1"><Power className="w-3 h-3" /> Nonaktif</span>
+                      )}
                     </div>
                     <div className="text-sm font-semibold opacity-80">{it.days_total} hari reward login</div>
                   </div>
@@ -677,7 +623,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                       disabled={togglingId === it.id}
                       onClick={() => onToggle(it)}
                       className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
-                      style={{ boxShadow: "4px 4px 0 #000", background: it.is_active ? "#FFD803" : "#FFF", color: "var(--foreground)", borderColor: "var(--panel-border)" }}
+                      style={{ boxShadow: "4px 4px 0 #000", background: it.is_active ? "#22c55e" : "var(--panel-bg)", color: it.is_active ? "#fff" : "var(--foreground)", borderColor: "var(--panel-border)" }}
                     >
                       {togglingId === it.id ? "..." : it.is_active ? (
                         <span className="inline-flex items-center gap-2">
@@ -713,7 +659,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                       </div>
                     ))}
                     {Number(it?.days_total || 0) > preview.length ? (
-                      <div className="rounded-[18px] border-4 p-3 flex items-center justify-center text-sm font-black" style={{ borderColor: "var(--panel-border)", background: "#ede9fe", color: "#6d28d9" }}>
+                      <div className="rounded-[18px] border-2 p-3 flex items-center justify-center text-sm font-bold" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--foreground)' }}>
                         +{Number(it.days_total || 0) - preview.length} hari lainnya
                       </div>
                     ) : null}
@@ -734,16 +680,19 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
             );
           })}
 
-          {items.length === 0 ? (
-            <div className="rounded-[22px] border-4 px-4 py-8 text-center text-sm font-semibold opacity-70" style={{ borderColor: "var(--panel-border)", background: "var(--background)" }}>
-              {loadingList ? "Memuat..." : "Belum ada config."}
+          {items.length === 0 && !loadingList && (
+            <div className={`${STYLES.card} p-8 text-center`} style={STYLES.cardShadow}>
+              <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-[var(--panel-bg)] flex items-center justify-center">
+                <Gift className="w-8 h-8 text-[var(--foreground)]/30" />
+              </div>
+              <div className="text-lg font-bold text-[var(--foreground)]">Belum ada config</div>
             </div>
-          ) : null}
+          )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Pagination */}
-      <div className="flex items-center gap-2">
+      <motion.div variants={ANIMATIONS.item} className="flex items-center justify-between gap-3">
         <button
           disabled={page <= 1}
           onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -773,11 +722,26 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
         >
           Berikutnya
         </button>
-      </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// StatCard Component
+function StatCard({ label, value, tone }) {
+  const toneStyles = {
+    active: 'bg-emerald-500/10 text-emerald-600 border-emerald-200',
+    default: 'bg-[var(--panel-bg)] text-[var(--foreground)] border-[var(--panel-border)]'
+  };
+
+  return (
+    <div className={`${STYLES.card} p-3 ${tone === 'active' ? toneStyles.active : toneStyles.default}`} style={STYLES.cardShadow}>
+      <div className="text-[10px] font-bold uppercase tracking-wide opacity-70">{label}</div>
+      <div className="mt-1 text-lg sm:text-xl font-black">{value}</div>
     </div>
   );
 }
 
- export default function SigninEventConfigsPage() {
-   return <SigninEventConfigsContent />;
- }
+export default function SigninEventConfigsPage() {
+  return <SigninEventConfigsContent />;
+}

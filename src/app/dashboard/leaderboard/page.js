@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, 
   Users, 
@@ -15,12 +16,17 @@ import {
   Medal,
   Award,
   TrendingUp,
-  Eye,
+  TrendingDown,
   User,
   Image,
-  Badge,
+  BadgeCheck,
   Target,
-  RefreshCcw
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  BarChart3,
+  Zap
 } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
@@ -33,6 +39,24 @@ import {
   getCoinLeaderboard,
   getSharpTokenLeaderboard
 } from '@/lib/api';
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: 'easeOut' }
+  }
+};
 
 export default function LeaderboardPage() {
   const router = useRouter();
@@ -159,26 +183,51 @@ export default function LeaderboardPage() {
   };
 
   const getRankIcon = (rank) => {
-    if (rank === 1) return <Trophy className="size-5 text-yellow-500" />;
-    if (rank === 2) return <Medal className="size-5 text-gray-400" />;
-    if (rank === 3) return <Award className="size-5 text-amber-600" />;
-    return <span className="font-bold text-lg">#{rank}</span>;
+    if (rank === 1) return (
+      <motion.div
+        whileHover={{ scale: 1.1, rotate: 5 }}
+        className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg shadow-yellow-500/30"
+      >
+        <Trophy className="w-5 h-5 text-white" />
+      </motion.div>
+    );
+    if (rank === 2) return (
+      <motion.div
+        whileHover={{ scale: 1.1 }}
+        className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center shadow-lg"
+      >
+        <Medal className="w-5 h-5 text-white" />
+      </motion.div>
+    );
+    if (rank === 3) return (
+      <motion.div
+        whileHover={{ scale: 1.1 }}
+        className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center shadow-lg"
+      >
+        <Award className="w-5 h-5 text-white" />
+      </motion.div>
+    );
+    return (
+      <div className="w-10 h-10 rounded-full bg-[var(--panel-bg)] border border-[var(--panel-border)] flex items-center justify-center">
+        <span className="font-bold text-[var(--foreground)]">#{rank}</span>
+      </div>
+    );
   };
 
   const getVipBadge = (vip) => {
     if (!vip || vip.status !== 'ACTIVE') return null;
     
     const colors = {
-      BRONZE: 'bg-amber-100 text-amber-700 border-amber-300',
-      SILVER: 'bg-gray-100 text-gray-700 border-gray-300',
-      GOLD: 'bg-yellow-100 text-yellow-700 border-yellow-300',
-      PLATINUM: 'bg-purple-100 text-purple-700 border-purple-300',
-      DIAMOND: 'bg-blue-100 text-blue-700 border-blue-300',
-      MASTER: 'bg-red-100 text-red-700 border-red-300'
+      BRONZE: 'from-amber-600 to-orange-600',
+      SILVER: 'from-gray-400 to-gray-500',
+      GOLD: 'from-yellow-400 to-amber-500',
+      PLATINUM: 'from-purple-500 to-violet-600',
+      DIAMOND: 'from-blue-500 to-cyan-500',
+      MASTER: 'from-rose-500 to-red-600'
     };
     
     return (
-      <span className={`px-2 py-1 border-2 rounded-full text-xs font-extrabold ${colors[vip.level] || 'bg-gray-100 text-gray-700'}`}>
+      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r ${colors[vip.level] || 'from-gray-400 to-gray-500'} text-white shadow-sm`}>
         {vip.level}
       </span>
     );
@@ -187,214 +236,283 @@ export default function LeaderboardPage() {
   if (loading || !user) return null;
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6 min-w-0 overflow-x-hidden"
+    >
       {/* Header */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-        <div className="grid gap-2">
-          <div className="inline-flex w-fit items-center gap-2 px-3 py-2 border-4 rounded-full font-extrabold text-sm" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-            <Trophy className="size-4" /> Leaderboard
+      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+              <Trophy className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-xs font-medium text-[var(--foreground)]/60 uppercase tracking-wide">Leaderboard</span>
           </div>
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-black leading-tight">Kelola leaderboard dan koleksi user.</h2>
-            <p className="text-sm sm:text-base opacity-80 mt-2 max-w-3xl">Monitor XP, coins, sharp tokens, dan koleksi user dengan interface yang komprehensif.</p>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">
+            Kelola Leaderboard
+          </h1>
+          <p className="text-sm text-[var(--foreground)]/60 mt-1 max-w-2xl">
+            Monitor XP, coins, sharp tokens, dan koleksi user dengan interface yang komprehensif.
+          </p>
         </div>
-        <div className="flex flex-wrap items-center justify-start lg:justify-end gap-2">
-          <button 
-            type="button" 
-            onClick={() => window.location.reload()} 
-            className="px-3 py-2 border-4 rounded-lg font-extrabold"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-          >
-            <RefreshCcw className="size-4 inline-block mr-1" /> Refresh
-          </button>
-        </div>
-      </div>
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => window.location.reload()}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--panel-bg)] border border-[var(--panel-border)] text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 transition-all duration-200"
+        >
+          <RefreshCw className="w-4 h-4" />
+          <span>Refresh</span>
+        </motion.button>
+      </motion.div>
 
       {/* Stats Cards */}
       {stats && (
-        <div className="grid gap-3 md:grid-cols-4">
-          <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #FDE68A 0%, #FCD34D 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
-            <div className="flex items-center gap-2">
-              <Users className="size-5" />
-              <div className="text-xs font-black uppercase tracking-wide opacity-80">Total Users</div>
+        <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Total Users */}
+          <div className="glass-card rounded-2xl p-5 relative overflow-hidden group hover:shadow-lg transition-all duration-300">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-full blur-2xl -mr-6 -mt-6 group-hover:scale-150 transition-transform duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
+                  <Users className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-xs font-medium text-[var(--foreground)]/60">Total Users</span>
+              </div>
+              <div className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
+                {formatNumber(stats.overview?.totalUsers || 0)}
+              </div>
+              <div className="text-xs text-[var(--foreground)]/50 mt-1">Registered users</div>
             </div>
-            <div className="mt-2 text-3xl font-black">{formatNumber(stats.overview?.totalUsers || 0)}</div>
-            <div className="text-sm font-semibold opacity-80 mt-1">Total registered users</div>
           </div>
-          
-          <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #BFDBFE 0%, #93C5FD 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
-            <div className="flex items-center gap-2">
-              <Coins className="size-5" />
-              <div className="text-xs font-black uppercase tracking-wide opacity-80">Coins Circulation</div>
+
+          {/* Coins */}
+          <div className="glass-card rounded-2xl p-5 relative overflow-hidden group hover:shadow-lg transition-all duration-300">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full blur-2xl -mr-6 -mt-6 group-hover:scale-150 transition-transform duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                  <Coins className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-xs font-medium text-[var(--foreground)]/60">Coins</span>
+              </div>
+              <div className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
+                {formatNumber(stats.coins?.totalCoinsInCirculation || 0)}
+              </div>
+              <div className="text-xs text-[var(--foreground)]/50 mt-1 truncate">
+                Top: {stats.coins?.topHolder?.username || '-'}
+              </div>
             </div>
-            <div className="mt-2 text-3xl font-black">{formatNumber(stats.coins?.totalCoinsInCirculation || 0)}</div>
-            <div className="text-sm font-semibold opacity-80 mt-1">Top: {stats.coins?.topHolder?.username || '-'}</div>
           </div>
-          
-          <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #C7F9CC 0%, #86EFAC 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
-            <div className="flex items-center gap-2">
-              <Star className="size-5" />
-              <div className="text-xs font-black uppercase tracking-wide opacity-80">Sharp Tokens</div>
+
+          {/* Sharp Tokens */}
+          <div className="glass-card rounded-2xl p-5 relative overflow-hidden group hover:shadow-lg transition-all duration-300">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-2xl -mr-6 -mt-6 group-hover:scale-150 transition-transform duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg">
+                  <Star className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-xs font-medium text-[var(--foreground)]/60">Sharp Tokens</span>
+              </div>
+              <div className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
+                {formatNumber(stats.sharpTokens?.totalTokensInCirculation || 0)}
+              </div>
+              <div className="text-xs text-[var(--foreground)]/50 mt-1 truncate">
+                Top: {stats.sharpTokens?.topHolder?.username || '-'}
+              </div>
             </div>
-            <div className="mt-2 text-3xl font-black">{formatNumber(stats.sharpTokens?.totalTokensInCirculation || 0)}</div>
-            <div className="text-sm font-semibold opacity-80 mt-1">Top: {stats.sharpTokens?.topHolder?.username || '-'}</div>
           </div>
-          
-          <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #FBCFE8 0%, #F9A8D4 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="size-5" />
-              <div className="text-xs font-black uppercase tracking-wide opacity-80">Daily Active</div>
+
+          {/* Daily Active */}
+          <div className="glass-card rounded-2xl p-5 relative overflow-hidden group hover:shadow-lg transition-all duration-300">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-rose-500/20 to-pink-500/20 rounded-full blur-2xl -mr-6 -mt-6 group-hover:scale-150 transition-transform duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center shadow-lg">
+                  <Zap className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-xs font-medium text-[var(--foreground)]/60">Daily Active</span>
+              </div>
+              <div className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
+                {formatNumber(stats.leaderboard?.daily?.participants || 0)}
+              </div>
+              <div className="text-xs text-[var(--foreground)]/50 mt-1 truncate">
+                Top: {stats.leaderboard?.daily?.topUser?.username || '-'}
+              </div>
             </div>
-            <div className="mt-2 text-3xl font-black">{formatNumber(stats.leaderboard?.daily?.participants || 0)}</div>
-            <div className="text-sm font-semibold opacity-80 mt-1">Top: {stats.leaderboard?.daily?.topUser?.username || '-'}</div>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Tabs */}
-      <div className="border-4 rounded-2xl p-2" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-        <div className="flex gap-2">
+      <motion.div variants={itemVariants} className="glass-card rounded-2xl p-2">
+        <div className="flex flex-wrap gap-2">
           {[
-            { key: 'overview', label: 'Overview', icon: Trophy },
+            { key: 'overview', label: 'Overview', icon: BarChart3 },
             { key: 'leaderboard', label: 'Leaderboard', icon: Medal },
             { key: 'coins', label: 'Coins', icon: Coins },
             { key: 'tokens', label: 'Sharp Tokens', icon: Star }
           ].map((tab) => {
             const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
             return (
-              <button
+              <motion.button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-4 py-3 border-4 rounded-xl font-extrabold transition-all ${
-                  activeTab === tab.key
-                    ? 'shadow-lg transform scale-105'
-                    : 'opacity-70 hover:opacity-100'
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+                  isActive
+                    ? 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white shadow-lg shadow-[var(--accent-primary)]/25'
+                    : 'text-[var(--foreground)]/70 hover:bg-[var(--panel-bg)]/50 hover:text-[var(--foreground)]'
                 }`}
-                style={{
-                  boxShadow: activeTab === tab.key ? '4px 4px 0 #000' : '2px 2px 0 #000',
-                  background: activeTab === tab.key ? 'var(--accent-edit)' : 'var(--background)',
-                  borderColor: 'var(--panel-border)',
-                  color: activeTab === tab.key ? 'var(--accent-edit-foreground)' : 'var(--foreground)'
-                }}
               >
-                <Icon className="size-4" />
-                {tab.label}
-              </button>
+                <Icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+              </motion.button>
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
       {/* Filters */}
-      {activeTab === 'leaderboard' && (
-        <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
-              <label className="text-xs font-bold">Period</label>
-              <select
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold"
-                style={{ boxShadow: '3px 3px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              >
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
-            </div>
-            
-            {period === 'monthly' && (
+      <AnimatePresence mode="wait">
+        {activeTab === 'leaderboard' && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="glass-card rounded-2xl p-4"
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
-                <label className="text-xs font-bold">Month</label>
+                <label className="text-xs font-medium text-[var(--foreground)]/60 mb-1.5 block">Period</label>
                 <select
-                  value={selectedMonth?.label || ''}
-                  onChange={(e) => {
-                    const month = availableMonths.find(m => m.label === e.target.value);
-                    setSelectedMonth(month);
-                  }}
-                  className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold"
-                  style={{ boxShadow: '3px 3px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                  className="modern-input w-full rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--foreground)] outline-none"
                 >
-                  {availableMonths.map((month) => (
-                    <option key={month.label} value={month.label}>{month.label}</option>
-                  ))}
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
                 </select>
               </div>
-            )}
-          </div>
-        </div>
-      )}
+              
+              {period === 'monthly' && (
+                <div>
+                  <label className="text-xs font-medium text-[var(--foreground)]/60 mb-1.5 block">Month</label>
+                  <select
+                    value={selectedMonth?.label || ''}
+                    onChange={(e) => {
+                      const month = availableMonths.find(m => m.label === e.target.value);
+                      setSelectedMonth(month);
+                    }}
+                    className="modern-input w-full rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--foreground)] outline-none"
+                  >
+                    {availableMonths.map((month) => (
+                      <option key={month.label} value={month.label}>{month.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
 
-      {(activeTab === 'coins' || activeTab === 'tokens') && (
-        <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-          <div className="grid gap-4 md:grid-cols-4">
-            <div>
-              <label className="text-xs font-bold">Search</label>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Username, email..."
-                className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold"
-                style={{ boxShadow: '3px 3px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              />
+        {(activeTab === 'coins' || activeTab === 'tokens') && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="glass-card rounded-2xl p-4"
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <label className="text-xs font-medium text-[var(--foreground)]/60 mb-1.5 block">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--foreground)]/40" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Username, email..."
+                    className="modern-input w-full rounded-xl pl-10 pr-3 py-2.5 text-sm font-medium text-[var(--foreground)] outline-none"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-xs font-medium text-[var(--foreground)]/60 mb-1.5 block">Min {activeTab === 'coins' ? 'Coins' : 'Tokens'}</label>
+                <input
+                  type="number"
+                  value={activeTab === 'coins' ? minCoins : minTokens}
+                  onChange={(e) => activeTab === 'coins' ? setMinCoins(parseInt(e.target.value) || 0) : setMinTokens(parseInt(e.target.value) || 0)}
+                  placeholder="0"
+                  className="modern-input w-full rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--foreground)] outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="text-xs font-medium text-[var(--foreground)]/60 mb-1.5 block">Max {activeTab === 'coins' ? 'Coins' : 'Tokens'}</label>
+                <input
+                  type="number"
+                  value={activeTab === 'coins' ? maxCoins : maxTokens}
+                  onChange={(e) => activeTab === 'coins' ? setMaxCoins(e.target.value) : setMaxTokens(e.target.value)}
+                  placeholder="Optional"
+                  className="modern-input w-full rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--foreground)] outline-none"
+                />
+              </div>
             </div>
-            
-            <div>
-              <label className="text-xs font-bold">Min {activeTab === 'coins' ? 'Coins' : 'Tokens'}</label>
-              <input
-                type="number"
-                value={activeTab === 'coins' ? minCoins : minTokens}
-                onChange={(e) => activeTab === 'coins' ? setMinCoins(parseInt(e.target.value) || 0) : setMinTokens(parseInt(e.target.value) || 0)}
-                placeholder="0"
-                className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold"
-                style={{ boxShadow: '3px 3px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              />
-            </div>
-            
-            <div>
-              <label className="text-xs font-bold">Max {activeTab === 'coins' ? 'Coins' : 'Tokens'}</label>
-              <input
-                type="number"
-                value={activeTab === 'coins' ? maxCoins : maxTokens}
-                onChange={(e) => activeTab === 'coins' ? setMaxCoins(e.target.value) : setMaxTokens(e.target.value)}
-                placeholder="Optional"
-                className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold"
-                style={{ boxShadow: '3px 3px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Content */}
-      <div className="border-4 rounded-2xl overflow-hidden" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+      <motion.div variants={itemVariants} className="glass-card rounded-2xl overflow-hidden">
         {loadingData ? (
-          <div className="p-8 text-center">
-            <div className="flex items-center justify-center gap-2">
-              <RefreshCcw className="size-4 animate-spin" />
-              <span>Loading data...</span>
-            </div>
+          <div className="p-12 text-center">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              className="w-10 h-10 rounded-full border-3 border-[var(--accent-primary)]/20 border-t-[var(--accent-primary)] mx-auto mb-4"
+            />
+            <p className="text-[var(--foreground)]/60">Memuat data...</p>
           </div>
         ) : (
-          <>
+          <AnimatePresence mode="wait">
             {/* Overview Tab */}
             {activeTab === 'overview' && leaderboardData && (
-              <div className="overflow-x-auto">
+              <motion.div
+                key="overview"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="overflow-x-auto"
+              >
                 <table className="w-full">
-                  <thead style={{ background: 'var(--background)' }}>
+                  <thead className="bg-[var(--panel-bg)]/50 border-b border-[var(--panel-border)]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Rank</th>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">User</th>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">XP</th>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Events</th>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Collection Points</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">Rank</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">User</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">XP</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">Events</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60 hidden sm:table-cell">Collection</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {leaderboardData.entries?.map((entry) => (
-                      <tr key={entry.user.id} className="border-t" style={{ borderColor: 'var(--panel-border)' }}>
+                    {leaderboardData.entries?.map((entry, index) => (
+                      <motion.tr
+                        key={entry.user.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="border-b border-[var(--panel-border)]/50 hover:bg-[var(--panel-bg)]/30 transition-colors"
+                      >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             {getRankIcon(entry.rank)}
@@ -403,219 +521,241 @@ export default function LeaderboardPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             {entry.user.avatarUrl && (
-                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full border-2" style={{ borderColor: 'var(--panel-border)' }} />
+                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-[var(--panel-border)]" />
                             )}
                             <div>
-                              <div className="font-semibold">{entry.user.username}</div>
-                              <div className="text-xs opacity-70">{entry.user.fullName}</div>
-                              {getVipBadge(entry.user.vip)}
+                              <div className="font-semibold text-[var(--foreground)]">{entry.user.username}</div>
+                              <div className="text-xs text-[var(--foreground)]/50">{entry.user.fullName}</div>
+                              <div className="mt-1">{getVipBadge(entry.user.vip)}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 font-bold">{formatNumber(entry.total_xp)}</td>
-                        <td className="px-4 py-3">{formatNumber(entry.events_count)}</td>
-                        <td className="px-4 py-3">
-                          <div className="text-sm">
+                        <td className="px-4 py-3 font-bold text-[var(--accent-primary)]">{formatNumber(entry.total_xp)}</td>
+                        <td className="px-4 py-3 text-[var(--foreground)]">{formatNumber(entry.events_count)}</td>
+                        <td className="px-4 py-3 hidden sm:table-cell">
+                          <div className="text-sm text-[var(--foreground)]/70">
                             <div className="font-semibold">{formatNumber(entry.collection?.totalPoints || 0)} pts</div>
-                            <div className="text-xs opacity-70">
-                              {entry.collection?.borders?.count || 0} borders, {entry.collection?.badges?.count || 0} badges, {entry.collection?.stickers?.count || 0} stickers
+                            <div className="text-xs">
+                              {entry.collection?.borders?.count || 0} borders, {entry.collection?.badges?.count || 0} badges
                             </div>
                           </div>
                         </td>
-                      </tr>
+                      </motion.tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </motion.div>
             )}
 
-            {/* Leaderboard Tab with Collections */}
+            {/* Leaderboard Tab */}
             {activeTab === 'leaderboard' && leaderboardData && (
-              <div className="overflow-x-auto">
+              <motion.div
+                key="leaderboard"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="overflow-x-auto"
+              >
                 <table className="w-full">
-                  <thead style={{ background: 'var(--background)' }}>
+                  <thead className="bg-[var(--panel-bg)]/50 border-b border-[var(--panel-border)]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Rank</th>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">User</th>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">XP</th>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Events</th>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Collection</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">Rank</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">User</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">XP</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">Collection</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {leaderboardData.entries?.map((entry) => (
-                      <tr key={entry.user.id} className="border-t" style={{ borderColor: 'var(--panel-border)' }}>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            {getRankIcon(entry.rank)}
-                          </div>
-                        </td>
+                    {leaderboardData.entries?.map((entry, index) => (
+                      <motion.tr
+                        key={entry.user.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="border-b border-[var(--panel-border)]/50 hover:bg-[var(--panel-bg)]/30 transition-colors"
+                      >
+                        <td className="px-4 py-3">{getRankIcon(entry.rank)}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             {entry.user.avatarUrl && (
-                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full border-2" style={{ borderColor: 'var(--panel-border)' }} />
+                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-[var(--panel-border)]" />
                             )}
                             <div>
-                              <div className="font-semibold">{entry.user.username}</div>
-                              <div className="text-xs opacity-70">{entry.user.fullName}</div>
+                              <div className="font-semibold text-[var(--foreground)]">{entry.user.username}</div>
+                              <div className="text-xs text-[var(--foreground)]/50">{entry.user.fullName}</div>
                               {getVipBadge(entry.user.vip)}
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 font-bold">{formatNumber(entry.total_xp)}</td>
-                        <td className="px-4 py-3">{formatNumber(entry.events_count)}</td>
+                        <td className="px-4 py-3 font-bold text-[var(--accent-primary)]">{formatNumber(entry.total_xp)}</td>
                         <td className="px-4 py-3">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-sm">
-                              <Image className="size-3" />
-                              <span>Borders: {entry.collection?.borders?.count || 0} ({formatNumber(entry.collection?.borders?.points || 0)} pts)</span>
+                          <div className="space-y-1 text-xs sm:text-sm text-[var(--foreground)]/70">
+                            <div className="flex items-center gap-2">
+                              <Image className="w-3 h-3" />
+                              <span>{entry.collection?.borders?.count || 0} borders</span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Badge className="size-3" />
-                              <span>Badges: {entry.collection?.badges?.count || 0} ({formatNumber(entry.collection?.badges?.points || 0)} pts)</span>
+                            <div className="flex items-center gap-2">
+                              <BadgeCheck className="w-3 h-3" />
+                              <span>{entry.collection?.badges?.count || 0} badges</span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Target className="size-3" />
-                              <span>Stickers: {entry.collection?.stickers?.count || 0} ({formatNumber(entry.collection?.stickers?.points || 0)} pts)</span>
+                            <div className="flex items-center gap-2">
+                              <Target className="w-3 h-3" />
+                              <span>{entry.collection?.stickers?.count || 0} stickers</span>
                             </div>
-                            <div className="text-xs font-bold border-t pt-1" style={{ borderColor: 'var(--panel-border)' }}>
+                            <div className="font-semibold text-[var(--foreground)] pt-1 border-t border-[var(--panel-border)]/50">
                               Total: {formatNumber(entry.collection?.totalPoints || 0)} pts
                             </div>
                           </div>
                         </td>
-                      </tr>
+                      </motion.tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </motion.div>
             )}
 
             {/* Coins Tab */}
             {activeTab === 'coins' && coinLeaderboard && (
-              <div className="overflow-x-auto">
+              <motion.div
+                key="coins"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="overflow-x-auto"
+              >
                 <table className="w-full">
-                  <thead style={{ background: 'var(--background)' }}>
+                  <thead className="bg-[var(--panel-bg)]/50 border-b border-[var(--panel-border)]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Rank</th>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">User</th>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Coins</th>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Collection Summary</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">Rank</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">User</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">Coins</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60 hidden sm:table-cell">Collection</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {coinLeaderboard.entries?.map((entry) => (
-                      <tr key={entry.user.id} className="border-t" style={{ borderColor: 'var(--panel-border)' }}>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            {getRankIcon(entry.rank)}
-                          </div>
-                        </td>
+                    {coinLeaderboard.entries?.map((entry, index) => (
+                      <motion.tr
+                        key={entry.user.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="border-b border-[var(--panel-border)]/50 hover:bg-[var(--panel-bg)]/30 transition-colors"
+                      >
+                        <td className="px-4 py-3">{getRankIcon(entry.rank)}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             {entry.user.avatarUrl && (
-                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full border-2" style={{ borderColor: 'var(--panel-border)' }} />
+                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-[var(--panel-border)]" />
                             )}
                             <div>
-                              <div className="font-semibold">{entry.user.username}</div>
-                              <div className="text-xs opacity-70">{entry.user.fullName}</div>
+                              <div className="font-semibold text-[var(--foreground)]">{entry.user.username}</div>
+                              <div className="text-xs text-[var(--foreground)]/50">{entry.user.fullName}</div>
                               {getVipBadge(entry.user.vip)}
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 font-bold text-lg">{formatNumber(entry.coins)}</td>
-                        <td className="px-4 py-3">
-                          <div className="text-sm">
-                            <div>{entry.collectionSummary?.bordersCount || 0} borders</div>
-                            <div>{entry.collectionSummary?.badgesCount || 0} badges</div>
-                            <div>{entry.collectionSummary?.stickersCount || 0} stickers</div>
-                          </div>
+                        <td className="px-4 py-3 font-bold text-lg text-[var(--accent-primary)]">{formatNumber(entry.coins)}</td>
+                        <td className="px-4 py-3 hidden sm:table-cell text-sm text-[var(--foreground)]/70">
+                          <div>{entry.collectionSummary?.bordersCount || 0} borders</div>
+                          <div>{entry.collectionSummary?.badgesCount || 0} badges</div>
+                          <div>{entry.collectionSummary?.stickersCount || 0} stickers</div>
                         </td>
-                      </tr>
+                      </motion.tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </motion.div>
             )}
 
             {/* Sharp Tokens Tab */}
             {activeTab === 'tokens' && sharpTokenLeaderboard && (
-              <div className="overflow-x-auto">
+              <motion.div
+                key="tokens"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="overflow-x-auto"
+              >
                 <table className="w-full">
-                  <thead style={{ background: 'var(--background)' }}>
+                  <thead className="bg-[var(--panel-bg)]/50 border-b border-[var(--panel-border)]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Rank</th>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">User</th>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Tokens</th>
-                      <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Collection Summary</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">Rank</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">User</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">Tokens</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60 hidden sm:table-cell">Collection</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {sharpTokenLeaderboard.entries?.map((entry) => (
-                      <tr key={entry.user.id} className="border-t" style={{ borderColor: 'var(--panel-border)' }}>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            {getRankIcon(entry.rank)}
-                          </div>
-                        </td>
+                    {sharpTokenLeaderboard.entries?.map((entry, index) => (
+                      <motion.tr
+                        key={entry.user.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="border-b border-[var(--panel-border)]/50 hover:bg-[var(--panel-bg)]/30 transition-colors"
+                      >
+                        <td className="px-4 py-3">{getRankIcon(entry.rank)}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             {entry.user.avatarUrl && (
-                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full border-2" style={{ borderColor: 'var(--panel-border)' }} />
+                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-[var(--panel-border)]" />
                             )}
                             <div>
-                              <div className="font-semibold">{entry.user.username}</div>
-                              <div className="text-xs opacity-70">{entry.user.fullName}</div>
+                              <div className="font-semibold text-[var(--foreground)]">{entry.user.username}</div>
+                              <div className="text-xs text-[var(--foreground)]/50">{entry.user.fullName}</div>
                               {getVipBadge(entry.user.vip)}
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 font-bold text-lg">{formatNumber(entry.tokens)}</td>
-                        <td className="px-4 py-3">
-                          <div className="text-sm">
-                            <div>{entry.collectionSummary?.bordersCount || 0} borders</div>
-                            <div>{entry.collectionSummary?.badgesCount || 0} badges</div>
-                            <div>{entry.collectionSummary?.stickersCount || 0} stickers</div>
-                          </div>
+                        <td className="px-4 py-3 font-bold text-lg text-[var(--accent-secondary)]">{formatNumber(entry.tokens)}</td>
+                        <td className="px-4 py-3 hidden sm:table-cell text-sm text-[var(--foreground)]/70">
+                          <div>{entry.collectionSummary?.bordersCount || 0} borders</div>
+                          <div>{entry.collectionSummary?.badgesCount || 0} badges</div>
+                          <div>{entry.collectionSummary?.stickersCount || 0} stickers</div>
                         </td>
-                      </tr>
+                      </motion.tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </motion.div>
             )}
-          </>
+          </AnimatePresence>
         )}
-      </div>
+      </motion.div>
 
       {/* Pagination */}
-      {leaderboardData && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm opacity-70">
-            Menampilkan {leaderboardData.entries?.length || 0} dari {formatNumber(leaderboardData.total || 0)} entries
+      {(leaderboardData || coinLeaderboard || sharpTokenLeaderboard) && (
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="text-sm text-[var(--foreground)]/60">
+            Menampilkan {(activeTab === 'coins' ? coinLeaderboard?.entries?.length : activeTab === 'tokens' ? sharpTokenLeaderboard?.entries?.length : leaderboardData?.entries?.length) || 0} dari {formatNumber((activeTab === 'coins' ? coinLeaderboard?.total : activeTab === 'tokens' ? sharpTokenLeaderboard?.total : leaderboardData?.total) || 0)} entries
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <motion.button
+              whileHover={{ scale: page <= 1 ? 1 : 1.05 }}
+              whileTap={{ scale: page <= 1 ? 1 : 0.95 }}
               onClick={() => setPage(Math.max(1, page - 1))}
               disabled={page <= 1}
-              className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              className="flex items-center gap-1 px-4 py-2.5 rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--panel-bg)] border border-[var(--panel-border)] text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 transition-colors"
             >
-              Previous
-            </button>
-            <span className="px-3 py-2 text-sm font-semibold">
-              {page} / {leaderboardData.totalPages || 1}
+              <ChevronLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Previous</span>
+            </motion.button>
+            <span className="px-4 py-2.5 text-sm font-semibold text-[var(--foreground)] bg-[var(--panel-bg)]/50 rounded-xl border border-[var(--panel-border)]">
+              {page} / {(activeTab === 'coins' ? coinLeaderboard?.totalPages : activeTab === 'tokens' ? sharpTokenLeaderboard?.totalPages : leaderboardData?.totalPages) || 1}
             </span>
-            <button
-              onClick={() => setPage((leaderboardData.totalPages || 1) > page ? page + 1 : page)}
-              disabled={page >= (leaderboardData.totalPages || 1)}
-              className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            <motion.button
+              whileHover={{ scale: page >= ((activeTab === 'coins' ? coinLeaderboard?.totalPages : activeTab === 'tokens' ? sharpTokenLeaderboard?.totalPages : leaderboardData?.totalPages) || 1) ? 1 : 1.05 }}
+              whileTap={{ scale: page >= ((activeTab === 'coins' ? coinLeaderboard?.totalPages : activeTab === 'tokens' ? sharpTokenLeaderboard?.totalPages : leaderboardData?.totalPages) || 1) ? 1 : 0.95 }}
+              onClick={() => setPage((activeTab === 'coins' ? coinLeaderboard?.totalPages : activeTab === 'tokens' ? sharpTokenLeaderboard?.totalPages : leaderboardData?.totalPages) || 1 > page ? page + 1 : page)}
+              disabled={page >= ((activeTab === 'coins' ? coinLeaderboard?.totalPages : activeTab === 'tokens' ? sharpTokenLeaderboard?.totalPages : leaderboardData?.totalPages) || 1)}
+              className="flex items-center gap-1 px-4 py-2.5 rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--panel-bg)] border border-[var(--panel-border)] text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 transition-colors"
             >
-              Next
-            </button>
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight className="w-4 h-4" />
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }

@@ -90,7 +90,7 @@ export default function MangaGrabListPage() {
             <div className="rounded-[28px] border-4 p-5 md:p-6" style={{ boxShadow: '10px 10px 0 #000', background: 'linear-gradient(135deg, var(--panel-bg) 0%, #dbeafe 100%)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-1 text-xs font-black" style={{ borderColor: 'var(--panel-border)', background: '#fff7ed', color: '#9a3412' }}>
+                  <div className="inline-flex items-center gap-2 rounded-full border-2 px-3 py-1 text-xs font-bold" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--accent-primary)' }}>
                     <Sparkles className="size-4" /> Monitoring Grab Manga
                   </div>
                   <div>
@@ -225,11 +225,11 @@ export default function MangaGrabListPage() {
                                 type="button"
                                 onClick={() => onFixGrabStack({ mangaId: manga.id, jobId: job.id, status: job?.status })}
                                 disabled={fixingKey === fixKey || loadingList}
-                                className="inline-flex items-center gap-2 rounded-2xl border-4 px-4 py-2 font-black disabled:opacity-60"
-                                style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)', background: '#fef3c7', color: '#92400e' }}
+                                className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2 font-bold disabled:opacity-60"
+                                style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--foreground)' }}
                               >
                                 <Wrench className={`size-4 ${fixingKey === fixKey ? 'animate-spin' : ''}`} />
-                                {fixingKey === fixKey ? 'Memperbaiki...' : 'Fix grab stack'}
+                                {fixingKey === fixKey ? 'Memperbaiki...' : 'Perbaiki'}
                               </button>
                             ) : null}
                             {manga?.id ? (
@@ -367,21 +367,21 @@ function formatDateTime(value) {
 }
 
 function getMiniTone(tone) {
-  if (tone === 'running') return { bg: '#dbeafe', fg: '#1d4ed8' };
-  if (tone === 'pending') return { bg: '#fef3c7', fg: '#92400e' };
-  if (tone === 'success') return { bg: '#dcfce7', fg: '#166534' };
-  if (tone === 'failed') return { bg: '#fee2e2', fg: '#991b1b' };
-  if (tone === 'partial') return { bg: '#fde68a', fg: '#92400e' };
+  if (tone === 'running') return { bg: 'var(--panel-bg)', fg: 'var(--accent-primary)' };
+  if (tone === 'pending') return { bg: 'var(--panel-bg)', fg: 'var(--foreground)' };
+  if (tone === 'success') return { bg: 'rgba(34,197,94,0.15)', fg: '#22c55e' };
+  if (tone === 'failed') return { bg: 'rgba(239,68,68,0.15)', fg: '#ef4444' };
+  if (tone === 'partial') return { bg: 'rgba(245,158,11,0.15)', fg: '#f59e0b' };
   return { bg: 'var(--background)', fg: 'var(--foreground)' };
 }
 
 function getStatusTone(status) {
   const s = String(status || '').toUpperCase();
-  if (s === 'RUNNING') return { bg: '#dbeafe', fg: '#1e3a8a', bar: '#2563eb' };
-  if (s === 'PENDING') return { bg: '#fef3c7', fg: '#92400e', bar: '#f59e0b' };
-  if (s === 'COMPLETED') return { bg: '#bbf7d0', fg: '#14532d', bar: '#16a34a' };
-  if (s === 'FAILED') return { bg: '#fecaca', fg: '#7f1d1d', bar: '#dc2626' };
-  if (s === 'PARTIAL') return { bg: '#fde68a', fg: '#78350f', bar: '#d97706' };
+  if (s === 'RUNNING') return { bg: 'var(--panel-bg)', fg: 'var(--accent-primary)', bar: 'var(--accent-primary)' };
+  if (s === 'PENDING') return { bg: 'var(--panel-bg)', fg: 'var(--foreground)', bar: '#f59e0b' };
+  if (s === 'COMPLETED') return { bg: 'rgba(34,197,94,0.15)', fg: '#22c55e', bar: '#22c55e' };
+  if (s === 'FAILED') return { bg: 'rgba(239,68,68,0.15)', fg: '#ef4444', bar: '#ef4444' };
+  if (s === 'PARTIAL') return { bg: 'rgba(245,158,11,0.15)', fg: '#f59e0b', bar: '#f59e0b' };
   return { bg: '#e5e7eb', fg: '#111827', bar: '#6b7280' };
 }
 

@@ -1,11 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "react-hot-toast";
-import { Clapperboard, Film, Gift, Plus, Pencil, Trash2, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
-import { useSession } from "@/hooks/useSession";
-import { getSession } from "@/lib/auth";
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { motion } from 'framer-motion';
+import { Clapperboard, Film, Gift, Plus, Trash2, RefreshCw, Power, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useSession } from '@/hooks/useSession';
+import { getSession } from '@/lib/auth';
 import {
   listWatchEventConfigs,
   createWatchEventConfig,
@@ -15,10 +16,50 @@ import {
   listAvatarBorders,
   listStickers,
   listBadges,
-} from "@/lib/api";
+} from '@/lib/api';
+import { ANIMATIONS, STYLES, REWARD_TYPES, LABELS } from './constants';
 
-const REWARD_TYPES = ["NONE", "BORDER", "STICKER", "SUPERBADGE"];
+// ============================================
+// DUMMY DATA - Hapus saat API sudah siap
+// ============================================
+const USE_DUMMY_DATA = true;
 
+const DUMMY_CONFIGS = [
+  {
+    id: 1,
+    is_active: true,
+    daily_reset: true,
+    starts_at: null,
+    ends_at: null,
+    thresholds: [
+      { id: 'T25', minutes: 30, episodes: null, coin_reward: 25, reward_type: 'NONE', reward_id: 0 },
+      { id: 'T50', minutes: 60, episodes: null, coin_reward: 50, reward_type: 'NONE', reward_id: 0 },
+      { id: 'T100', minutes: 120, episodes: null, coin_reward: 100, reward_type: 'STICKER', reward_id: 1 },
+    ]
+  },
+  {
+    id: 2,
+    is_active: false,
+    daily_reset: false,
+    starts_at: '2024-12-01T00:00',
+    ends_at: '2024-12-31T23:59',
+    thresholds: [
+      { id: 'EP3', minutes: null, episodes: 3, coin_reward: 30, reward_type: 'BADGE', reward_id: 1 },
+      { id: 'EP10', minutes: null, episodes: 10, coin_reward: 200, reward_type: 'BORDER', reward_id: 1 },
+    ]
+  }
+];
+
+const DUMMY_REWARD_OPTIONS = {
+  BADGE: [{ value: 1, label: 'Badge Pemula' }, { value: 2, label: 'Badge Pro' }],
+  STICKER: [{ value: 1, label: 'Sticker Anime' }, { value: 2, label: 'Sticker Emoji' }],
+  BORDER: [{ value: 1, label: 'Border Emas' }, { value: 2, label: 'Border Perak' }],
+  ITEM: [{ value: 1, label: 'Item Spesial' }]
+};
+
+// ============================================
+// Helper Functions
+// ============================================
 function toIsoOrNull(v) {
   const s = String(v || "").trim();
   if (!s) return null;
@@ -29,28 +70,30 @@ function toIsoOrNull(v) {
 
 function fromIsoToDateTimeLocal(iso) {
   if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
+  const dt = new Date(iso);
+  if (Number.isNaN(dt.getTime())) return "";
   const pad = (n) => String(n).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const mm = pad(d.getMonth() + 1);
-  const dd = pad(d.getDate());
-  const hh = pad(d.getHours());
-  const mi = pad(d.getMinutes());
-  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  const Y = dt.getFullYear();
+  const M = pad(dt.getMonth() + 1);
+  const D = pad(dt.getDate());
+  const h = pad(dt.getHours());
+  const m = pad(dt.getMinutes());
+  return `${Y}-${M}-${D}T${h}:${m}`;
 }
 
 function randomThresholdId() {
-  return `T${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  return `T${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
+// ============================================
+// Main Component
+// ============================================
 export function WatchEventConfigsContent({ embedded = false } = {}) {
   const router = useRouter();
   const { user, loading } = useSession();
 
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  const canAccess =
-    permissions.includes("watch-event-configs") || String(user?.role || "").toLowerCase() === "superadmin";
+  const canAccess = permissions.includes("watch-event-configs") || String(user?.role || "").toLowerCase() === "superadmin";
 
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
@@ -62,7 +105,6 @@ export function WatchEventConfigsContent({ embedded = false } = {}) {
   const [borders, setBorders] = useState([]);
   const [stickers, setStickers] = useState([]);
   const [badges, setBadges] = useState([]);
-  const [loadingLookups, setLoadingLookups] = useState({ borders: false, stickers: false, badges: false });
 
   const [mode, setMode] = useState("add");
   const [form, setForm] = useState({
@@ -74,93 +116,98 @@ export function WatchEventConfigsContent({ embedded = false } = {}) {
     ends_at: "",
   });
 
-  const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
+  // Load data
   useEffect(() => {
     if (!loading && !user) router.replace("/");
   }, [loading, user, router]);
 
   useEffect(() => {
     if (!embedded && !loading && user && !canAccess) {
-      toast.error("Kamu tidak punya izin untuk Konfigurasi Event Tonton");
       router.replace("/dashboard");
     }
   }, [embedded, loading, user, canAccess, router]);
 
-  const ensureLookupsLoaded = async (rewardType) => {
-    const type = String(rewardType || "NONE").toUpperCase();
+  // Load lookups
+  useEffect(() => {
+    if (USE_DUMMY_DATA) {
+      setBorders(DUMMY_REWARD_OPTIONS.BORDER);
+      setStickers(DUMMY_REWARD_OPTIONS.STICKER);
+      setBadges(DUMMY_REWARD_OPTIONS.BADGE);
+      return;
+    }
+    
     const token = getSession()?.token;
     if (!token) return;
 
-    if (type === "BORDER") {
-      if (loadingLookups.borders || borders.length > 0) return;
-      setLoadingLookups((s) => ({ ...s, borders: true }));
+    const loadLookups = async () => {
       try {
-        const res = await listAvatarBorders({ token, page: 1, limit: 200, q: "", active: true });
-        setBorders(Array.isArray(res?.items) ? res.items : []);
-      } catch (err) {
-        toast.error(err?.message || "Gagal memuat Bingkai Avatar");
-      } finally {
-        setLoadingLookups((s) => ({ ...s, borders: false }));
+        const [b, s, g] = await Promise.all([
+          listAvatarBorders({ token }),
+          listStickers({ token }),
+          listBadges({ token }),
+        ]);
+        setBorders(Array.isArray(b) ? b : []);
+        setStickers(Array.isArray(s) ? s : []);
+        setBadges(Array.isArray(g) ? g : []);
+      } catch {
+        // silent fail
       }
-    }
+    };
+    loadLookups();
+  }, []);
 
-    if (type === "STICKER") {
-      if (loadingLookups.stickers || stickers.length > 0) return;
-      setLoadingLookups((s) => ({ ...s, stickers: true }));
-      try {
-        const res = await listStickers({ token, page: 1, limit: 200, q: "" });
-        setStickers(Array.isArray(res?.items) ? res.items : []);
-      } catch (err) {
-        toast.error(err?.message || "Gagal memuat Stiker");
-      } finally {
-        setLoadingLookups((s) => ({ ...s, stickers: false }));
-      }
+  // Load list
+  const loadList = async () => {
+    if (USE_DUMMY_DATA) {
+      setItems(DUMMY_CONFIGS);
+      setTotal(DUMMY_CONFIGS.length);
+      return;
     }
-
-    if (type === "SUPERBADGE") {
-      if (loadingLookups.badges || badges.length > 0) return;
-      setLoadingLookups((s) => ({ ...s, badges: true }));
-      try {
-        const res = await listBadges({ token, page: 1, limit: 200, q: "", active: true });
-        setBadges(Array.isArray(res?.items) ? res.items : []);
-      } catch (err) {
-        toast.error(err?.message || "Gagal memuat Lencana");
-      } finally {
-        setLoadingLookups((s) => ({ ...s, badges: false }));
-      }
-    }
-  };
-
-  const loadList = async (opts = {}) => {
-    setLoadingList(true);
+    
+    const token = getSession()?.token;
+    if (!token) return;
     try {
-      const token = getSession()?.token;
-      const data = await listWatchEventConfigs({
-        token,
-        page,
-        limit,
-        is_active: filterActive === "" ? undefined : filterActive === "true",
-        ...opts,
-      });
-      setItems(Array.isArray(data.items) ? data.items : []);
-      setPage(data.page || 1);
-      setLimit(data.limit || 20);
-      setTotal(data.total || 0);
+      setLoadingList(true);
+      const res = await listWatchEventConfigs({ token, page, limit, isActive: filterActive || undefined });
+      setItems(Array.isArray(res?.data) ? res.data : []);
+      setTotal(res?.meta?.total || 0);
     } catch (err) {
-      toast.error(err?.message || "Gagal memuat configs");
+      toast.error(err?.message || "Gagal memuat config");
     } finally {
       setLoadingList(false);
     }
   };
 
   useEffect(() => {
-    if (!user || !canAccess) return;
-    loadList();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, canAccess, page, limit, filterActive]);
+    if (!USE_DUMMY_DATA) loadList();
+  }, [page, limit, filterActive]);
+
+  // Initial load for dummy data
+  useEffect(() => {
+    if (USE_DUMMY_DATA) loadList();
+  }, []);
+
+  const rewardOptionsForType = (type) => {
+    if (USE_DUMMY_DATA) return DUMMY_REWARD_OPTIONS[type] || [];
+    
+    switch (type) {
+      case "BORDER": return borders.map((x) => ({ value: x.id, label: x.name }));
+      case "STICKER": return stickers.map((x) => ({ value: x.id, label: x.name }));
+      case "BADGE": return badges.map((x) => ({ value: x.id, label: x.name }));
+      default: return [];
+    }
+  };
+
+  const normalizedThresholds = useMemo(() => {
+    return (Array.isArray(form.thresholds) ? form.thresholds : []).map((t, i) => ({
+      ...t,
+      key: t.id || `thr-${i}-${Math.random().toString(36).slice(2, 8)}`,
+    }));
+  }, [form.thresholds]);
 
   const resetForm = () => {
     setMode("add");
@@ -168,121 +215,25 @@ export function WatchEventConfigsContent({ embedded = false } = {}) {
       id: null,
       is_active: false,
       daily_reset: true,
-      thresholds: [{ id: "T25", minutes: 25, episodes: "", coin_reward: 10, reward_type: "NONE", reward_id: 0 }],
+      thresholds: [{ id: randomThresholdId(), minutes: "", episodes: "", coin_reward: 0, reward_type: "NONE", reward_id: 0 }],
       starts_at: "",
       ends_at: "",
     });
   };
 
   const onEdit = (it) => {
-    const hasThresholds = Array.isArray(it.thresholds) && it.thresholds.length > 0;
-
     setMode("edit");
-
-    if (hasThresholds) {
-      for (const t of it.thresholds) {
-        const rt = String(t?.reward_type || "NONE").toUpperCase();
-        if (["BORDER", "STICKER", "SUPERBADGE"].includes(rt)) {
-          ensureLookupsLoaded(rt);
-        }
-      }
-    }
-
     setForm({
       id: it.id,
       is_active: !!it.is_active,
-      daily_reset: it.daily_reset === undefined ? true : !!it.daily_reset,
-      thresholds: hasThresholds
-        ? it.thresholds.map((t) => ({
-            id: String(t?.id || randomThresholdId()),
-            minutes: t?.minutes === null || t?.minutes === undefined ? "" : Number(t.minutes),
-            episodes: t?.episodes === null || t?.episodes === undefined ? "" : Number(t.episodes),
-            coin_reward: Number(t?.coin_reward || 0),
-            reward_type: String(t?.reward_type || "NONE").toUpperCase(),
-            reward_id: Number(t?.reward_id || 0),
-          }))
-        : [{ id: randomThresholdId(), minutes: 25, episodes: "", coin_reward: 10, reward_type: "NONE", reward_id: 0 }],
+      daily_reset: !!it.daily_reset,
       starts_at: fromIsoToDateTimeLocal(it.starts_at),
       ends_at: fromIsoToDateTimeLocal(it.ends_at),
+      thresholds: Array.isArray(it.thresholds) && it.thresholds.length > 0
+        ? it.thresholds.map((t) => ({ ...t, reward_type: String(t.reward_type || "NONE").toUpperCase() }))
+        : [{ id: randomThresholdId(), minutes: "", episodes: "", coin_reward: 0, reward_type: "NONE", reward_id: 0 }],
     });
-  };
-
-  const normalizedThresholds = useMemo(() => {
-    const raw = Array.isArray(form.thresholds) ? form.thresholds : [];
-    return raw.map((t, idx) => ({
-      key: `${t?.id || "IDX"}${idx}`,
-      id: String(t?.id || ""),
-      minutes: t?.minutes === "" || t?.minutes === null || t?.minutes === undefined ? "" : Number(t.minutes),
-      episodes: t?.episodes === "" || t?.episodes === null || t?.episodes === undefined ? "" : Number(t.episodes),
-      coin_reward: Number(t?.coin_reward || 0),
-      reward_type: String(t?.reward_type || "NONE").toUpperCase(),
-      reward_id: Number(t?.reward_id || 0),
-    }));
-  }, [form.thresholds]);
-
-  const borderOptions = useMemo(() => {
-    return borders
-      .filter((b) => b && b.is_active)
-      .map((b) => ({
-        id: b.id,
-        label: `${b.title || b.code || "Border"} (#${b.id})`,
-      }));
-  }, [borders]);
-
-  const stickerOptions = useMemo(() => {
-    return stickers
-      .filter((s) => s && (s.is_active === undefined ? true : !!s.is_active))
-      .map((s) => ({
-        id: s.id,
-        label: `${s.name || s.code || "Sticker"} (#${s.id})`,
-      }));
-  }, [stickers]);
-
-  const badgeOptions = useMemo(() => {
-    return badges
-      .filter((b) => b && b.is_active)
-      .map((b) => ({
-        id: b.id,
-        label: `${b.name || b.code || "Badge"} (#${b.id})`,
-      }));
-  }, [badges]);
-
-  const rewardOptionsForType = (type) => {
-    const t = String(type || "NONE").toUpperCase();
-    if (t === "BORDER") return borderOptions;
-    if (t === "STICKER") return stickerOptions;
-    if (t === "SUPERBADGE") return badgeOptions;
-    return [];
-  };
-
-  const buildPayload = () => {
-    const startsAt = toIsoOrNull(form.starts_at);
-    const endsAt = toIsoOrNull(form.ends_at);
-
-    const thresholds = normalizedThresholds.map((t) => {
-      const minutes = t.minutes === "" ? undefined : Number(t.minutes);
-      const episodes = t.episodes === "" ? undefined : Number(t.episodes);
-
-      const rewardType = String(t.reward_type || "NONE").toUpperCase();
-      const rewardId = rewardType === "NONE" ? 0 : Number(t.reward_id || 0);
-
-      return {
-        id: String(t.id || ""),
-        ...(minutes !== undefined ? { minutes } : {}),
-        ...(episodes !== undefined ? { episodes } : {}),
-        coin_reward: Number(t.coin_reward || 0),
-        reward_type: rewardType,
-        reward_id: rewardId,
-      };
-    });
-
-    return {
-      is_active: !!form.is_active,
-      daily_reset: !!form.daily_reset,
-      thresholds,
-      starts_at: startsAt,
-      ends_at: endsAt,
-    };
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const onSubmit = async (e) => {
@@ -290,49 +241,36 @@ export function WatchEventConfigsContent({ embedded = false } = {}) {
     const token = getSession()?.token;
     if (!token) return toast.error("Token tidak tersedia");
 
+    const payload = {
+      is_active: !!form.is_active,
+      daily_reset: !!form.daily_reset,
+      starts_at: toIsoOrNull(form.starts_at),
+      ends_at: toIsoOrNull(form.ends_at),
+      thresholds: (Array.isArray(form.thresholds) ? form.thresholds : []).map((t) => ({
+        id: String(t.id || "").trim(),
+        minutes: t.minutes === "" || t.minutes == null ? null : Number(t.minutes),
+        episodes: t.episodes === "" || t.episodes == null ? null : Number(t.episodes),
+        coin_reward: Number(t.coin_reward || 0),
+        reward_type: String(t.reward_type || "NONE").toUpperCase(),
+        reward_id: t.reward_type && t.reward_type !== "NONE" ? Number(t.reward_id || 0) : 0,
+      })),
+    };
+
     try {
-      setSubmitting(true);
-      const payload = buildPayload();
-
-      const errs = [];
-      const seen = new Set();
-
-      for (const t of payload.thresholds || []) {
-        const id = String(t.id || "").trim();
-        if (!id) errs.push("Threshold id wajib diisi");
-        if (id && seen.has(id)) errs.push(`Threshold id duplikat: ${id}`);
-        if (id) seen.add(id);
-        if (t.minutes === undefined && t.episodes === undefined) errs.push(`Threshold ${id || "(tanpa id)"} wajib punya minutes atau episodes`);
-
-        const rt = String(t.reward_type || "NONE").toUpperCase();
-        if (!REWARD_TYPES.includes(rt)) errs.push(`Reward type tidak valid untuk threshold ${id || "(tanpa id)"}`);
-        if (rt !== "NONE") {
-          if (!Number.isFinite(Number(t.reward_id)) || Number(t.reward_id) <= 0) {
-            errs.push(`Reward id wajib > 0 untuk threshold ${id || "(tanpa id)"}`);
-          }
-        }
-      }
-
-      if (errs.length > 0) {
-        toast.error(errs[0]);
-        return;
-      }
-
+      setSaving(true);
       if (mode === "add") {
-        const res = await createWatchEventConfig({ token, payload });
-        toast.success(res?.message || "Config dibuat");
+        await createWatchEventConfig({ token, ...payload });
+        toast.success("Config ditambahkan");
       } else {
-        const res = await updateWatchEventConfig({ token, id: form.id, payload });
-        toast.success(res?.message || "Config diupdate");
+        await updateWatchEventConfig({ token, id: form.id, ...payload });
+        toast.success("Config diperbarui");
       }
-
       resetForm();
-      setPage(1);
-      await loadList({ page: 1 });
+      await loadList();
     } catch (err) {
       toast.error(err?.message || "Gagal menyimpan config");
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
@@ -367,664 +305,307 @@ export function WatchEventConfigsContent({ embedded = false } = {}) {
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil((total || 0) / (limit || 1)));
-
-  const renderWindow = (it) => {
-    const s = it?.starts_at ? new Date(it.starts_at).toLocaleString() : "-";
-    const e = it?.ends_at ? new Date(it.ends_at).toLocaleString() : "-";
-    return `${s} → ${e}`;
-  };
-
-  const renderConfigSummary = (it) => {
-    const raw = Array.isArray(it?.thresholds) ? it.thresholds : [];
-    if (raw.length === 0) return <span className="opacity-70">-</span>;
-
-    const formatReward = (t) => {
-      const rt = String(t?.reward_type || "NONE").toUpperCase();
-      const rid = Number(t?.reward_id || 0);
-      if (rt === "NONE") return "-";
-      if (!rid) return rt;
-      return `${rt} #${rid}`;
-    };
-
-    const formatReq = (t) => {
-      const mm = t?.minutes ? `${t.minutes}m` : "";
-      const ep = t?.episodes ? `${t.episodes}ep` : "";
-      return [mm, ep].filter(Boolean).join("/") || "-";
-    };
-
-    const maxShow = 2;
-    const shown = raw.slice(0, maxShow);
-    const remaining = Math.max(0, raw.length - shown.length);
-
-    return (
-      <div className="space-y-1">
-        <div className="text-[11px] font-extrabold">Tingkat: {raw.length}</div>
-        <div className="space-y-1">
-          {shown.map((t, idx) => (
-            <div key={`${t?.id || "IDX"}-${idx}`} className="text-[11px] leading-snug">
-              <span className="font-extrabold">{t?.id || "?"}</span>
-              <span className="opacity-80"> · </span>
-              <span>{formatReq(t)}</span>
-              <span className="opacity-80"> · </span>
-              <span className="font-extrabold">{Number(t?.coin_reward || 0)} koin</span>
-              <span className="opacity-80"> · </span>
-              <span>{formatReward(t)}</span>
-            </div>
-          ))}
-          {remaining > 0 ? <div className="text-[11px] opacity-70">+{remaining} lainnya</div> : null}
-        </div>
-      </div>
-    );
-  };
-
-  const renderDateTime = (value) => {
-    if (!value) return "-";
-    const dt = new Date(value);
-    return Number.isNaN(dt.getTime()) ? "-" : dt.toLocaleString();
-  };
-
   const activeCount = useMemo(() => items.filter((it) => !!it?.is_active).length, [items]);
-  const totalThresholds = useMemo(
-    () => items.reduce((sum, it) => sum + (Array.isArray(it?.thresholds) ? it.thresholds.length : 0), 0),
-    [items]
-  );
+  const totalThresholds = useMemo(() => items.reduce((sum, it) => sum + (Array.isArray(it?.thresholds) ? it.thresholds.length : 0), 0), [items]);
 
   if (loading || !user) return null;
 
+  const totalPages = Math.max(1, Math.ceil((total || 0) / (limit || 20)));
+
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div
-          className="rounded-[28px] border-4 p-5 md:p-6"
-          style={{
-            boxShadow: "10px 10px 0 #000",
-            background: "linear-gradient(135deg, var(--panel-bg) 0%, #dbeafe 100%)",
-            borderColor: "var(--panel-border)",
-            color: "var(--foreground)",
-          }}
-        >
-          <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-1 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "#e0f2fe", color: "#1d4ed8" }}>
-            <Clapperboard className="size-4" /> Watch Event
-          </div>
-          <h2 className="mt-4 text-2xl md:text-3xl font-black flex items-center gap-3">
-            <Film className="size-7" /> Konfigurasi Event Tonton
-          </h2>
-          <p className="mt-3 max-w-3xl text-sm md:text-base font-semibold opacity-80">
-            Atur reward berdasarkan ambang menit atau episode, coin bonus, hadiah item, serta jadwal aktif event tonton dengan tampilan yang lebih rapi.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 rounded-[28px] border-4 p-5" style={{ boxShadow: "10px 10px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
-          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#f3f4f6" }}>
-            <div className="text-xs font-black uppercase tracking-wide opacity-70">Total Config</div>
-            <div className="mt-2 text-2xl font-black">{total}</div>
-          </div>
-          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#dcfce7", color: "#166534" }}>
-            <div className="text-xs font-black uppercase tracking-wide opacity-70">Aktif</div>
-            <div className="mt-2 text-2xl font-black">{activeCount}</div>
-          </div>
-          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#ede9fe", color: "#6d28d9" }}>
-            <div className="text-xs font-black uppercase tracking-wide opacity-70">Mode Form</div>
-            <div className="mt-2 text-sm font-black">{mode === "add" ? "Tambah Baru" : `Edit #${form.id}`}</div>
-          </div>
-          <div className="rounded-[20px] border-4 p-4" style={{ borderColor: "var(--panel-border)", background: "#dbeafe", color: "#1d4ed8" }}>
-            <div className="text-xs font-black uppercase tracking-wide opacity-70">Threshold</div>
-            <div className="mt-2 text-2xl font-black">{totalThresholds}</div>
+    <motion.div variants={ANIMATIONS.container} initial="hidden" animate="visible" className="space-y-5">
+      {/* Header & Stats */}
+      <motion.div variants={ANIMATIONS.item} className="space-y-4">
+        <div className={`${STYLES.card} p-5 sm:p-6`} style={STYLES.cardShadow}>
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
+                  <Clapperboard className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-xs font-medium text-[var(--foreground)]/50 uppercase tracking-wide">Watch Event</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-[var(--foreground)] flex items-center gap-2">
+                <Film className="w-6 h-6" /> Konfigurasi Event Tonton
+              </h2>
+              <p className="mt-2 text-sm text-[var(--foreground)]/60 max-w-lg">
+                Atur reward berdasarkan menit/episode nonton. User dapat klaim reward saat mencapai threshold.
+              </p>
+            </div>
+            <button onClick={loadList} disabled={loadingList}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] font-bold text-sm hover:bg-[var(--accent-primary)]/10 transition-colors disabled:opacity-50"
+              style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)' }}>
+              <RefreshCw className={`w-4 h-4 ${loadingList ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{loadingList ? 'Memuat...' : 'Refresh'}</span>
+            </button>
           </div>
         </div>
-      </div>
 
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)", color: "var(--foreground)" }}>
-          <Gift className="size-4" /> Reward menonton berdasarkan progress dan threshold
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard label="Total Config" value={total} />
+          <StatCard label="Aktif" value={activeCount} tone="active" />
+          <StatCard label="Mode" value={mode === 'add' ? 'Tambah' : `Edit #${form.id}`} />
+          <StatCard label="Threshold" value={totalThresholds} />
         </div>
-        <button
-          type="button"
-          onClick={async () => {
-            await loadList();
-          }}
-          className="px-4 py-3 border-4 rounded-2xl font-extrabold"
-          style={{
-            boxShadow: "6px 6px 0 #000",
-            background: "var(--panel-bg)",
-            borderColor: "var(--panel-border)",
-            color: "var(--foreground)",
-          }}
-        >
-          <span className="inline-flex items-center gap-2">
-            <RefreshCw className="size-4" /> Muat Ulang
-          </span>
-        </button>
-      </div>
+      </motion.div>
 
-      <div
-        className="p-4 border-4 rounded-[24px]"
-        style={{
-          boxShadow: "8px 8px 0 #000",
-          background: "var(--panel-bg)",
-          borderColor: "var(--panel-border)",
-          color: "var(--foreground)",
-        }}
-      >
-        <div className="mb-3 text-sm font-black opacity-75">Filter Config</div>
-        <div className="grid sm:grid-cols-[220px_1fr] gap-3 items-center">
-          <select
-            value={filterActive}
-            onChange={(e) => {
-              setPage(1);
-              setFilterActive(e.target.value);
-            }}
-            className="px-3 py-2 border-4 rounded-lg font-extrabold"
-            style={{
-              boxShadow: "4px 4px 0 #000",
-              background: "var(--panel-bg)",
-              borderColor: "var(--panel-border)",
-              color: "var(--foreground)",
-            }}
-          >
-            <option value="">Semua</option>
-            <option value="true">Aktif saja</option>
-            <option value="false">Nonaktif saja</option>
-          </select>
-          <div className="text-sm font-extrabold">Total: {total}</div>
+      {/* Filter */}
+      <motion.div variants={ANIMATIONS.item} className={`${STYLES.card} p-4`} style={STYLES.cardShadow}>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="text-sm font-bold text-[var(--foreground)]/70">Filter Config</div>
+          <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-3">
+            <select value={filterActive} onChange={(e) => { setPage(1); setFilterActive(e.target.value); }}
+              className="px-3 py-2 rounded-xl border-2 bg-[var(--panel-bg)] text-[var(--foreground)] text-sm font-bold"
+              style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', borderColor: 'var(--panel-border)' }}>
+              <option value="">Semua</option>
+              <option value="true">Aktif saja</option>
+              <option value="false">Nonaktif saja</option>
+            </select>
+            <div className="text-sm font-bold text-[var(--foreground)]/60">
+              Total: <span className="text-[var(--accent-primary)]">{total}</span> config
+            </div>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
-      <div
-        className="p-4 border-4 rounded-[24px] space-y-4"
-        style={{
-          boxShadow: "8px 8px 0 #000",
-          background: "var(--panel-bg)",
-          borderColor: "var(--panel-border)",
-          color: "var(--foreground)",
-        }}
-      >
-        <div>
-          <div className="text-sm font-extrabold">{mode === "add" ? "Tambah Config" : `Edit Config #${form.id}`}</div>
-          <div className="mt-1 text-xs font-semibold opacity-70">Tentukan reset harian, periode event, serta daftar threshold reward menonton.</div>
+      {/* Form */}
+      <motion.div variants={ANIMATIONS.item} className={`${STYLES.card} p-4 sm:p-5`} style={STYLES.cardShadow}>
+        <div className="flex items-center justify-between gap-3 mb-4 pb-4 border-b border-[var(--panel-border)]">
+          <div>
+            <h3 className="text-lg font-bold text-[var(--foreground)]">{form.id ? `Edit Config #${form.id}` : 'Tambah Config Baru'}</h3>
+            <p className="text-xs text-[var(--foreground)]/60 mt-0.5">{LABELS.thresholdCount(normalizedThresholds.length)}</p>
+          </div>
+          {form.id && (
+            <button type="button" onClick={resetForm}
+              className="px-3 py-1.5 rounded-lg text-sm font-bold text-[var(--foreground)]/70 hover:bg-[var(--panel-bg)] transition-colors border border-[var(--panel-border)]">
+              Reset Form
+            </button>
+          )}
         </div>
 
-        <form onSubmit={onSubmit} className="grid gap-3">
-          <div className="grid gap-3 lg:grid-cols-[240px_minmax(0,1fr)]">
-            <div className="rounded-[22px] border-4 p-4 grid gap-3 content-start" style={{ boxShadow: "6px 6px 0 #000", background: "#dbeafe", borderColor: "var(--panel-border)", color: "#1d4ed8" }}>
-              <label className="flex items-center gap-2 text-sm font-semibold">
-                <input
-                  type="checkbox"
-                  checked={!!form.is_active}
-                  onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
-                />
-                <span>Config aktif</span>
-              </label>
-
-              <label className="flex items-center gap-2 text-sm font-semibold">
-                <input
-                  type="checkbox"
-                  checked={!!form.daily_reset}
-                  onChange={(e) => setForm((f) => ({ ...f, daily_reset: e.target.checked }))}
-                />
-                <span>Reset harian</span>
-              </label>
-
-              <div className="rounded-2xl border-4 px-3 py-2 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "rgba(255,255,255,0.7)", color: "#1d4ed8" }}>
-                {normalizedThresholds.length} threshold aktif di editor.
+        <form onSubmit={onSubmit} className="space-y-4">
+          {/* Settings Row */}
+          <div className="grid lg:grid-cols-[200px_1fr] gap-4">
+            <div className={`${STYLES.card} p-3 bg-blue-500/5`} style={{ ...STYLES.cardShadow, borderColor: 'var(--panel-border)' }}>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-bold cursor-pointer">
+                  <input type="checkbox" checked={!!form.is_active} onChange={(e) => setForm(f => ({ ...f, is_active: e.target.checked }))} className="w-4 h-4 rounded border-2" />
+                  <span>{LABELS.isActive}</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm font-bold cursor-pointer">
+                  <input type="checkbox" checked={!!form.daily_reset} onChange={(e) => setForm(f => ({ ...f, daily_reset: e.target.checked }))} className="w-4 h-4 rounded border-2" />
+                  <span>{LABELS.dailyReset}</span>
+                </label>
               </div>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="grid gap-1 rounded-[22px] border-4 p-4" style={{ boxShadow: "6px 6px 0 #000", background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
-                <span className="text-xs font-extrabold">Mulai (opsional)</span>
-                <input
-                  type="datetime-local"
-                  value={form.starts_at}
-                  onChange={(e) => setForm((f) => ({ ...f, starts_at: e.target.value }))}
-                  className="px-3 py-2 border-4 rounded-xl font-semibold"
-                  style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
-                />
-              </label>
-              <label className="grid gap-1 rounded-[22px] border-4 p-4" style={{ boxShadow: "6px 6px 0 #000", background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
-                <span className="text-xs font-extrabold">Selesai (opsional)</span>
-                <input
-                  type="datetime-local"
-                  value={form.ends_at}
-                  onChange={(e) => setForm((f) => ({ ...f, ends_at: e.target.value }))}
-                  className="px-3 py-2 border-4 rounded-xl font-semibold"
-                  style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}
-                />
-              </label>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <DateInput label={LABELS.startsAt} value={form.starts_at} onChange={(v) => setForm(f => ({ ...f, starts_at: v }))} />
+              <DateInput label={LABELS.endsAt} value={form.ends_at} onChange={(v) => setForm(f => ({ ...f, ends_at: v }))} />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-xs font-extrabold">Ambang</div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setForm((f) => ({
-                    ...f,
-                    thresholds: [
-                      ...(Array.isArray(f.thresholds) ? f.thresholds : []),
-                      { id: randomThresholdId(), minutes: "", episodes: "", coin_reward: 0, reward_type: "NONE", reward_id: 0 },
-                    ],
-                  }))
-                }
-                className="px-3 py-2 border-4 rounded-lg font-extrabold"
-                style={{
-                  boxShadow: "4px 4px 0 #000",
-                  background: "var(--panel-bg)",
-                  borderColor: "var(--panel-border)",
-                  color: "var(--foreground)",
-                }}
-              >
-                <span className="inline-flex items-center gap-2">
-                  <Plus className="size-4" /> Tambah ambang
-                </span>
+          {/* Threshold Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-[var(--foreground)]">Threshold Reward</h4>
+              <button type="button" onClick={() => setForm(f => ({ ...f, thresholds: [...(Array.isArray(f.thresholds) ? f.thresholds : []), { id: randomThresholdId(), minutes: "", episodes: "", coin_reward: 0, reward_type: "NONE", reward_id: 0 }] }))}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--accent-primary)] text-white text-xs font-bold hover:opacity-90 transition-opacity" style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.2)' }}>
+                <Plus className="w-3.5 h-3.5" /> {LABELS.addThreshold}
               </button>
             </div>
 
-            <div className="grid gap-3">
-              {normalizedThresholds.map((t, idx) => {
-                const rt = String(t.reward_type || "NONE").toUpperCase();
-                const needsRewardId = rt !== "NONE";
-                const opts = rewardOptionsForType(rt);
-
-                return (
-                  <div
-                    key={t.key}
-                    className="p-4 border-4 rounded-[22px] space-y-4"
-                    style={{
-                      boxShadow: "6px 6px 0 #000",
-                      background: idx % 2 === 0 ? "var(--background)" : "var(--panel-bg)",
-                      borderColor: "var(--panel-border)",
-                      color: "var(--foreground)",
-                    }}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="text-sm font-extrabold">Tingkat #{idx + 1}</div>
-                        <div className="rounded-full border-4 px-2 py-1 text-[11px] font-black" style={{ borderColor: "var(--panel-border)", background: "#e0f2fe", color: "#1d4ed8" }}>
-                          Threshold reward
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setForm((f) => {
-                            const next = [...(Array.isArray(f.thresholds) ? f.thresholds : [])];
-                            next.splice(idx, 1);
-                            return {
-                              ...f,
-                              thresholds:
-                                next.length > 0
-                                  ? next
-                                  : [{ id: randomThresholdId(), minutes: "", episodes: "", coin_reward: 0, reward_type: "NONE", reward_id: 0 }],
-                            };
-                          });
-                        }}
-                        className="px-3 py-2 border-4 rounded-xl font-extrabold"
-                        style={{
-                          boxShadow: "4px 4px 0 #000",
-                          background: "#fee2e2",
-                          borderColor: "var(--panel-border)",
-                          color: "#991b1b",
-                        }}
-                      >
-                        Hapus
-                      </button>
-                    </div>
-
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                      <label className="grid gap-1">
-                        <span className="text-xs font-extrabold">ID</span>
-                        <input
-                          value={t.id}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setForm((f) => {
-                              const next = [...(Array.isArray(f.thresholds) ? f.thresholds : [])];
-                              next[idx] = { ...next[idx], id: v };
-                              return { ...f, thresholds: next };
-                            });
-                          }}
-                          className="px-3 py-2 border-4 rounded-xl font-semibold"
-                          style={{
-                            boxShadow: "4px 4px 0 #000",
-                            background: "var(--panel-bg)",
-                            borderColor: "var(--panel-border)",
-                            color: "var(--foreground)",
-                          }}
-                        />
-                      </label>
-
-                      <label className="grid gap-1">
-                        <span className="text-xs font-extrabold">Hadiah koin</span>
-                        <input
-                          type="number"
-                          min={0}
-                          value={t.coin_reward}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setForm((f) => {
-                              const next = [...(Array.isArray(f.thresholds) ? f.thresholds : [])];
-                              next[idx] = { ...next[idx], coin_reward: Number(v || 0) };
-                              return { ...f, thresholds: next };
-                            });
-                          }}
-                          className="px-3 py-2 border-4 rounded-lg font-semibold"
-                          style={{
-                            boxShadow: "4px 4px 0 #000",
-                            background: "var(--panel-bg)",
-                            borderColor: "var(--panel-border)",
-                            color: "var(--foreground)",
-                          }}
-                        />
-                      </label>
-
-                      <label className="grid gap-1">
-                        <span className="text-xs font-extrabold">Menit (opsional)</span>
-                        <input
-                          type="number"
-                          min={0}
-                          value={t.minutes}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setForm((f) => {
-                              const next = [...(Array.isArray(f.thresholds) ? f.thresholds : [])];
-                              next[idx] = { ...next[idx], minutes: v === "" ? "" : Number(v) };
-                              return { ...f, thresholds: next };
-                            });
-                          }}
-                          className="px-3 py-2 border-4 rounded-lg font-semibold"
-                          style={{
-                            boxShadow: "4px 4px 0 #000",
-                            background: "var(--panel-bg)",
-                            borderColor: "var(--panel-border)",
-                            color: "var(--foreground)",
-                          }}
-                        />
-                      </label>
-
-                      <label className="grid gap-1">
-                        <span className="text-xs font-extrabold">Episode (opsional)</span>
-                        <input
-                          type="number"
-                          min={0}
-                          value={t.episodes}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setForm((f) => {
-                              const next = [...(Array.isArray(f.thresholds) ? f.thresholds : [])];
-                              next[idx] = { ...next[idx], episodes: v === "" ? "" : Number(v) };
-                              return { ...f, thresholds: next };
-                            });
-                          }}
-                          className="px-3 py-2 border-4 rounded-lg font-semibold"
-                          style={{
-                            boxShadow: "4px 4px 0 #000",
-                            background: "var(--panel-bg)",
-                            borderColor: "var(--panel-border)",
-                            color: "var(--foreground)",
-                          }}
-                        />
-                      </label>
-
-                      <label className="grid gap-1">
-                        <span className="text-xs font-extrabold">Tipe hadiah</span>
-                        <select
-                          value={rt}
-                          onChange={(e) => {
-                            const v = String(e.target.value || "NONE").toUpperCase();
-                            ensureLookupsLoaded(v);
-                            setForm((f) => {
-                              const next = [...(Array.isArray(f.thresholds) ? f.thresholds : [])];
-                              next[idx] = { ...next[idx], reward_type: v, reward_id: v === "NONE" ? 0 : Number(next[idx]?.reward_id || 0) };
-                              return { ...f, thresholds: next };
-                            });
-                          }}
-                          className="px-3 py-2 border-4 rounded-xl font-extrabold"
-                          style={{
-                            boxShadow: "4px 4px 0 #000",
-                            background: "var(--panel-bg)",
-                            borderColor: "var(--panel-border)",
-                            color: "var(--foreground)",
-                          }}
-                        >
-                          {REWARD_TYPES.map((x) => (
-                            <option key={x} value={x}>
-                              {x}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="grid gap-1">
-                        <span className="text-xs font-extrabold">Item hadiah</span>
-                        {needsRewardId ? (
-                          <select
-                            value={Number(t.reward_id || 0)}
-                            onChange={(e) => {
-                              const v = Number(e.target.value || 0);
-                              setForm((f) => {
-                                const next = [...(Array.isArray(f.thresholds) ? f.thresholds : [])];
-                                next[idx] = { ...next[idx], reward_id: v };
-                                return { ...f, thresholds: next };
-                              });
-                            }}
-                            className="px-3 py-2 border-4 rounded-xl font-extrabold"
-                            style={{
-                              boxShadow: "4px 4px 0 #000",
-                              background: "var(--panel-bg)",
-                              borderColor: "var(--panel-border)",
-                              color: "var(--foreground)",
-                            }}
-                          >
-                            <option value={0}>
-                              {loadingLookups.borders || loadingLookups.stickers || loadingLookups.badges ? "Memuat..." : "Pilih item"}
-                            </option>
-                            {opts.map((o) => (
-                              <option key={o.id} value={o.id}>
-                                {o.label}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            value="NONE"
-                            disabled
-                            className="px-3 py-2 border-4 rounded-xl font-semibold opacity-70"
-                            style={{
-                              boxShadow: "4px 4px 0 #000",
-                              background: "var(--panel-bg)",
-                              borderColor: "var(--panel-border)",
-                              color: "var(--foreground)",
-                            }}
-                          />
-                        )}
-                      </label>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="space-y-2">
+              {normalizedThresholds.map((t, idx) => (
+                <ThresholdRow key={t.key} data={t} index={idx}
+                  onChange={(field, value) => { setForm(f => { const arr = [...(Array.isArray(f.thresholds) ? f.thresholds : [])]; arr[idx] = { ...arr[idx], [field]: value }; return { ...f, thresholds: arr }; }); }}
+                  onDelete={() => { setForm(f => { const arr = [...(Array.isArray(f.thresholds) ? f.thresholds : [])]; arr.splice(idx, 1); return { ...f, thresholds: arr.length > 0 ? arr : [{ id: randomThresholdId(), minutes: "", episodes: "", coin_reward: 0, reward_type: "NONE", reward_id: 0 }] }; }); }}
+                  rewardOptions={rewardOptionsForType(String(t.reward_type || 'NONE').toUpperCase())} />
+              ))}
+              {normalizedThresholds.length === 0 && (
+                <div className="text-center py-6 text-sm text-[var(--foreground)]/50 border-2 border-dashed border-[var(--panel-border)] rounded-xl">
+                  Belum ada threshold. Klik "{LABELS.addThreshold}" untuk menambahkan.
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-              style={{
-                boxShadow: "4px 4px 0 #000",
-                background: mode === "add" ? "var(--accent-add)" : "var(--accent-edit)",
-                color: mode === "add" ? "var(--accent-add-foreground)" : "var(--accent-edit-foreground)",
-                borderColor: "var(--panel-border)",
-              }}
-            >
-              <span className="inline-flex items-center gap-2">
-                {mode === "add" ? <Plus className="size-4" /> : <Pencil className="size-4" />}
-                {submitting ? (mode === "add" ? "Menambah..." : "Menyimpan...") : mode === "add" ? "Tambah" : "Simpan"}
-              </span>
+          {/* Submit */}
+          <div className="pt-3 border-t border-[var(--panel-border)]">
+            <button type="submit" disabled={saving}
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[var(--accent-primary)] text-white font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+              style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
+              {saving ? 'Menyimpan...' : (form.id ? 'Simpan Perubahan' : 'Tambah Config')}
             </button>
-
-            {mode === "edit" ? (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-3 py-2 border-4 rounded-lg font-extrabold"
-                style={{
-                  boxShadow: "4px 4px 0 #000",
-                  background: "var(--panel-bg)",
-                  borderColor: "var(--panel-border)",
-                  color: "var(--foreground)",
-                }}
-              >
-                Batal
-              </button>
-            ) : null}
           </div>
         </form>
-      </div>
+      </motion.div>
 
-      <div className="rounded-[24px] border-4 p-4" style={{ boxShadow: "8px 8px 0 #000", background: "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-extrabold">Daftar Config</div>
-            <div className="mt-1 text-xs font-semibold opacity-70">Pantau periode event, threshold reward, serta aksi edit, toggle, dan hapus dari satu panel.</div>
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: "var(--panel-border)", background: "#dbeafe", color: "#1d4ed8" }}>
-            <Film className="size-4" /> {items.length} item ditampilkan
-          </div>
+      {/* Config List */}
+      <motion.div variants={ANIMATIONS.item} className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-sm font-bold text-[var(--foreground)]/70">Daftar Config ({items.length} item)</h3>
         </div>
-        <div className="grid gap-3">
-          {items.map((it) => (
-            <div key={it.id} className="rounded-[22px] border-4 p-4" style={{ boxShadow: "6px 6px 0 #000", background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)", opacity: loadingList ? 0.7 : 1 }}>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="grid gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="text-base font-black">Config #{it.id}</div>
-                    <div className="rounded-full border-4 px-2 py-1 text-[11px] font-black" style={{ borderColor: "var(--panel-border)", background: it.is_active ? "#dcfce7" : "#f3f4f6", color: it.is_active ? "#166534" : "#374151" }}>
-                      {it.is_active ? "Aktif" : "Nonaktif"}
-                    </div>
-                    <div className="rounded-full border-4 px-2 py-1 text-[11px] font-black" style={{ borderColor: "var(--panel-border)", background: it.daily_reset ? "#dbeafe" : "#fef3c7", color: it.daily_reset ? "#1d4ed8" : "#92400e" }}>
-                      {it.daily_reset ? "Reset harian" : "Tanpa reset harian"}
-                    </div>
-                  </div>
-                  <div className="text-sm font-semibold opacity-80">{Array.isArray(it?.thresholds) ? it.thresholds.length : 0} threshold reward</div>
-                </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onEdit(it)}
-                    className="px-3 py-2 border-4 rounded-xl font-extrabold"
-                    style={{ boxShadow: "4px 4px 0 #000", background: "var(--accent-edit)", color: "var(--accent-edit-foreground)", borderColor: "var(--panel-border)" }}
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <Pencil className="size-4" /> Edit
-                    </span>
-                  </button>
+        {items.map((cfg) => (
+          <ConfigCard key={cfg.id} data={cfg} onEdit={onEdit} onToggle={onToggle} onDelete={onDelete}
+            loadingList={loadingList} togglingId={togglingId} deletingId={deletingId} />
+        ))}
 
-                  <button
-                    type="button"
-                    onClick={() => onToggle(it)}
-                    disabled={togglingId === it.id}
-                    className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
-                    style={{ boxShadow: "4px 4px 0 #000", background: it.is_active ? "#FFD803" : "#FFF", color: "#111", borderColor: "var(--panel-border)" }}
-                  >
-                    {togglingId === it.id ? "..." : it.is_active ? (
-                      <span className="inline-flex items-center gap-2">
-                        <ToggleRight className="size-4" /> Aktif
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-2">
-                        <ToggleLeft className="size-4" /> Nonaktif
-                      </span>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => onDelete(it)}
-                    disabled={deletingId === it.id}
-                    className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
-                    style={{ boxShadow: "4px 4px 0 #000", background: "var(--accent-delete)", color: "var(--accent-delete-foreground)", borderColor: "var(--panel-border)" }}
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <Trash2 className="size-4" /> {deletingId === it.id ? "Menghapus..." : "Hapus"}
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-                <div className="rounded-[20px] border-4 p-3 text-xs" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
-                  {renderConfigSummary(it)}
-                </div>
-
-                <div className="grid gap-2">
-                  <div className="rounded-[18px] border-4 p-3" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
-                    <div className="text-xs font-black opacity-70">Mulai</div>
-                    <div className="mt-1 text-sm font-semibold">{renderDateTime(it.starts_at)}</div>
-                  </div>
-                  <div className="rounded-[18px] border-4 p-3" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
-                    <div className="text-xs font-black opacity-70">Selesai</div>
-                    <div className="mt-1 text-sm font-semibold">{renderDateTime(it.ends_at)}</div>
-                  </div>
-                </div>
-              </div>
+        {items.length === 0 && !loadingList && (
+          <div className={`${STYLES.card} p-8 text-center`} style={STYLES.cardShadow}>
+            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-[var(--panel-bg)] flex items-center justify-center">
+              <Gift className="w-8 h-8 text-[var(--foreground)]/30" />
             </div>
-          ))}
+            <div className="text-lg font-bold text-[var(--foreground)]">Belum ada config</div>
+          </div>
+        )}
+      </motion.div>
 
-          {items.length === 0 ? (
-            <div className="rounded-[22px] border-4 px-4 py-8 text-center text-sm font-semibold opacity-70" style={{ borderColor: "var(--panel-border)", background: "var(--background)" }}>
-              Tidak ada data
-            </div>
-          ) : null}
-        </div>
-      </div>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <motion.div variants={ANIMATIONS.item} className="flex items-center justify-between gap-3">
+          <div className="text-sm font-bold text-[var(--foreground)]/70">Halaman {page} / {totalPages}</div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
+              className="px-4 py-2 rounded-xl bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] font-bold text-sm disabled:opacity-50"
+              style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)' }}>
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
+              className="px-4 py-2 rounded-xl bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] font-bold text-sm disabled:opacity-50"
+              style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)' }}>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-sm font-extrabold">
-          Halaman {page} / {totalPages}
+// ============================================
+// Sub Components
+// ============================================
+function DateInput({ label, value, onChange }) {
+  return (
+    <label className="space-y-1">
+      <span className="text-xs font-bold text-[var(--foreground)]/70">{label}</span>
+      <input type="datetime-local" value={value} onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 rounded-xl border-2 bg-[var(--panel-bg)] text-[var(--foreground)] text-sm font-bold"
+        style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', borderColor: 'var(--panel-border)' }} />
+    </label>
+  );
+}
+
+function ThresholdRow({ data, index, onChange, onDelete, rewardOptions }) {
+  const rt = String(data.reward_type || 'NONE').toUpperCase();
+  const needsRewardId = rt !== 'NONE';
+
+  return (
+    <div className="p-3 rounded-xl border-2 bg-[var(--panel-bg)]" style={{ borderColor: 'var(--panel-border)', boxShadow: '2px 2px 0 rgba(0,0,0,0.1)' }}>
+      <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+        <div className="flex items-center gap-2 lg:w-24">
+          <span className="px-2 py-0.5 rounded bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] text-xs font-black">#{index + 1}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page <= 1}
-            className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-            style={{
-              boxShadow: "4px 4px 0 #000",
-              background: "var(--panel-bg)",
-              borderColor: "var(--panel-border)",
-              color: "var(--foreground)",
-            }}
-          >
-            Sebelumnya
-          </button>
-          <button
-            type="button"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page >= totalPages}
-            className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-            style={{
-              boxShadow: "4px 4px 0 #000",
-              background: "var(--panel-bg)",
-              borderColor: "var(--panel-border)",
-              color: "var(--foreground)",
-            }}
-          >
-            Berikutnya
-          </button>
+
+        <div className="flex-1 grid sm:grid-cols-2 lg:grid-cols-5 gap-2">
+          <input type="text" placeholder="ID" value={data.id || ''} onChange={(e) => onChange('id', e.target.value)}
+            className="px-2 py-1.5 rounded-lg border-2 bg-[var(--panel-bg)] text-sm font-bold" style={{ borderColor: 'var(--panel-border)' }} />
+          <input type="number" placeholder="Koin" value={data.coin_reward || 0} onChange={(e) => onChange('coin_reward', parseInt(e.target.value) || 0)}
+            className="px-2 py-1.5 rounded-lg border-2 bg-[var(--panel-bg)] text-sm font-bold" style={{ borderColor: 'var(--panel-border)' }} />
+          <input type="number" placeholder="Menit" value={data.minutes || ''} onChange={(e) => onChange('minutes', e.target.value)}
+            className="px-2 py-1.5 rounded-lg border-2 bg-[var(--panel-bg)] text-sm font-bold" style={{ borderColor: 'var(--panel-border)' }} />
+          <input type="number" placeholder="Episode" value={data.episodes || ''} onChange={(e) => onChange('episodes', e.target.value)}
+            className="px-2 py-1.5 rounded-lg border-2 bg-[var(--panel-bg)] text-sm font-bold" style={{ borderColor: 'var(--panel-border)' }} />
+          <select value={rt} onChange={(e) => onChange('reward_type', e.target.value)}
+            className="px-2 py-1.5 rounded-lg border-2 bg-[var(--panel-bg)] text-sm font-bold" style={{ borderColor: 'var(--panel-border)' }}>
+            {Object.entries(REWARD_TYPES).map(([key, config]) => <option key={key} value={key}>{config.label}</option>)}
+          </select>
         </div>
+
+        {needsRewardId && (
+          <select value={data.reward_id || 0} onChange={(e) => onChange('reward_id', parseInt(e.target.value))}
+            className="lg:w-32 px-2 py-1.5 rounded-lg border-2 bg-[var(--panel-bg)] text-sm font-bold" style={{ borderColor: 'var(--panel-border)' }}>
+            <option value={0}>Pilih {REWARD_TYPES[rt]?.label}</option>
+            {rewardOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+        )}
+
+        <button type="button" onClick={onDelete} className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10">
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
 }
 
- export default function WatchEventConfigsPage() {
-   return <WatchEventConfigsContent />;
- }
+function ConfigCard({ data, onEdit, onToggle, onDelete, loadingList, togglingId, deletingId }) {
+  const thresholds = Array.isArray(data.thresholds) ? data.thresholds : [];
+  const isActive = !!data.is_active;
+
+  return (
+    <div className="p-4 rounded-2xl border-2 bg-[var(--panel-bg)]" style={{ borderColor: 'var(--panel-border)', boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', opacity: loadingList ? 0.7 : 1 }}>
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="px-2 py-0.5 rounded-md bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] text-xs font-black">Config #{data.id}</span>
+          {isActive ? (
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-bold flex items-center gap-1"><Power className="w-3 h-3" /> Aktif</span>
+          ) : (
+            <span className="px-2 py-0.5 rounded-full bg-gray-400/10 text-gray-500 text-xs font-bold flex items-center gap-1"><Power className="w-3 h-3" /> Nonaktif</span>
+          )}
+          {data.daily_reset && <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-xs font-bold">Reset Harian</span>}
+        </div>
+
+        <div className="flex items-center gap-1">
+          <button onClick={() => onEdit(data)} className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-500/10">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+          </button>
+          <button onClick={() => onToggle(data)} disabled={togglingId === data.id} className={`p-1.5 rounded-lg ${isActive ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-gray-400 hover:bg-gray-400/10'}`}>
+            <Power className="w-4 h-4" />
+          </button>
+          <button onClick={() => onDelete(data)} disabled={deletingId === data.id} className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="text-xs text-[var(--foreground)]/60 mb-2">
+        {data.starts_at ? new Date(data.starts_at).toLocaleString('id-ID') : 'Tanpa batas mulai'} → {data.ends_at ? new Date(data.ends_at).toLocaleString('id-ID') : 'Tanpa batas selesai'}
+      </div>
+
+      {thresholds.length > 0 && (
+        <div className="border-t border-[var(--panel-border)] pt-2">
+          <div className="flex flex-wrap gap-1.5">
+            {thresholds.map((t, i) => (
+              <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[var(--background)] border border-[var(--panel-border)] text-xs">
+                <span className="font-black text-[var(--accent-primary)]">{t.id || '?'}</span>
+                {t.minutes && <span className="text-[var(--foreground)]/60">{t.minutes}m</span>}
+                {t.episodes && <span className="text-[var(--foreground)]/60">{t.episodes}ep</span>}
+                <span className="font-bold text-emerald-600">{t.coin_reward || 0}🪙</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatCard({ label, value, tone }) {
+  const toneStyles = {
+    active: 'bg-emerald-500/10 text-emerald-600 border-emerald-200',
+    default: 'bg-[var(--panel-bg)] text-[var(--foreground)] border-[var(--panel-border)]'
+  };
+
+  return (
+    <div className={`${STYLES.card} p-3 ${tone === 'active' ? toneStyles.active : toneStyles.default}`} style={STYLES.cardShadow}>
+      <div className="text-[10px] font-bold uppercase tracking-wide opacity-70">{label}</div>
+      <div className="mt-1 text-lg sm:text-xl font-black">{value}</div>
+    </div>
+  );
+}
+
+export default function WatchEventConfigsPage() {
+  return <WatchEventConfigsContent />;
+}

@@ -1,14 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { LogOut, Shield, Sun, Moon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Sun, Moon, Sparkles } from 'lucide-react';
 
 export default function Header({ user, role, onLogout }) {
   const getInitialTheme = () => {
     if (typeof window === 'undefined') return 'light';
     const saved = localStorage.getItem('theme');
     if (saved === 'light' || saved === 'dark') return saved;
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const prefersDark =
+      window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches;
     return prefersDark ? 'dark' : 'light';
   };
 
@@ -29,47 +32,69 @@ export default function Header({ user, role, onLogout }) {
       root.classList.add('light');
       body.classList.add('light');
     }
-    try { localStorage.setItem('theme', theme); } catch {}
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {}
   }, [theme]);
 
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
   return (
-    <header className="mx-auto flex items-center justify-between mb-6">
-      <div className="flex items-center gap-3">
-        <div
-          className="grid place-items-center size-10 bg-[#9AE6B4] border-4 rounded-md"
-          style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}
-        >
-          <Shield className="size-5" />
+    <motion.header
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="px-6 py-4"
+    >
+      <div className="glass-card rounded-2xl px-6 py-4 flex items-center justify-between">
+        {/* Left: Logo & Title */}
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] p-0.5 shadow-lg">
+            <img
+              src="/icon.png"
+              alt="NanimeID"
+              className="w-full h-full object-contain rounded-lg bg-white"
+            />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-[var(--foreground)] tracking-tight">
+                Dashboard
+              </h1>
+              <Sparkles className="w-4 h-4 text-[var(--accent-secondary)]" />
+            </div>
+            <div className="text-xs text-[var(--foreground)]/50 font-medium">
+              {user?.email}
+            </div>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Dashboard NanimeID</h1>
-          <div className="text-xs font-semibold opacity-70">{user?.email}</div>
-        </div>
-      </div>
 
-      <div className="flex items-center gap-2">
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-2 border-4 rounded-md px-3 py-2 font-extrabold"
-          style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-          title={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
-        >
-          {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
-          <span className="hidden sm:inline">{theme === 'dark' ? 'Terang' : 'Gelap'}</span>
-        </button>
-        <span className="px-2 py-1 border-4 rounded-md text-xs font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-          {role}
-        </span>
-        <button
-          onClick={onLogout}
-          className="flex items-center gap-2 bg-[#FFD803] hover:bg-[#F1C40F] border-4 rounded-md px-3 py-2 font-extrabold"
-          style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}
-        >
-          <LogOut className="size-4" /> Keluar
-        </button>
+        {/* Right: Theme Toggle Only */}
+        <div className="flex items-center gap-3">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={toggleTheme}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--panel-bg)] border border-[var(--panel-border)] text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 transition-all duration-200"
+            title={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
+          >
+            <motion.div
+              initial={false}
+              animate={{ rotate: theme === 'dark' ? 0 : 180 }}
+              transition={{ duration: 0.3 }}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
+            </motion.div>
+            <span className="hidden sm:inline text-sm font-medium">
+              {theme === 'dark' ? 'Terang' : 'Gelap'}
+            </span>
+          </motion.button>
+        </div>
       </div>
-    </header>
+    </motion.header>
   );
 }

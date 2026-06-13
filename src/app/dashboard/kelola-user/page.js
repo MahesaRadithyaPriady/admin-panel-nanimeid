@@ -3,10 +3,35 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Plus, Pencil, Trash2, Users, ShieldBan, Search, Clock3, UserRound, Ban, ShieldAlert, RefreshCcw } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Plus, Pencil, Trash2, Users, ShieldBan, Search, Clock3, UserRound, Ban, ShieldAlert, RefreshCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { listAdminUsers, createAdminUser, updateAdminUser, moderateAdminUser, deleteAdminUser } from '@/lib/api';
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: 'easeOut' }
+  }
+};
+
+const STATUS_TONES = {
+  ACTIVE: { bg: 'from-emerald-500 to-teal-500', text: 'text-white' },
+  SUSPENDED: { bg: 'from-amber-500 to-orange-500', text: 'text-white' },
+  BANNED: { bg: 'from-rose-500 to-pink-500', text: 'text-white' },
+};
 
 export default function KelolaUserPage() {
   const router = useRouter();
@@ -199,31 +224,39 @@ export default function KelolaUserPage() {
   const isTemporaryBan = isBan && moderation.ban_type === 'TEMPORARY';
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6 min-w-0"
+    >
       {loading || !user ? null : (
         <>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="rounded-[28px] border-4 p-5 md:p-6" style={{ boxShadow: '10px 10px 0 #000', background: 'linear-gradient(135deg, var(--panel-bg) 0%, #e0f2fe 100%)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-              <div className="flex flex-wrap items-start justify-between gap-4">
+          {/* Header & Stats - Glassbrutalism */}
+          <motion.div variants={itemVariants} className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+            {/* Header Card */}
+            <div className="glass-card rounded-2xl sm:rounded-3xl border-2 p-5 sm:p-6 relative overflow-hidden" style={{ boxShadow: '8px 8px 0 rgba(0,0,0,0.3)', borderColor: 'var(--panel-border)' }}>
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 rounded-full border-4 px-3 py-1 text-xs font-black" style={{ borderColor: 'var(--panel-border)', background: '#fef3c7', color: '#92400e' }}>
-                    <ShieldBan className="size-4" /> Moderasi User
+                  <div className="inline-flex items-center gap-2 rounded-full border-2 px-3 py-1.5 text-xs font-bold backdrop-blur-sm" style={{ borderColor: 'var(--panel-border)', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>
+                    <ShieldBan className="w-4 h-4" /> Moderasi User
                   </div>
                   <div>
-                    <h2 className="text-2xl md:text-3xl font-black flex items-center gap-3"><Users className="size-7" /> Kelola User</h2>
-                    <p className="mt-2 max-w-2xl text-sm md:text-base font-semibold opacity-80">
-                      Atur data akun pengguna, pantau statusnya dengan lebih jelas, dan lakukan tindakan moderasi dengan alur yang rapi, cepat, dan nyaman digunakan.
+                    <h2 className="text-2xl sm:text-3xl font-black flex items-center gap-3 text-[var(--foreground)]"><Users className="w-7 h-7" /> Kelola User</h2>
+                    <p className="mt-2 max-w-2xl text-sm sm:text-base font-medium text-[var(--foreground)]/70">
+                      Atur data akun pengguna, pantau statusnya dengan lebih jelas.
                     </p>
                   </div>
                 </div>
-                <button type="button" onClick={() => loadUsers()} disabled={loadingList} className="inline-flex items-center gap-2 rounded-2xl border-4 px-4 py-3 font-black disabled:opacity-60" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--accent-primary)', color: 'var(--accent-primary-foreground)', borderColor: 'var(--panel-border)' }}>
-                  <RefreshCcw className={`size-4 ${loadingList ? 'animate-spin' : ''}`} />
-                  {loadingList ? 'Memuat...' : 'Refresh'}
+                <button type="button" onClick={() => loadUsers()} disabled={loadingList} className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-3 font-bold disabled:opacity-60 transition-all hover:translate-y-[-2px]" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.3)', background: 'var(--accent-primary)', color: 'var(--accent-primary-foreground)', borderColor: 'var(--panel-border)' }}>
+                  <RefreshCcw className={`w-4 h-4 ${loadingList ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">{loadingList ? 'Memuat...' : 'Refresh'}</span>
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 rounded-[28px] border-4 p-5" style={{ boxShadow: '10px 10px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3">
               <SummaryCard label="Total" value={summary.total} tone="neutral" />
               <SummaryCard label="Active" value={summary.ACTIVE} tone="active" />
               <SummaryCard label="Warned" value={summary.WARNED} tone="warned" />
@@ -231,7 +264,7 @@ export default function KelolaUserPage() {
               <SummaryCard label="Banned" value={summary.BANNED} tone="banned" />
               <SummaryCard label="Halaman" value={`${page}/${totalPages}`} tone="neutral" />
             </div>
-          </div>
+          </motion.div>
 
       {/* Search */}
       <div className="grid gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
@@ -495,7 +528,7 @@ export default function KelolaUserPage() {
       )}
         </>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -509,11 +542,21 @@ function Field({ label, children }) {
 }
 
 function SummaryCard({ label, value, tone }) {
-  const meta = getSummaryTone(tone);
+  const gradients = {
+    neutral: 'from-gray-500 to-gray-600',
+    active: 'from-emerald-500 to-teal-500',
+    warned: 'from-amber-500 to-orange-500',
+    suspended: 'from-orange-500 to-red-500',
+    banned: 'from-rose-500 to-pink-500',
+  };
+
   return (
-    <div className="rounded-2xl border-4 px-3 py-4" style={{ borderColor: 'var(--panel-border)', background: meta.bg, color: meta.fg }}>
-      <div className="text-[11px] font-black uppercase tracking-[0.15em] opacity-70">{label}</div>
-      <div className="mt-1 text-2xl font-black">{value}</div>
+    <div className="glass-card rounded-2xl p-4 relative overflow-hidden group hover:shadow-lg transition-all duration-300 border-2" style={{ borderColor: 'var(--panel-border)', boxShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
+      <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${gradients[tone]} opacity-20 rounded-full blur-2xl -mr-6 -mt-6 group-hover:scale-150 transition-transform duration-500`} />
+      <div className="relative z-10">
+        <div className="text-xs font-bold text-[var(--foreground)]/60 uppercase tracking-wide">{label}</div>
+        <div className="mt-1 text-2xl font-black text-[var(--foreground)]">{value}</div>
+      </div>
     </div>
   );
 }
@@ -532,8 +575,10 @@ function MiniInfo({ label, value, icon }) {
 
 function StatusBadge({ status }) {
   const meta = getStatusMeta(status);
+  const tone = STATUS_TONES[status] || { bg: 'from-gray-400 to-gray-500', text: 'text-white' };
+
   return (
-    <span className="inline-flex items-center rounded-full border-4 px-3 py-1 text-xs font-black" style={{ borderColor: 'var(--panel-border)', background: meta.bg, color: meta.fg }}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${tone.bg} ${tone.text} border-2`} style={{ borderColor: 'rgba(0,0,0,0.2)', boxShadow: '2px 2px 0 rgba(0,0,0,0.2)' }}>
       {meta.label}
     </span>
   );

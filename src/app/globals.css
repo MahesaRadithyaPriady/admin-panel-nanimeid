@@ -1,16 +1,38 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --panel-bg: #ffffff;
-  --panel-border: #000000;
-  --accent-edit: #FFD803;
-  --accent-edit-foreground: #000000;
-  --accent-primary: #C0E8FF; /* search/apply */
-  --accent-primary-foreground: #000000;
-  --accent-add: #C6F6D5; /* add/create */
-  --accent-add-foreground: #000000;
+  /* Modern gradient background colors */
+  --background: #f8fafc;
+  --foreground: #1e293b;
+  --panel-bg: rgba(255, 255, 255, 0.85);
+  --panel-border: rgba(148, 163, 184, 0.2);
+  --panel-shadow: rgba(15, 23, 42, 0.08);
+
+  /* Primary accent - Indigo/Violet */
+  --accent-primary: #6366f1;
+  --accent-primary-hover: #4f46e5;
+  --accent-primary-foreground: #ffffff;
+
+  /* Secondary accent - Soft purple */
+  --accent-secondary: #a855f7;
+  --accent-secondary-foreground: #ffffff;
+
+  /* Success accent - Emerald */
+  --accent-success: #10b981;
+  --accent-success-foreground: #ffffff;
+
+  /* Warning accent - Amber */
+  --accent-warning: #f59e0b;
+  --accent-warning-foreground: #ffffff;
+
+  /* Input styling */
+  --input-bg: #ffffff;
+  --input-border: #e2e8f0;
+  --input-focus: #6366f1;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.5);
 }
 
 @theme inline {
@@ -22,47 +44,140 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --panel-bg: #1e1f22;
-    --panel-border: #ffffff;
-    --accent-edit: #000000;
-    --accent-edit-foreground: #ffffff;
-    --accent-primary: #1e1f22;
+    --background: #0f172a;
+    --foreground: #f1f5f9;
+    --panel-bg: rgba(30, 41, 59, 0.8);
+    --panel-border: rgba(148, 163, 184, 0.15);
+    --panel-shadow: rgba(0, 0, 0, 0.3);
+
+    --accent-primary: #818cf8;
+    --accent-primary-hover: #6366f1;
     --accent-primary-foreground: #ffffff;
-    --accent-add: #1e1f22;
-    --accent-add-foreground: #ffffff;
+
+    --accent-secondary: #c084fc;
+    --accent-secondary-foreground: #ffffff;
+
+    --input-bg: rgba(30, 41, 59, 0.6);
+    --input-border: rgba(71, 85, 105, 0.5);
+    --input-focus: #818cf8;
+
+    --glass-bg: rgba(30, 41, 59, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.1);
   }
 }
 
 /* Override via class (used by Header theme toggle) */
 :root.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --panel-bg: #1e1f22;
-  --panel-border: #ffffff;
-  --accent-edit: #000000;
-  --accent-edit-foreground: #ffffff;
-  --accent-primary: #1e1f22;
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --panel-bg: rgba(30, 41, 59, 0.8);
+  --panel-border: rgba(148, 163, 184, 0.15);
+  --panel-shadow: rgba(0, 0, 0, 0.3);
+
+  --accent-primary: #818cf8;
+  --accent-primary-hover: #6366f1;
   --accent-primary-foreground: #ffffff;
-  --accent-add: #1e1f22;
-  --accent-add-foreground: #ffffff;
+
+  --accent-secondary: #c084fc;
+  --accent-secondary-foreground: #ffffff;
+
+  --input-bg: rgba(30, 41, 59, 0.6);
+  --input-border: rgba(71, 85, 105, 0.5);
+  --input-focus: #818cf8;
+
+  --glass-bg: rgba(30, 41, 59, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
 }
+
 :root.light {
-  --background: #ffffff;
-  --foreground: #171717;
-  --panel-bg: #ffffff;
-  --panel-border: #000000;
-  --accent-edit: #FFD803;
-  --accent-edit-foreground: #000000;
-  --accent-primary: #C0E8FF;
-  --accent-primary-foreground: #000000;
-  --accent-add: #C6F6D5;
-  --accent-add-foreground: #000000;
+  --background: #f8fafc;
+  --foreground: #1e293b;
+  --panel-bg: rgba(255, 255, 255, 0.85);
+  --panel-border: rgba(148, 163, 184, 0.2);
+  --panel-shadow: rgba(15, 23, 42, 0.08);
+
+  --accent-primary: #6366f1;
+  --accent-primary-hover: #4f46e5;
+  --accent-primary-foreground: #ffffff;
+
+  --accent-secondary: #a855f7;
+  --accent-secondary-foreground: #ffffff;
+
+  --input-bg: #ffffff;
+  --input-border: #e2e8f0;
+  --input-focus: #6366f1;
+
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.5);
+}
+
+* {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* Animated gradient background */
+.gradient-bg {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #667eea 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Glassmorphism card */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px var(--panel-shadow);
+}
+
+/* Modern input styling */
+.modern-input {
+  background: var(--input-bg);
+  border: 2px solid var(--input-border);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modern-input:focus {
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Glow effect */
+.glow-primary {
+  box-shadow: 0 0 40px rgba(99, 102, 241, 0.3);
+}
+
+/* Shimmer effect */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
 }

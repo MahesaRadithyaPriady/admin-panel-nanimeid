@@ -950,6 +950,16 @@ export async function takeAnimeRequest({ token, id }) {
   return await handleJson(res, 'Gagal mengambil anime request');
 }
 
+export async function getAnimeStats({ token } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${animeBase()}/stats`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil statistik anime');
+  // Return full response to handle both old and new formats in the component
+  return data;
+}
+
 export async function listAnime({ token, page = 1, limit = 20, q = '', status = '', genre = '', includeEpisodes } = {}) {
   if (!token) throw new Error('Token tidak tersedia');
   const params = new URLSearchParams();
@@ -1125,6 +1135,25 @@ export async function createEpisode({ token, animeId, payload }) {
   return await handleJson(res, 'Gagal membuat episode');
 }
 
+// Batch create episodes (JSON only - thumbnail via URL)
+export async function batchCreateEpisodes({ token, animeId, episodes }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!animeId && animeId !== 0) throw new Error('animeId tidak valid');
+  if (!Array.isArray(episodes)) throw new Error('episodes harus berupa array');
+  if (episodes.length === 0) throw new Error('episodes array tidak boleh kosong');
+  if (episodes.length > 100) throw new Error('Maksimal 100 episodes per batch');
+
+  const res = await fetch(`${getApiBase()}/admin/anime/${animeId}/episodes/batch`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ episodes }),
+  });
+  return await handleJson(res, 'Gagal batch create episodes');
+}
+
 // Get episode detail (includes qualities)
 export async function getEpisodeDetail({ token, id }) {
   if (!token) throw new Error('Token tidak tersedia');
@@ -1162,6 +1191,15 @@ export async function deleteEpisode({ token, id }) {
     headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal menghapus episode');
+}
+
+// Check episode quality status
+export async function checkEpisodeQuality({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${episodesBase()}/${id}/quality-check`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal memeriksa status quality');
 }
 
 // ===== Admin Episode Video Issues (permission: episode-video-issues) =====

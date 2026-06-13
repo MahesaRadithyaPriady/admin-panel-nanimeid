@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity, Terminal, Trophy } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity, Terminal, Trophy, Menu, Sparkles, Inbox, AlertTriangle, Film } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
-import Header from '@/components/dashboard/Header';
 import Sidebar from '@/components/dashboard/Sidebar';
 import nacl from 'tweetnacl';
 import { getAdminLivechatStats, getAnimeRequestStats, listMyAdminPublicKeys, upsertMyAdminPublicKey } from '@/lib/api';
@@ -18,8 +18,12 @@ export default function DashboardLayout({ children }) {
   const publicKeyInitRef = useRef(false);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [livechatStats, setLivechatStats] = useState({ queued: 0, active: 0, closed: 0 });
   const [animeRequestStats, setAnimeRequestStats] = useState({ pending: 0, under_review: 0, upload_in_progress: 0, completed: 0, rejected: 0 });
+
+  const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
+  const closeMobileMenu = () => setMobileMenuOpen(false);
 
   useEffect(() => {
     try {
@@ -171,55 +175,55 @@ export default function DashboardLayout({ children }) {
   // Visibility akan ditentukan berdasarkan user.permissions.
   const allMenus = useMemo(
     () => [
-      { key: 'overview', label: 'Ringkasan', icon: LayoutDashboard, roles: ['superadmin', 'keuangan', 'uploader'], href: '/dashboard' },
-      { key: 'leaderboard', permissionKey: 'overview', label: 'Leaderboard', icon: Trophy, roles: ['superadmin'], href: '/dashboard/leaderboard' },
+      { key: 'overview', label: 'Dashboard', icon: LayoutDashboard, roles: ['superadmin', 'keuangan', 'uploader'], href: '/dashboard' },
+      { key: 'leaderboard', permissionKey: 'overview', label: 'Peringkat', icon: Trophy, roles: ['superadmin'], href: '/dashboard/leaderboard' },
       
-      // Kelola Dropdown
+      // Manajemen Dropdown
       { 
         key: 'kelola', 
-        label: 'Kelola', 
+        label: 'Manajemen', 
         icon: UsersIcon, 
         roles: ['superadmin'],
         children: [
-          { key: 'kelola-user', label: 'Kelola User', icon: UsersIcon, roles: ['superadmin'], href: '/dashboard/kelola-user' },
-          { key: 'kelola-admin', label: 'Kelola Admin', icon: Shield, roles: ['superadmin'], href: '/dashboard/kelola-admin' },
-          { key: 'topup-manual', label: 'Topup Manual', icon: CreditCard, roles: ['superadmin'], href: '/dashboard/topup' },
+          { key: 'kelola-user', label: 'Pengguna', icon: UsersIcon, roles: ['superadmin'], href: '/dashboard/kelola-user' },
+          { key: 'kelola-admin', label: 'Administrator', icon: Shield, roles: ['superadmin'], href: '/dashboard/kelola-admin' },
+          { key: 'topup-manual', label: 'Top Up', icon: CreditCard, roles: ['superadmin'], href: '/dashboard/topup' },
           { key: 'moderation', permissionKey: 'moderation', label: 'Moderasi', icon: Shield, roles: ['superadmin'], href: '/dashboard/moderation' },
           { key: 'livechat', permissionKey: 'livechat', label: 'Live Chat', icon: MessageSquareText, roles: ['superadmin'], href: '/dashboard/livechat' },
-          { key: 'konfigurasi-event', permissionKey: 'event-configs', label: 'Konfigurasi Event', icon: ListChecks, roles: ['superadmin'], href: '/dashboard/konfigurasi-event' },
-          { key: 'analytics-logs', label: 'Analytics Logs', icon: Activity, roles: ['superadmin'], href: '/dashboard/analytics-logs' },
-          { key: 'client-logs', permissionKey: 'client-logs', label: 'Client Logs', icon: Terminal, roles: ['superadmin'], href: '/dashboard/client-logs' },
+          { key: 'konfigurasi-event', permissionKey: 'event-configs', label: 'Event & Reward', icon: ListChecks, roles: ['superadmin'], href: '/dashboard/konfigurasi-event' },
+          { key: 'analytics-logs', label: 'Log Analitik', icon: Activity, roles: ['superadmin'], href: '/dashboard/analytics-logs' },
+          { key: 'client-logs', permissionKey: 'client-logs', label: 'Log Klien', icon: Terminal, roles: ['superadmin'], href: '/dashboard/client-logs' },
         ]
       },
 
-      // Store Dropdown
+      // Toko Dropdown
       { 
         key: 'store-group', 
         label: 'Toko', 
         icon: ShoppingBag, 
         roles: ['superadmin'],
         children: [
-          { key: 'store-admin', label: 'Admin Toko', icon: ShoppingBag, roles: ['superadmin'], href: '/dashboard/store-admin' },
+          { key: 'store-admin', label: 'Pengaturan Toko', icon: ShoppingBag, roles: ['superadmin'], href: '/dashboard/store-admin' },
           { key: 'prime-store', label: 'Toko Prime', icon: ShoppingBag, roles: ['superadmin'], href: '/dashboard/prime-store' },
-          { key: 'sponsor-admin', label: 'Admin Sponsor', icon: Megaphone, roles: ['superadmin'], href: '/dashboard/sponsor-admin' },
+          { key: 'sponsor-admin', label: 'Pengaturan Sponsor', icon: Megaphone, roles: ['superadmin'], href: '/dashboard/sponsor-admin' },
         ]
       },
 
-      // VIP & Items Dropdown
+      // VIP & Item Dropdown
       { 
         key: 'vip-items', 
         label: 'VIP & Item', 
         icon: Crown, 
         roles: ['superadmin'],
         children: [
-          { key: 'vip-plans', label: 'Paket VIP', icon: Crown, roles: ['superadmin'], href: '/dashboard/vip-plans' },
-          { key: 'vip-features', permissionKey: 'vip-tiers', label: 'Tingkat VIP & Syarat', icon: Crown, roles: ['superadmin'], href: '/dashboard/vip-features' },
-          { key: 'admin-vip', label: 'Admin VIP', icon: Crown, roles: ['superadmin'], href: '/dashboard/admin-vip' },
-          { key: 'admin-wallet', label: 'Admin Dompet', icon: Wallet, roles: ['superadmin'], href: '/dashboard/admin-wallet' },
-          { key: 'redeem-codes', label: 'Kode Redeem', icon: Gift, roles: ['superadmin'], href: '/dashboard/redeem' },
-          { key: 'avatar-borders', label: 'Bingkai Avatar', icon: Image, roles: ['superadmin'], href: '/dashboard/avatar-borders' },
-          { key: 'badges', label: 'Lencana Super', icon: Award, roles: ['superadmin'], href: '/dashboard/badges' },
-          { key: 'stickers', label: 'Stikers', icon: Image, roles: ['superadmin'], href: '/dashboard/stikers' },
+          { key: 'vip-plans', label: 'Paket Langganan', icon: Crown, roles: ['superadmin'], href: '/dashboard/vip-plans' },
+          { key: 'vip-features', permissionKey: 'vip-tiers', label: 'Level & Syarat VIP', icon: Crown, roles: ['superadmin'], href: '/dashboard/vip-features' },
+          { key: 'admin-vip', label: 'Pengaturan VIP', icon: Crown, roles: ['superadmin'], href: '/dashboard/admin-vip' },
+          { key: 'admin-wallet', label: 'Manajemen Dompet', icon: Wallet, roles: ['superadmin'], href: '/dashboard/admin-wallet' },
+          { key: 'redeem-codes', label: 'Kode Tukar', icon: Gift, roles: ['superadmin'], href: '/dashboard/redeem' },
+          { key: 'avatar-borders', label: 'Bingkai Profil', icon: Image, roles: ['superadmin'], href: '/dashboard/avatar-borders' },
+          { key: 'badges', label: 'Lencana', icon: Award, roles: ['superadmin'], href: '/dashboard/badges' },
+          { key: 'stickers', label: 'Stiker', icon: Image, roles: ['superadmin'], href: '/dashboard/stikers' },
         ]
       },
 
@@ -230,21 +234,23 @@ export default function DashboardLayout({ children }) {
         icon: Gift,
         roles: ['superadmin'],
         children: [
-          { key: 'gacha-admin', label: 'Gacha Admin', icon: Gift, roles: ['superadmin'], href: '/dashboard/gacha-admin' },
+          { key: 'gacha-admin', label: 'Pengaturan Gacha', icon: Gift, roles: ['superadmin'], href: '/dashboard/gacha-admin' },
         ],
       },
 
       // Konten Dropdown
-      { 
-        key: 'konten-group', 
-        label: 'Konten', 
-        icon: BookOpen, 
+      {
+        key: 'konten-group',
+        label: 'Konten',
+        icon: BookOpen,
         roles: ['superadmin', 'uploader'],
         children: [
-          { key: 'daftar-konten', label: 'Daftar Konten', icon: List, roles: ['superadmin', 'uploader'], href: '/dashboard/daftar-konten' },
-          { key: 'manga-grab-list', label: 'List Grab', icon: BadgeCheck, roles: ['superadmin'], href: '/dashboard/manga-admin/list-grab' },
-          { key: 'manga-admin', label: 'Manga Admin', icon: BookOpen, roles: ['superadmin', 'uploader'], href: '/dashboard/manga-admin' },
-          { key: 'uploader-legacy', label: 'Upload Episode (Legacy)', icon: Upload, roles: ['superadmin', 'uploader'], href: '/dashboard/uploader' },
+          { key: 'daftar-konten', label: 'Manajemen Konten', icon: Film, roles: ['superadmin', 'uploader'], href: '/dashboard/daftar-konten' },
+          { key: 'anime-requests', label: 'Permintaan Anime', icon: Inbox, roles: ['superadmin', 'uploader'], href: '/dashboard/anime-requests' },
+          { key: 'episode-issue', label: 'Issue Episode', icon: AlertTriangle, roles: ['superadmin', 'uploader'], href: '/dashboard/episode-issue' },
+          { key: 'manga-grab-list', label: 'Daftar Grab', icon: BadgeCheck, roles: ['superadmin'], href: '/dashboard/manga-admin/list-grab' },
+          { key: 'manga-admin', label: 'Manajemen Manga', icon: BookOpen, roles: ['superadmin', 'uploader'], href: '/dashboard/manga-admin' },
+          { key: 'uploader-legacy', label: 'Unggah Episode', icon: Upload, roles: ['superadmin', 'uploader'], href: '/dashboard/uploader' },
         ]
       },
 
@@ -255,7 +261,7 @@ export default function DashboardLayout({ children }) {
         icon: Heart, 
         roles: ['superadmin'],
         children: [
-          { key: 'waifu-vote', label: 'Waifu Vote', icon: Heart, roles: ['superadmin'], href: '/dashboard/waifu-vote' },
+          { key: 'waifu-vote', label: 'Voting Waifu', icon: Heart, roles: ['superadmin'], href: '/dashboard/waifu-vote' },
         ]
       },
 
@@ -307,20 +313,74 @@ export default function DashboardLayout({ children }) {
 
   if (loading || !user) {
     return (
-      <main className="min-h-screen grid place-items-center p-6" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
-        <div className="text-sm">Memuat...</div>
+      <main className="min-h-screen grid place-items-center gradient-bg" style={{ color: 'var(--foreground)' }}>
+        <div className="glass-card rounded-2xl p-8 flex flex-col items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] p-0.5 shadow-lg animate-pulse">
+            <img
+              src="/icon.png"
+              alt="NanimeID"
+              className="w-full h-full object-contain rounded-lg bg-white"
+            />
+          </div>
+          <div className="text-sm font-medium">Memuat...</div>
+        </div>
       </main>
     );
   }
 
-  return (
-    <main className="min-h-screen p-3 sm:p-6 overflow-x-hidden" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
-      <div className="hidden md:block">
-        <Header user={user} role={role} onLogout={onLogout} />
+  // Mobile Header Component
+  const MobileHeader = () => (
+    <motion.header
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="md:hidden fixed top-0 left-0 right-0 z-30 px-4 py-3 glass-card border-b border-[var(--panel-border)]"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {/* Logo */}
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] p-0.5 shadow-lg">
+            <img
+              src="/icon.png"
+              alt="NanimeID"
+              className="w-full h-full object-contain rounded-lg bg-white"
+            />
+          </div>
+          <div>
+            <div className="flex items-center gap-1">
+              <span className="text-sm font-bold text-[var(--foreground)]">NanimeID</span>
+              <Sparkles className="w-3 h-3 text-[var(--accent-secondary)]" />
+            </div>
+            <span className="text-[10px] text-[var(--foreground)]/50">
+              {user?.username || user?.email?.split('@')[0] || '-'}
+            </span>
+          </div>
+        </div>
+
+        {/* Hamburger Button */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={toggleMobileMenu}
+          className="p-2.5 rounded-xl bg-[var(--panel-bg)] border border-[var(--panel-border)] text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 transition-colors"
+          aria-label="Buka menu"
+        >
+          <Menu className="w-5 h-5" />
+        </motion.button>
       </div>
+    </motion.header>
+  );
+
+  return (
+    <main className="min-h-screen overflow-x-hidden gradient-bg" style={{ color: 'var(--foreground)' }}>
+      {/* Mobile Header */}
+      {!loading && user && <MobileHeader />}
 
       <div
-        className={`mx-auto grid grid-cols-1 gap-6 min-w-0 transition-[grid-template-columns] duration-300 ease-in-out ${sidebarCollapsed ? 'md:grid-cols-[76px_1fr]' : 'md:grid-cols-[240px_1fr]'}`}
+        className={`min-h-screen md:h-screen grid min-w-0 transition-all duration-300 ease-in-out ${
+          sidebarCollapsed
+            ? 'grid-cols-1 md:grid-cols-[80px_1fr]'
+            : 'grid-cols-1 md:grid-cols-[280px_1fr]'
+        } ${!loading && user ? 'pt-[72px] md:pt-0' : ''}`}
       >
         <Sidebar
           menus={visibleMenus}
@@ -332,13 +392,14 @@ export default function DashboardLayout({ children }) {
           user={user}
           role={role}
           onLogout={onLogout}
+          mobileOpen={mobileMenuOpen}
+          onMobileClose={closeMobileMenu}
         />
 
-        <section
-          className="border-4 rounded-xl p-4 sm:p-6 min-w-0 overflow-x-hidden"
-          style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}
-        >
-          {children}
+        <section className="overflow-y-auto p-4 sm:p-6 w-full">
+          <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 min-w-0 overflow-x-hidden w-full">
+            {children}
+          </div>
         </section>
       </div>
     </main>
