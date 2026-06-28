@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { ShoppingBag, Save, Trash2, ArrowLeft } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { getStoreItem, updateStoreItem, deleteStoreItem, listBadges, listStickers } from '@/lib/api';
+import { getStoreItem, updateStoreItem, deleteStoreItem, listBadges, listStickers, listAvatarBorders } from '@/lib/api';
 
 export default function StoreItemDetailPage() {
   const router = useRouter();
@@ -19,7 +19,7 @@ export default function StoreItemDetailPage() {
   const [loadingItem, setLoadingItem] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    sku: '', title: '', description: '', item_type: 'COIN', coin_price: '', coin_amount: '', vip_days: '', badge_name: '', badge_icon: '', badge_id: '', sticker_id: '', title_color: '', is_active: true, sort_order: ''
+    sku: '', title: '', description: '', item_type: 'COIN', coin_price: '', coin_amount: '', vip_days: '', badge_name: '', badge_icon: '', badge_id: '', sticker_id: '', avatar_border_id: '', title_color: '', is_active: true, sort_order: ''
   });
 
   const [badges, setBadges] = useState([]);
@@ -27,6 +27,9 @@ export default function StoreItemDetailPage() {
 
   const [stickers, setStickers] = useState([]);
   const [loadingStickers, setLoadingStickers] = useState(false);
+
+  const [avatarBorders, setAvatarBorders] = useState([]);
+  const [loadingAvatarBorders, setLoadingAvatarBorders] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -52,6 +55,7 @@ export default function StoreItemDetailPage() {
           badge_icon: it?.badge_icon || '',
           badge_id: it?.badge_id ?? '',
           sticker_id: it?.sticker_id ?? '',
+          avatar_border_id: it?.avatar_border_id ?? '',
           title_color: it?.title_color || '',
           is_active: !!it?.is_active,
           sort_order: it?.sort_order ?? '',
@@ -104,6 +108,26 @@ export default function StoreItemDetailPage() {
     if (stickers.length > 0 || loadingStickers) return;
     loadStickers();
   }, [form.item_type, isSuperAdmin, stickers.length, loadingStickers]);
+
+  useEffect(() => {
+    const loadAvatarBordersData = async () => {
+      try {
+        setLoadingAvatarBorders(true);
+        const token = getSession()?.token;
+        if (!token) return;
+        const data = await listAvatarBorders({ token, page: 1, limit: 200, q: '', active: 'true' });
+        setAvatarBorders(Array.isArray(data.items) ? data.items : []);
+      } catch (err) {
+        toast.error(err?.message || 'Gagal memuat daftar avatar border');
+      } finally {
+        setLoadingAvatarBorders(false);
+      }
+    };
+
+    if (form.item_type !== 'BORDER') return;
+    if (avatarBorders.length > 0 || loadingAvatarBorders) return;
+    loadAvatarBordersData();
+  }, [form.item_type, isSuperAdmin, avatarBorders.length, loadingAvatarBorders]);
 
   const updateField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -159,6 +183,7 @@ export default function StoreItemDetailPage() {
                     <option value="BADGE">BADGE</option>
                     <option value="SUPERBADGE">SUPERBADGE</option>
                     <option value="STICKER">STICKER</option>
+                    <option value="BORDER">BORDER</option>
                     <option value="OTHER">OTHER</option>
                   </select>
                 </L>
@@ -213,6 +238,28 @@ export default function StoreItemDetailPage() {
                     </L>
                     {loadingStickers && (
                       <div className="text-xs font-semibold opacity-70">Memuat daftar stiker...</div>
+                    )}
+                  </>
+                )}
+
+                {form.item_type === 'BORDER' && (
+                  <>
+                    <L label="Avatar Border">
+                      <select
+                        value={form.avatar_border_id}
+                        onChange={(e)=>updateField('avatar_border_id', e.target.value)}
+                        className="sel"
+                      >
+                        <option value="">Pilih Avatar Border...</option>
+                        {avatarBorders.map((ab) => (
+                          <option key={ab.id} value={ab.id}>
+                            {ab.title || ab.code} (#{ab.id})
+                          </option>
+                        ))}
+                      </select>
+                    </L>
+                    {loadingAvatarBorders && (
+                      <div className="text-xs font-semibold opacity-70">Memuat daftar avatar border...</div>
                     )}
                   </>
                 )}
@@ -272,6 +319,7 @@ function buildUpdatePayload(form) {
   setNum('vip_days');
   setNum('badge_id');
   setNum('sticker_id');
+  setNum('avatar_border_id');
   setStr('badge_name');
   setStr('badge_icon');
   setStr('title_color');

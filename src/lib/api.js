@@ -3792,3 +3792,121 @@ export async function updateAdminSettings({ token, payload } = {}) {
   return data?.settings ?? data;
 }
 
+// ===== Admin Mystery Box (SUPERADMIN) =====
+const mysteryBoxBase = () => `${getApiBase()}/admin/mystery-box`;
+
+// List all mystery boxes
+export async function listMysteryBoxes({ token } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${mysteryBoxBase()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil daftar mystery box');
+  return Array.isArray(data?.data) ? data.data : [];
+}
+
+// Get mystery box by ID
+export async function getMysteryBox({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id) throw new Error('id wajib diisi');
+  const res = await fetch(`${mysteryBoxBase()}/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil detail mystery box');
+  return data?.data ?? data;
+}
+
+// Create mystery box
+export async function createMysteryBox({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${mysteryBoxBase()}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await handleJson(res, 'Gagal membuat mystery box');
+  return data?.data ?? data;
+}
+
+// Update mystery box
+export async function updateMysteryBox({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id) throw new Error('id wajib diisi');
+  const res = await fetch(`${mysteryBoxBase()}/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await handleJson(res, 'Gagal memperbarui mystery box');
+  return data?.data ?? data;
+}
+
+// Delete mystery box
+export async function deleteMysteryBox({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id) throw new Error('id wajib diisi');
+  const res = await fetch(`${mysteryBoxBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus mystery box');
+}
+
+// List tiers (optionally filter by box_id)
+export async function listMysteryBoxTiers({ token, box_id } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (box_id) params.set('box_id', String(box_id));
+  const qs = params.toString();
+  const url = `${mysteryBoxBase()}/tiers${qs ? `?${qs}` : ''}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar tier mystery box');
+  return Array.isArray(data?.data) ? data.data : [];
+}
+
+// Create tier
+export async function createMysteryBoxTier({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${mysteryBoxBase()}/tiers`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await handleJson(res, 'Gagal membuat tier mystery box');
+  return data?.data ?? data;
+}
+
+// Update tier
+export async function updateMysteryBoxTier({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id) throw new Error('id wajib diisi');
+  const res = await fetch(`${mysteryBoxBase()}/tiers/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await handleJson(res, 'Gagal memperbarui tier mystery box');
+  return data?.data ?? data;
+}
+
+// Delete tier
+export async function deleteMysteryBoxTier({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!id) throw new Error('id wajib diisi');
+  const res = await fetch(`${mysteryBoxBase()}/tiers/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus tier mystery box');
+}
+
+// Get reward options (badges & borders & vip_days_options)
+export async function getMysteryBoxRewardOptions({ token } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${mysteryBoxBase()}/reward-options`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil reward options');
+  return data?.data ?? data;
+}
+

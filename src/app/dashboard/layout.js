@@ -235,6 +235,7 @@ export default function DashboardLayout({ children }) {
         roles: ['superadmin'],
         children: [
           { key: 'gacha-admin', label: 'Pengaturan Gacha', icon: Gift, roles: ['superadmin'], href: '/dashboard/gacha-admin' },
+          { key: 'mystery-box', label: 'Mystery Box', icon: Gift, roles: ['superadmin'], href: '/dashboard/mystery-box' },
         ],
       },
 

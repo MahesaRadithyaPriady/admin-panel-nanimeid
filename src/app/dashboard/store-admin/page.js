@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { ShoppingBag, Plus, Trash2, ListFilter, ExternalLink } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listStoreItems, createStoreItem, deleteStoreItem, listBadges, listStickers } from '@/lib/api';
+import { listStoreItems, createStoreItem, deleteStoreItem, listBadges, listStickers, listAvatarBorders } from '@/lib/api';
 
 export default function StoreAdminPage() {
   const router = useRouter();
@@ -39,6 +39,7 @@ export default function StoreAdminPage() {
     badge_icon: '',
     badge_id: '',
     sticker_id: '',
+    avatar_border_id: '',
     title_color: '',
     is_active: true,
     sort_order: '',
@@ -51,6 +52,10 @@ export default function StoreAdminPage() {
   // Master stickers untuk STICKER
   const [stickers, setStickers] = useState([]);
   const [loadingStickers, setLoadingStickers] = useState(false);
+
+  // Master avatar borders untuk AVATAR_BORDER
+  const [avatarBorders, setAvatarBorders] = useState([]);
+  const [loadingAvatarBorders, setLoadingAvatarBorders] = useState(false);
 
   const loadList = async (opts = {}) => {
     setLoadingList(true);
@@ -119,6 +124,28 @@ export default function StoreAdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.item_type, user, stickers.length, loadingStickers]);
 
+  const loadAvatarBorders = async () => {
+    try {
+      setLoadingAvatarBorders(true);
+      const token = getSession()?.token;
+      if (!token) return;
+      const data = await listAvatarBorders({ token, page: 1, limit: 200, q: '', active: 'true' });
+      setAvatarBorders(Array.isArray(data.items) ? data.items : []);
+    } catch (err) {
+      toast.error(err?.message || 'Gagal memuat daftar avatar border');
+    } finally {
+      setLoadingAvatarBorders(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    if (form.item_type !== 'BORDER') return;
+    if (avatarBorders.length > 0 || loadingAvatarBorders) return;
+    loadAvatarBorders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.item_type, user, avatarBorders.length, loadingAvatarBorders]);
+
   const onSearch = (e) => {
     e.preventDefault();
     setPage(1);
@@ -135,7 +162,7 @@ export default function StoreAdminPage() {
       const payload = buildItemPayload(form);
       await createStoreItem({ token, payload });
       toast.success('Item store dibuat');
-      setForm({ sku: '', title: '', description: '', item_type: 'COIN', coin_price: '', coin_amount: '', vip_days: '', badge_name: '', badge_icon: '', badge_id: '', sticker_id: '', title_color: '', is_active: true, sort_order: '' });
+      setForm({ sku: '', title: '', description: '', item_type: 'COIN', coin_price: '', coin_amount: '', vip_days: '', badge_name: '', badge_icon: '', badge_id: '', sticker_id: '', avatar_border_id: '', title_color: '', is_active: true, sort_order: '' });
       await loadList({ page: 1 });
       setPage(1);
     } catch (err) {
@@ -179,6 +206,7 @@ export default function StoreAdminPage() {
                   <option value="BADGE">BADGE</option>
                   <option value="SUPERBADGE">SUPERBADGE</option>
                   <option value="STICKER">STICKER</option>
+                  <option value="BORDER">BORDER</option>
                   <option value="OTHER">OTHER</option>
                 </select>
               </L>
@@ -241,6 +269,28 @@ export default function StoreAdminPage() {
                   </L>
                   {loadingStickers && (
                     <div className="text-xs font-semibold opacity-70">Memuat daftar stiker...</div>
+                  )}
+                </>
+              )}
+
+              {form.item_type === 'BORDER' && (
+                <>
+                  <L label="Avatar Border">
+                    <select
+                      value={form.avatar_border_id}
+                      onChange={(e)=>updateForm('avatar_border_id', e.target.value)}
+                      className="sel"
+                    >
+                      <option value="">Pilih Avatar Border...</option>
+                      {avatarBorders.map((ab) => (
+                        <option key={ab.id} value={ab.id}>
+                          {ab.title || ab.code} (#{ab.id})
+                        </option>
+                      ))}
+                    </select>
+                  </L>
+                  {loadingAvatarBorders && (
+                    <div className="text-xs font-semibold opacity-70">Memuat daftar avatar border...</div>
                   )}
                 </>
               )}
@@ -360,6 +410,8 @@ function buildItemPayload(form) {
     if (form.badge_id !== '') p.badge_id = Number(form.badge_id);
   } else if (form.item_type === 'STICKER') {
     if (form.sticker_id !== '') p.sticker_id = Number(form.sticker_id);
+  } else if (form.item_type === 'BORDER') {
+    if (form.avatar_border_id !== '') p.avatar_border_id = Number(form.avatar_border_id);
   }
   return p;
 }
