@@ -186,7 +186,7 @@ export default function AnimeRequestsPage() {
                         <div className="flex items-center gap-2 flex-wrap mb-2">
                           <span className="badge"><Icon className="w-3 h-3" /> {meta.label}</span>
                           <span className="mono text-xs" style={{ color: 'var(--muted)' }}>
-                            {new Date(item.created_at).toLocaleDateString('id-ID')}
+                            {formatDate(item.created_at)}
                           </span>
                         </div>
                         <h3 className="section-title truncate">{item.title}</h3>
@@ -237,4 +237,11 @@ export default function AnimeRequestsPage() {
       )}
     </motion.div>
   );
+}
+
+function formatDate(value) {
+  if (!value) return '-';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleDateString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
 }
