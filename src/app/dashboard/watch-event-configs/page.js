@@ -419,7 +419,7 @@ export function WatchEventConfigsContent({ embedded = false } = {}) {
           </div>
 
           {/* Submit */}
-          <div className="pt-3" style={{ borderTop: '2px solid var(--border)' }}>
+          <div className="pt-3" style={{ borderTop: '1px solid var(--border)' }}>
             <button type="submit" disabled={saving} className="btn btn--primary">
               {saving ? 'Menyimpan...' : (form.id ? 'Simpan Perubahan' : 'Tambah Config')}
             </button>

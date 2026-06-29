@@ -9,6 +9,17 @@ import {
   X,
 } from 'lucide-react';
 
+const itemVariants = {
+  hidden:  { opacity: 0, x: -8 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.15, ease: 'easeOut' } },
+};
+
+const groupExpandVariants = {
+  hidden:  { height: 0, opacity: 0 },
+  visible: { height: 'auto', opacity: 1, transition: { duration: 0.2, ease: 'easeOut' } },
+  exit:    { height: 0, opacity: 0, transition: { duration: 0.15, ease: 'easeIn' } },
+};
+
 export default function Sidebar({
   menus,
   currentPath,
@@ -261,36 +272,52 @@ export default function Sidebar({
                     </button>
 
                     {/* Dropdown children */}
-                    {isExpanded && (
-                      <div id={`group-${m.key}`} className="overflow-hidden">
-                        {m.children.map((child) => {
-                          const isActive = isItemActive(child.href);
-                          return (
-                            <Link
-                              key={child.key}
-                              href={child.href}
-                              onClick={isMobile ? onMobileClose : undefined}
-                              className={`w-full flex items-center gap-3 px-4 pl-8 py-2.5 transition-colors ${
-                                isActive
-                                  ? 'bg-white/15 border-l-[3px] border-gray-300'
-                                  : 'border-l-[3px] border-transparent hover:bg-white/10'
-                              }`}
-                              title={child.label}
-                            >
-                              <child.icon className="w-4 h-4 flex-shrink-0 text-white" strokeWidth={2} />
-                              <span
-                                className={`text-xs flex-1 whitespace-nowrap uppercase tracking-wide ${isActive ? 'text-white font-bold' : 'text-white/70 font-medium'}`}
-                                style={{ fontFamily: 'var(--font-mono)' }}
+                    <AnimatePresence initial={false}>
+                      {isExpanded && (
+                        <motion.div
+                          id={`group-${m.key}`}
+                          variants={groupExpandVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                          className="overflow-hidden"
+                        >
+                          {m.children.map((child, ci) => {
+                            const isActive = isItemActive(child.href);
+                            return (
+                              <motion.div
+                                key={child.key}
+                                variants={itemVariants}
+                                initial="hidden"
+                                animate="visible"
+                                transition={{ delay: ci * 0.03 }}
                               >
-                                {child.label}
-                              </span>
-                              {renderLivechatBadges(child.key)}
-                              {renderDaftarKontenBadges(child.key)}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    )}
+                                <Link
+                                  href={child.href}
+                                  onClick={isMobile ? onMobileClose : undefined}
+                                  className={`w-full flex items-center gap-3 px-4 pl-8 py-2.5 transition-colors ${
+                                    isActive
+                                      ? 'bg-white/15 border-l-[3px] border-gray-300'
+                                      : 'border-l-[3px] border-transparent hover:bg-white/10'
+                                  }`}
+                                  title={child.label}
+                                >
+                                  <child.icon className="w-4 h-4 flex-shrink-0 text-white" strokeWidth={2} />
+                                  <span
+                                    className={`text-xs flex-1 whitespace-nowrap uppercase tracking-wide ${isActive ? 'text-white font-bold' : 'text-white/70 font-medium'}`}
+                                    style={{ fontFamily: 'var(--font-mono)' }}
+                                  >
+                                    {child.label}
+                                  </span>
+                                  {renderLivechatBadges(child.key)}
+                                  {renderDaftarKontenBadges(child.key)}
+                                </Link>
+                              </motion.div>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </>
                 )}
 

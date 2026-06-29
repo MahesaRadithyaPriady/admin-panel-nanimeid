@@ -233,7 +233,7 @@ export default function WaifuVotePage() {
     <div className="space-y-6">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div className="grid gap-2">
-          <div className="inline-flex w-fit items-center gap-2 px-3 py-2 border-4 rounded-full font-extrabold text-sm" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <div className="inline-flex w-fit items-center gap-2 px-3 py-2 border-2 rounded-full font-extrabold text-sm" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <List className="size-4" /> Waifu Vote Management
           </div>
           <div>
@@ -242,13 +242,13 @@ export default function WaifuVotePage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-start lg:justify-end gap-2">
-          <button onClick={() => loadList()} disabled={loadingList} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
+          <button onClick={() => loadList()} disabled={loadingList} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
             <RefreshCcw className="size-4 inline-block mr-1" /> {loadingList ? 'Memuat...' : 'Refresh'}
           </button>
-          <button onClick={onResetVotes} disabled={resetting} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>
+          <button onClick={onResetVotes} disabled={resetting} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>
             <RotateCcw className="size-4 inline-block mr-1" /> {resetting ? 'Mereset...' : 'Reset Semua Vote'}
           </button>
-          <button onClick={openAdd} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>
+          <button onClick={openAdd} className="px-3 py-2 border-2 rounded-lg font-extrabold" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>
             <Plus className="size-4 inline-block mr-1" /> Tambah Waifu
           </button>
         </div>
@@ -307,22 +307,22 @@ export default function WaifuVotePage() {
             <table className="min-w-full">
               <thead style={{ background: 'var(--surface)' }}>
                 <tr>
-                  <th className="text-left px-4 py-3 border-b-4 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Rank</th>
-                  <th className="text-left px-4 py-3 border-b-4 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Waifu</th>
-                  <th className="text-left px-4 py-3 border-b-4 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Anime</th>
-                  <th className="text-left px-4 py-3 border-b-4 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Votes</th>
-                  <th className="text-left px-4 py-3 border-b-4 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
+                  <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Rank</th>
+                  <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Waifu</th>
+                  <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Anime</th>
+                  <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Votes</th>
+                  <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((it, idx) => (
                   <tr key={it.id} style={{ background: idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
-                    <td className="px-4 py-4 border-b-4 align-top" style={{ borderColor: 'var(--panel-border)' }}>
-                      <div className="inline-flex min-w-12 justify-center px-3 py-2 border-4 rounded-xl font-black" style={{ background: idx === 0 ? '#FFD803' : 'var(--panel-bg)', color: idx === 0 ? '#111827' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>
+                    <td className="px-4 py-4 border-b-2 align-top" style={{ borderColor: 'var(--panel-border)' }}>
+                      <div className="inline-flex min-w-12 justify-center px-3 py-2 border-2 rounded-xl font-black" style={{ background: idx === 0 ? '#FFD803' : 'var(--panel-bg)', color: idx === 0 ? '#111827' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}>
                         #{((page - 1) * limit) + idx + 1}
                       </div>
                     </td>
-                    <td className="px-4 py-4 border-b-4 align-top" style={{ borderColor: 'var(--panel-border)' }}>
+                    <td className="px-4 py-4 border-b-2 align-top" style={{ borderColor: 'var(--panel-border)' }}>
                       <div className="flex items-start gap-3 min-w-[260px]">
                         {it.image_url ? (
                           <img src={it.image_url} alt={it.name} className="w-16 h-16 object-cover border-2 border-[var(--border)] shrink-0" loading="lazy" decoding="async" />
@@ -336,17 +336,17 @@ export default function WaifuVotePage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4 border-b-4 align-top font-semibold min-w-[180px]" style={{ borderColor: 'var(--panel-border)' }}>
-                      <div className="px-3 py-2 border-4 rounded-xl inline-flex" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+                    <td className="px-4 py-4 border-b-2 align-top font-semibold min-w-[180px]" style={{ borderColor: 'var(--panel-border)' }}>
+                      <div className="px-3 py-2 border-2 rounded-xl inline-flex" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
                         {it.anime_title || '-'}
                       </div>
                     </td>
-                    <td className="px-4 py-4 border-b-4 align-top" style={{ borderColor: 'var(--panel-border)' }}>
-                      <div className="inline-flex items-center px-3 py-2 border-4 rounded-xl font-black text-lg" style={{ background: '#FFD803', color: '#111827', borderColor: 'var(--panel-border)' }}>
+                    <td className="px-4 py-4 border-b-2 align-top" style={{ borderColor: 'var(--panel-border)' }}>
+                      <div className="inline-flex items-center px-3 py-2 border-2 rounded-xl font-black text-lg" style={{ background: '#FFD803', color: '#111827', borderColor: 'var(--panel-border)' }}>
                         {Number(it.total_votes) || 0}
                       </div>
                     </td>
-                    <td className="px-4 py-4 border-b-4 align-top" style={{ borderColor: 'var(--panel-border)' }}>
+                    <td className="px-4 py-4 border-b-2 align-top" style={{ borderColor: 'var(--panel-border)' }}>
                       <div className="flex flex-wrap items-center gap-2 min-w-[170px]">
                         <button type="button" onClick={() => openEdit(it)} className="btn btn--secondary btn--sm">
                           <Pencil className="w-4 h-4" /> Edit
@@ -397,7 +397,7 @@ export default function WaifuVotePage() {
       {formOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => !submitting && setFormOpen(false)} />
-          <form onSubmit={onSubmit} className="relative z-10 w-[92%] max-w-3xl border-4 rounded-xl p-4 sm:p-6 grid gap-4" style={{ boxShadow: 'var(--shadow-xl)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <form onSubmit={onSubmit} className="relative z-10 w-[92%] max-w-3xl border-2 rounded-xl p-4 sm:p-6 grid gap-4" style={{ boxShadow: 'var(--shadow-xl)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <div className="grid gap-1">
               <div className="text-lg font-extrabold">{mode === 'add' ? 'Tambah Waifu' : 'Edit Waifu'}</div>
               <div className="text-sm opacity-80">Atur identitas waifu, pilih sumber gambar, lalu cek preview sebelum simpan.</div>
@@ -405,33 +405,33 @@ export default function WaifuVotePage() {
             <div className="grid lg:grid-cols-[minmax(0,1fr)_260px] gap-4 items-start">
               <div className="grid gap-3">
                 <div className="grid sm:grid-cols-2 gap-3">
-                  <input type="text" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Nama waifu (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
-                  <input type="text" value={form.anime_title} onChange={(e) => setForm((f) => ({ ...f, anime_title: e.target.value }))} placeholder="Judul anime (wajib)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+                  <input type="text" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Nama waifu (wajib)" className="px-3 py-2 border-2 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+                  <input type="text" value={form.anime_title} onChange={(e) => setForm((f) => ({ ...f, anime_title: e.target.value }))} placeholder="Judul anime (wajib)" className="px-3 py-2 border-2 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
                 </div>
                 <div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] items-start">
                   <select
                     value={form.image_mode}
                     onChange={(e) => setForm((f) => ({ ...f, image_mode: e.target.value, image_url: e.target.value === 'url' ? f.image_url : '', file: e.target.value === 'upload' ? f.file : null, preview_url: e.target.value === 'upload' ? f.preview_url : '' }))}
-                    className="px-3 py-2 border-4 rounded-lg font-semibold"
+                    className="px-3 py-2 border-2 rounded-lg font-semibold"
                     style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                   >
                     <option value="upload">Upload file</option>
                     <option value="url">Gunakan URL</option>
                   </select>
                   {form.image_mode === 'upload' ? (
-                    <label className="px-3 py-2 border-4 rounded-lg font-extrabold cursor-pointer w-fit" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                    <label className="px-3 py-2 border-2 rounded-lg font-extrabold cursor-pointer w-fit" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                       <input type="file" accept="image/*" onChange={onSelectImageFile} className="hidden" />
                       <span className="flex items-center gap-2"><ImageIcon className="size-4" /> Pilih Gambar</span>
                     </label>
                   ) : (
-                    <input type="url" value={form.image_url} onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value, preview_url: '' }))} placeholder="https://..." className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                    <input type="url" value={form.image_url} onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value, preview_url: '' }))} placeholder="https://..." className="px-3 py-2 border-2 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                   )}
                 </div>
-                <textarea rows={5} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Deskripsi waifu" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <textarea rows={5} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Deskripsi waifu" className="px-3 py-2 border-2 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               </div>
-              <div className="border-4 rounded-xl p-4 grid gap-3" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+              <div className="border-2 rounded-xl p-4 grid gap-3" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
                 <div className="text-sm font-extrabold">Preview Gambar</div>
-                <div className="aspect-square border-4 rounded-xl overflow-hidden grid place-items-center" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+                <div className="aspect-square border-2 rounded-xl overflow-hidden grid place-items-center" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
                   {getPreviewUrl() ? (
                     <img src={getPreviewUrl()} alt="preview" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   ) : (
@@ -442,8 +442,8 @@ export default function WaifuVotePage() {
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 pt-1">
-              <button type="button" disabled={submitting} onClick={() => setFormOpen(false)} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Batal</button>
-              <button type="submit" disabled={submitting} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: mode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: mode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)' }}>{submitting ? (mode === 'add' ? 'Menambah...' : 'Menyimpan...') : (mode === 'add' ? 'Tambah' : 'Simpan')}</button>
+              <button type="button" disabled={submitting} onClick={() => setFormOpen(false)} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Batal</button>
+              <button type="submit" disabled={submitting} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: mode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: mode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)' }}>{submitting ? (mode === 'add' ? 'Menambah...' : 'Menyimpan...') : (mode === 'add' ? 'Tambah' : 'Simpan')}</button>
             </div>
           </form>
         </div>
@@ -453,9 +453,9 @@ export default function WaifuVotePage() {
       {confirmOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => !deleting && setConfirmOpen(false)} />
-          <div className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6" style={{ boxShadow: 'var(--shadow-xl)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <div className="relative z-10 w-[92%] max-w-md border-2 rounded-xl p-4 sm:p-6" style={{ boxShadow: 'var(--shadow-xl)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <div className="flex items-center gap-3 mb-3">
-              <div className="grid place-items-center size-10 border-4 rounded-md" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+              <div className="grid place-items-center size-10 border-2 rounded-md" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
                 <Trash2 className="size-5" />
               </div>
               <div>
@@ -464,8 +464,8 @@ export default function WaifuVotePage() {
               </div>
             </div>
             <div className="flex items-center justify-end gap-2">
-              <button onClick={() => setConfirmOpen(false)} disabled={deleting} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Batal</button>
-              <button onClick={onConfirmDelete} disabled={deleting} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>{deleting ? 'Menghapus...' : 'Ya, Hapus'}</button>
+              <button onClick={() => setConfirmOpen(false)} disabled={deleting} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Batal</button>
+              <button onClick={onConfirmDelete} disabled={deleting} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>{deleting ? 'Menghapus...' : 'Ya, Hapus'}</button>
             </div>
           </div>
         </div>

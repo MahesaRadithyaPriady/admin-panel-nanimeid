@@ -398,7 +398,7 @@ export default function AnalyticsLogsPage() {
                 <div className="text-xs font-semibold opacity-50 mt-1">{card.sub}</div>
               </div>
               <div 
-                className="p-2 border-4 border-[var(--border)]"
+                className="p-2 border-2 border-[var(--border)]"
                 style={{ boxShadow: 'var(--shadow-sm)' }}
               >
                 <card.icon className="size-5" style={{ color: card.color }} />
@@ -707,7 +707,7 @@ export default function AnalyticsLogsPage() {
                 className="card p-4 text-left hover:brightness-95 transition-all"
               >
                 <div className="flex items-start gap-3">
-                  <div className="p-2 border-4 border-[var(--border)]" style={{ boxShadow: 'var(--shadow-sm)' }}>
+                  <div className="p-2 border-2 border-[var(--border)]" style={{ boxShadow: 'var(--shadow-sm)' }}>
                     <FileCode className="size-5" />
                   </div>
                   <div className="flex-1 min-w-0">

@@ -113,14 +113,14 @@ export default function UploaderOverviewPage() {
       </div>
 
       {/* Form Data Episode (Full Width) */}
-      <div className="p-4 border-4 rounded-lg space-y-3" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+      <div className="p-4 border-2 rounded-lg space-y-3" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
           <div className="flex items-center gap-2 text-lg font-extrabold"><ListPlus className="size-5" /> Data Episode</div>
           <div>
             <label className="text-xs font-bold">Pilih Anime</label>
             <select
               value={formEpisode.animeId}
               onChange={(e) => setFormEpisode((f) => ({ ...f, animeId: e.target.value }))}
-              className="w-full mt-1 px-3 py-2 border-4 rounded-lg"
+              className="w-full mt-1 px-3 py-2 border-2 rounded-lg"
               style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             >
               <option value="">-- Pilih --</option>
@@ -140,7 +140,7 @@ export default function UploaderOverviewPage() {
                 min="1"
                 value={formEpisode.number}
                 onChange={(e) => setFormEpisode((f) => ({ ...f, number: e.target.value }))}
-                className="w-full mt-1 px-3 py-2 border-4 rounded-lg"
+                className="w-full mt-1 px-3 py-2 border-2 rounded-lg"
                 style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 placeholder="1"
               />
@@ -151,7 +151,7 @@ export default function UploaderOverviewPage() {
                 type="text"
                 value={formEpisode.title}
                 onChange={(e) => setFormEpisode((f) => ({ ...f, title: e.target.value }))}
-                className="w-full mt-1 px-3 py-2 border-4 rounded-lg"
+                className="w-full mt-1 px-3 py-2 border-2 rounded-lg"
                 style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 placeholder="Episode 1 - Awal Petualangan"
               />
@@ -163,7 +163,7 @@ export default function UploaderOverviewPage() {
               <select
                 value={formEpisode.thumbnail_mode || 'upload'}
                 onChange={(e) => setFormEpisode((f) => ({ ...f, thumbnail_mode: e.target.value, thumbnail_url: e.target.value === 'url' ? f.thumbnail_url : '', image: e.target.value === 'upload' ? f.image : null, previewUrl: e.target.value === 'upload' ? f.previewUrl : '' }))}
-                className="w-full px-3 py-2 border-4 rounded-lg"
+                className="w-full px-3 py-2 border-2 rounded-lg"
                 style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               >
                 <option value="upload">Upload</option>
@@ -179,7 +179,7 @@ export default function UploaderOverviewPage() {
                     const url = URL.createObjectURL(file);
                     setFormEpisode((f) => ({ ...f, image: file, previewUrl: url }));
                   }}
-                  className="w-full px-3 py-2 border-4 rounded-lg"
+                  className="w-full px-3 py-2 border-2 rounded-lg"
                   style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 />
               ) : (
@@ -187,7 +187,7 @@ export default function UploaderOverviewPage() {
                   type="url"
                   value={formEpisode.thumbnail_url || ''}
                   onChange={(e) => setFormEpisode((f) => ({ ...f, thumbnail_url: e.target.value }))}
-                  className="w-full px-3 py-2 border-4 rounded-lg"
+                  className="w-full px-3 py-2 border-2 rounded-lg"
                   style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                   placeholder="https://..."
                 />
@@ -211,7 +211,7 @@ export default function UploaderOverviewPage() {
       </div>
 
       {/* Quality & Source Card below the two columns (full width) */}
-      <div className="p-4 border-4 rounded-lg space-y-3" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+      <div className="p-4 border-2 rounded-lg space-y-3" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
         <div className="flex items-center gap-2 text-lg font-extrabold"><Plus className="size-5" /> Kualitas & Sumber</div>
         <div className="space-y-2">
           {formEpisode.sources.map((row, idx) => (
@@ -225,7 +225,7 @@ export default function UploaderOverviewPage() {
                     next[idx] = { ...next[idx], quality: e.target.value };
                     return { ...f, sources: next };
                   })}
-                  className="w-full mt-1 px-3 py-2 border-4 rounded-lg"
+                  className="w-full mt-1 px-3 py-2 border-2 rounded-lg"
                   style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 >
                   {['360p','480p','720p','1080p','1440p','2160p'].map((q) => (
@@ -243,7 +243,7 @@ export default function UploaderOverviewPage() {
                     next[idx] = { ...next[idx], url: e.target.value };
                     return { ...f, sources: next };
                   })}
-                  className="w-full mt-1 px-3 py-2 border-4 rounded-lg"
+                  className="w-full mt-1 px-3 py-2 border-2 rounded-lg"
                   style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                   placeholder="https://..."
                 />
@@ -252,7 +252,7 @@ export default function UploaderOverviewPage() {
                 <button
                   type="button"
                   onClick={() => setFormEpisode((f) => ({ ...f, sources: [...f.sources.slice(0, idx), ...f.sources.slice(idx + 1)] }))}
-                  className="px-2 py-2 border-4 rounded-lg"
+                  className="px-2 py-2 border-2 rounded-lg"
                   style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                   title="Hapus baris"
                   disabled={formEpisode.sources.length === 1}
@@ -265,7 +265,7 @@ export default function UploaderOverviewPage() {
           <button
             type="button"
             onClick={() => setFormEpisode((f) => ({ ...f, sources: [...f.sources, { quality: '720p', url: '' }] }))}
-            className="px-3 py-2 border-4 rounded-lg font-extrabold"
+            className="px-3 py-2 border-2 rounded-lg font-extrabold"
             style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}
           >
             <Plus className="inline size-4" /> Tambah Kualitas
@@ -274,7 +274,7 @@ export default function UploaderOverviewPage() {
         </div>
       </div>
 
-      <button onClick={onAddEpisode} disabled={uploading} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>
+      <button onClick={onAddEpisode} disabled={uploading} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>
         {uploading ? 'Mengupload...' : (<><Upload className="inline size-4" /> Upload Episode</>)}
       </button>
     </div>

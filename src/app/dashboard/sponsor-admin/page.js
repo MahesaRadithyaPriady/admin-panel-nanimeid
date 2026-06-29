@@ -112,7 +112,7 @@ export default function SponsorAdminPage() {
 
           {/* Table */}
           <div className="overflow-auto">
-            <table className="w-full border-4 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
+            <table className="w-full border-2 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
               <thead className="bg-[var(--panel-bg)]">
                 <tr>
                   <Th>ID</Th>
@@ -159,8 +159,8 @@ function L({ label, children }) {
     </div>
   );
 }
-function Th({ children }) { return <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">{children}</th>; }
-function Td({ children, className='' }) { return <td className={`px-3 py-2 font-semibold border-b-4 border-[var(--border)] ${className}`}>{children}</td>; }
+function Th({ children }) { return <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">{children}</th>; }
+function Td({ children, className='' }) { return <td className={`px-3 py-2 font-semibold border-b-2 border-[var(--border)] ${className}`}>{children}</td>; }
 
 // Styles helpers
 function buildSponsorPayload(form) {

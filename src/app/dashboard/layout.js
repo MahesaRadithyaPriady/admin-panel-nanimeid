@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity, Terminal, Trophy, Inbox, AlertTriangle, Film } from 'lucide-react';
+import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity, Terminal, Trophy, Inbox, AlertTriangle, Film, Sun, Moon } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import Sidebar from '@/components/dashboard/Sidebar';
 import BottomNav from '@/components/dashboard/BottomNav';
 import Header from '@/components/dashboard/Header';
+import TableAutoLabel from '@/components/dashboard/TableAutoLabel';
+import { motion, AnimatePresence } from 'framer-motion';
 import nacl from 'tweetnacl';
 import { getAdminLivechatStats, getAnimeRequestStats, listMyAdminPublicKeys, upsertMyAdminPublicKey } from '@/lib/api';
 
@@ -22,6 +24,28 @@ export default function DashboardLayout({ children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [livechatStats, setLivechatStats] = useState({ queued: 0, active: 0, closed: 0 });
   const [animeRequestStats, setAnimeRequestStats] = useState({ pending: 0, under_review: 0, upload_in_progress: 0, completed: 0, rejected: 0 });
+  const [mobileTheme, setMobileTheme] = useState('light');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light' || saved === 'dark') setMobileTheme(saved);
+    else setMobileTheme(window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const onThemeChange = (e) => setMobileTheme(e.detail);
+    window.addEventListener('themechange', onThemeChange);
+    return () => window.removeEventListener('themechange', onThemeChange);
+  }, []);
+
+  const toggleMobileTheme = () => {
+    const next = mobileTheme === 'dark' ? 'light' : 'dark';
+    setMobileTheme(next);
+    try { localStorage.setItem('theme', next); } catch {}
+    document.documentElement.classList.toggle('dark', next === 'dark');
+    document.documentElement.classList.toggle('light', next !== 'dark');
+    document.body.classList.toggle('dark', next === 'dark');
+    document.body.classList.toggle('light', next !== 'dark');
+    window.dispatchEvent(new CustomEvent('themechange', { detail: next }));
+  };
 
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -342,7 +366,7 @@ export default function DashboardLayout({ children }) {
         borderBottom: '2px solid var(--border)',
       }}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         <div
           className="flex items-center justify-center w-9 h-9 border-2 border-[var(--border)] flex-shrink-0"
           style={{ background: 'var(--foreground)', color: 'var(--background)', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.75rem' }}
@@ -356,14 +380,38 @@ export default function DashboardLayout({ children }) {
           NanimeID Admin
         </span>
       </div>
-      {user?.email && (
-        <span
-          className="text-[10px] truncate max-w-[120px]"
-          style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {user?.email && (
+          <span
+            className="text-[10px] truncate max-w-[100px] hidden xs:inline"
+            style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}
+          >
+            {user.email}
+          </span>
+        )}
+        <button
+          onClick={toggleMobileTheme}
+          className="flex items-center justify-center w-9 h-9 border-2 border-[var(--border)] transition-colors active:scale-90"
+          style={{
+            background: 'var(--background)',
+            color: 'var(--foreground)',
+          }}
+          title={mobileTheme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
+          aria-label={mobileTheme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
         >
-          {user.email}
-        </span>
-      )}
+          <AnimatePresence mode="wait">
+            {mobileTheme === 'dark' ? (
+              <motion.span key="sun" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
+                <Sun className="w-4 h-4" />
+              </motion.span>
+            ) : (
+              <motion.span key="moon" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
+                <Moon className="w-4 h-4" />
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </button>
+      </div>
     </header>
   );
 
@@ -403,6 +451,9 @@ export default function DashboardLayout({ children }) {
           </div>
         </section>
       </div>
+
+      {/* Auto-label tables for mobile card layout */}
+      <TableAutoLabel />
 
       {/* Mobile Bottom Nav — all menus rendered here, sidebar hidden on mobile */}
       {!loading && user && (

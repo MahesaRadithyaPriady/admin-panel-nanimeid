@@ -595,7 +595,7 @@ export default function PrimeStoreAdminPage() {
 
       {/* Items Table */}
       <div className="overflow-auto">
-        <table className="w-full border-4 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
+        <table className="w-full border-2 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
           <thead className="bg-[var(--panel-bg)]">
             <tr>
               <Th>ID</Th>
@@ -737,7 +737,7 @@ export default function PrimeStoreAdminPage() {
               type="checkbox"
               checked={!!discForm.is_active}
               onChange={(e) => updateDiscForm('is_active', e.target.checked)}
-              className="size-4 border-4 border-[var(--border)]"
+              className="size-4 border-2 border-[var(--border)]"
             />
             <label htmlFor="disc-active" className="text-sm font-extrabold">
               Aktif untuk tanggal tersebut
@@ -752,7 +752,7 @@ export default function PrimeStoreAdminPage() {
 
         {/* Tabel diskon harian */}
         <div className="overflow-auto">
-          <table className="w-full border-4 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
+          <table className="w-full border-2 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
             <thead className="bg-[var(--panel-bg)]">
               <tr>
                 <Th>ID</Th>
@@ -839,11 +839,11 @@ function L({ label, children }) {
 }
 
 function Th({ children }) {
-  return <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">{children}</th>;
+  return <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">{children}</th>;
 }
 
 function Td({ children, className = '' }) {
-  return <td className={`px-3 py-2 font-semibold border-b-4 border-[var(--border)] ${className}`}>{children}</td>;
+  return <td className={`px-3 py-2 font-semibold border-b-2 border-[var(--border)] ${className}`}>{children}</td>;
 }
 
 function buildPrimeItemPayload(form) {

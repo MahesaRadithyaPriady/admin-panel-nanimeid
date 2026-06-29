@@ -150,7 +150,7 @@ export default function AnimeListPage() {
                 <button
                   key={key}
                   onClick={() => setStatus(active ? '' : key)}
-                  className={`stat-card text-left border-4 border-[var(--border)] ${active ? 'bg-[var(--foreground)] text-[var(--background)]' : ''}`}
+                  className={`stat-card text-left border-2 border-[var(--border)] ${active ? 'bg-[var(--foreground)] text-[var(--background)]' : ''}`}
                   style={{ boxShadow: active ? 'var(--shadow-md)' : 'var(--shadow-md)' }}
                 >
                   <div className="text-xs font-extrabold uppercase tracking-wide label">{meta.label}</div>
@@ -210,7 +210,7 @@ export default function AnimeListPage() {
                   >
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                       {/* Cover */}
-                      <div className="w-14 h-18 sm:w-16 sm:h-22 border-4 border-[var(--border)] overflow-hidden flex-shrink-0" style={{ aspectRatio: '2/3', width: '56px', minWidth: '56px' }}>
+                      <div className="w-14 h-18 sm:w-16 sm:h-22 border-2 border-[var(--border)] overflow-hidden flex-shrink-0" style={{ aspectRatio: '2/3', width: '56px', minWidth: '56px' }}>
                         {(item.cover_anime || item.gambar_anime) ? (
                           <img
                             src={item.cover_anime || item.gambar_anime}

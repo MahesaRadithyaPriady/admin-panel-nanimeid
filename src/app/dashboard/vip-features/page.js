@@ -366,23 +366,23 @@ export default function VipFeaturesPage() {
 
           <div className="overflow-auto">
             <table
-              className="min-w-full border-4 border-[var(--border)] text-sm"
+              className="min-w-full border-2 border-[var(--border)] text-sm"
               style={{ boxShadow: 'var(--shadow-lg)' }}
             >
               <thead className="bg-[var(--panel-bg)]">
                 <tr>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Name</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Rank</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Active</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aksi</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Name</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Rank</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Active</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {tiers.map((t) => (
                   <tr key={t.id}>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{t.name}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{t.rank}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{t.name}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{t.rank}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">
                       <button
                         type="button"
                         disabled={togglingTierId === t.id}
@@ -392,7 +392,7 @@ export default function VipFeaturesPage() {
                         {togglingTierId === t.id ? "..." : t.is_active ? "On" : "Off"}
                       </button>
                     </td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)]">
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)]">
                       <div className="flex items-center gap-2">
                         <button type="button" onClick={() => onEditTier(t)} className="btn btn--secondary btn--sm">
                           <Pencil className="size-4" />
@@ -433,22 +433,22 @@ export default function VipFeaturesPage() {
 
           <div className="overflow-auto">
             <table
-              className="min-w-full border-4 border-[var(--border)] text-sm"
+              className="min-w-full border-2 border-[var(--border)] text-sm"
               style={{ boxShadow: 'var(--shadow-lg)' }}
             >
               <thead className="bg-[var(--panel-bg)]">
                 <tr>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Feature</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Min Tier</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Enabled</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aksi</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Feature</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Min Tier</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Enabled</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {requirements.map((r) => (
                   <tr key={r.id}>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{r.feature}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{r.feature}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">
                       <select
                         value={r._draft_min_tier_name}
                         onChange={(e) =>
@@ -464,7 +464,7 @@ export default function VipFeaturesPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">
                       <button
                         type="button"
                         disabled={togglingId === r.id}
@@ -474,7 +474,7 @@ export default function VipFeaturesPage() {
                         {togglingId === r.id ? "..." : r.is_enabled ? "On" : "Off"}
                       </button>
                     </td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)]">
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)]">
                       <button
                         type="button"
                         disabled={savingId === r.id}

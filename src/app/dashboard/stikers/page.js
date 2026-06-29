@@ -287,32 +287,32 @@ export default function StickersPage() {
         {/* Table + Pagination */}
         <div className="space-y-4">
           <div className="overflow-auto">
-            <table className="min-w-full border-4 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
+            <table className="min-w-full border-2 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
               <thead className="bg-[var(--panel-bg)]">
                 <tr>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">ID</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Preview</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Code</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Name</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Poin</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Active</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Sort</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aksi</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">ID</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Preview</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Code</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Name</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Poin</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Active</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Sort</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((it) => (
                   <tr key={it.id}>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.id}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)]">
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.id}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)]">
                       {it.image_url ? <img src={it.image_url} alt={it.name || it.code} className="w-10 h-10 object-contain border-2 border-[var(--border)]" loading="lazy" decoding="async" /> : <span className="text-xs opacity-60">-</span>}
                     </td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.code}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.name}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.poin_collection ?? 500}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.is_active ? 'Ya' : 'Tidak'}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.sort_order ?? '-'}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)]">
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.code}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.name}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.poin_collection ?? 500}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.is_active ? 'Ya' : 'Tidak'}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.sort_order ?? '-'}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)]">
                       <div className="flex items-center gap-2">
                         <button type="button" onClick={() => onEdit(it)} className="btn btn--secondary btn--sm"><Pencil className="size-4" /></button>
                         <button type="button" onClick={() => onRequestDelete(it)} className="btn btn--danger btn--sm"><Trash2 className="size-4" /></button>
@@ -341,7 +341,7 @@ export default function StickersPage() {
           <div className="absolute inset-0 bg-black/40" onClick={onCancelDelete} />
           <div className="relative z-10 w-[92%] max-w-md card p-4 sm:p-6" style={{ boxShadow: 'var(--shadow-xl)' }}>
             <div className="flex items-center gap-3 mb-3">
-              <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 border-[var(--border)]" style={{ boxShadow: 'var(--shadow-md)' }}>
+              <div className="grid place-items-center size-10 bg-[#FEB2B2] border-2 border-[var(--border)]" style={{ boxShadow: 'var(--shadow-md)' }}>
                 <Trash2 className="size-5" />
               </div>
               <div>

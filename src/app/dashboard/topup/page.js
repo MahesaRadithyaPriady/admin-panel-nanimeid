@@ -166,7 +166,7 @@ export default function TopupModerationPage() {
             <div className="flex items-center gap-2 label mb-3">
               <ListFilter className="w-4 h-4" /> Filter &amp; Pencarian
             </div>
-            <div className="grid gap-3 xl:grid-cols-[minmax(0,1.3fr)_200px_220px_120px]">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.3fr)_200px_220px_120px]">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 w-4 h-4 -translate-y-1/2" style={{ color: 'var(--muted)' }} />
                 <input
@@ -208,7 +208,7 @@ export default function TopupModerationPage() {
 
               return (
                 <div key={it.id} className="card p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="flex flex-col gap-4">
                     <div className="min-w-0 space-y-4 flex-1">
                       <div className="flex flex-wrap items-start gap-3">
                         <div className="grid place-items-center w-12 h-12 flex-shrink-0" style={{ border: '2px solid var(--border)', background: 'var(--muted-bg)' }}>
@@ -225,7 +225,7 @@ export default function TopupModerationPage() {
                         </div>
                       </div>
 
-                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <div className="p-3" style={{ border: '1px solid var(--border-muted)' }}>
                           <div className="label uppercase mb-2">Request</div>
                           <div className="mono text-xs">ID: {it.id}</div>
@@ -254,7 +254,7 @@ export default function TopupModerationPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 border-t-2 border-[var(--border)] pt-3">
                       <button
                         type="button"
                         disabled={actingId === it.id || !canApprove}
@@ -288,7 +288,7 @@ export default function TopupModerationPage() {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <button
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}

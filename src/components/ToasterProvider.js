@@ -10,9 +10,9 @@ export default function ToasterProvider() {
         style: {
           background: '#000000',
           color: '#FFFFFF',
-          border: '2px solid #D4D4D4',
-          borderRadius: '0',
-          fontFamily: "'Space Mono', monospace",
+          border: '1px solid #D4D4D4',
+          borderRadius: '8px',
+          fontFamily: "'Inter', sans-serif",
           fontSize: '0.75rem',
           fontWeight: '700',
           letterSpacing: '0.04em',

@@ -28,7 +28,7 @@ export const DISTINCT_PALETTE = [
 ];
 
 export function applyChartDefaults() {
-  ChartJS.defaults.font.family = "'Space Grotesk', system-ui, sans-serif";
+  ChartJS.defaults.font.family = "'Satoshi', 'Inter', system-ui, sans-serif";
   ChartJS.defaults.font.size   = 12;
   ChartJS.defaults.color       = '#737373';
 
@@ -41,13 +41,13 @@ export function applyChartDefaults() {
   ChartJS.defaults.plugins.tooltip.borderWidth      = 1;
   ChartJS.defaults.plugins.tooltip.cornerRadius     = 0;
   ChartJS.defaults.plugins.tooltip.padding          = 10;
-  ChartJS.defaults.plugins.tooltip.titleFont        = { family: "'Space Mono', monospace", weight: 'bold', size: 11 };
-  ChartJS.defaults.plugins.tooltip.bodyFont         = { family: "'Space Grotesk', system-ui", size: 12 };
+  ChartJS.defaults.plugins.tooltip.titleFont        = { family: "'Inter', sans-serif", weight: 'bold', size: 11 };
+  ChartJS.defaults.plugins.tooltip.bodyFont         = { family: "'Satoshi', 'Inter', sans-serif", size: 12 };
 
   ChartJS.defaults.scale.grid.color        = '#E5E5E5';
   ChartJS.defaults.scale.grid.borderColor  = '#737373';
   ChartJS.defaults.scale.ticks.color       = '#737373';
-  ChartJS.defaults.scale.ticks.font        = { family: "'Space Mono', monospace", size: 10 };
+  ChartJS.defaults.scale.ticks.font        = { family: "'Inter', sans-serif", size: 10 };
 }
 
 export const lineChartOptions = {
@@ -63,19 +63,19 @@ export const lineChartOptions = {
       borderWidth: 1,
       cornerRadius: 0,
       padding: 10,
-      titleFont: { family: "'Space Mono', monospace", weight: 'bold', size: 11 },
+      titleFont: { family: "'Inter', sans-serif", weight: 'bold', size: 11 },
     },
   },
   scales: {
     x: {
       grid: { display: false },
       border: { color: '#737373', width: 2 },
-      ticks: { color: '#737373', font: { family: "'Space Mono', monospace", size: 10 }, maxRotation: 0 },
+      ticks: { color: '#737373', font: { family: "'Inter', sans-serif", size: 10 }, maxRotation: 0 },
     },
     y: {
       grid: { color: '#E5E5E5' },
       border: { color: '#737373', width: 2 },
-      ticks: { color: '#737373', font: { family: "'Space Mono', monospace", size: 10 }, precision: 0 },
+      ticks: { color: '#737373', font: { family: "'Inter', sans-serif", size: 10 }, precision: 0 },
       beginAtZero: true,
     },
   },
@@ -95,7 +95,7 @@ export const doughnutOptions = {
       borderWidth: 1,
       cornerRadius: 0,
       padding: 10,
-      titleFont: { family: "'Space Mono', monospace", weight: 'bold', size: 11 },
+      titleFont: { family: "'Inter', sans-serif", weight: 'bold', size: 11 },
     },
   },
 };

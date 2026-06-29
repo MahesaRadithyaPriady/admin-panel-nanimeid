@@ -516,7 +516,7 @@ export default function MysteryBoxAdminPage() {
             Mystery Box
           </div>
           <div
-            className="border-4 rounded-lg p-3"
+            className="border-2 rounded-lg p-3"
             style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}
           >
             {loadingBoxes ? (
@@ -530,7 +530,7 @@ export default function MysteryBoxAdminPage() {
                       key={b.id}
                       type="button"
                       onClick={() => handleSelectBox(b.id)}
-                      className="w-full text-left px-3 py-2 border-4 rounded-lg text-sm font-extrabold"
+                      className="w-full text-left px-3 py-2 border-2 rounded-lg text-sm font-extrabold"
                       style={{
                         boxShadow: 'var(--shadow-sm)',
                         background: active ? '#FFD803' : 'var(--panel-bg)',
@@ -549,7 +549,7 @@ export default function MysteryBoxAdminPage() {
                 <button
                   type="button"
                   onClick={handleNewBox}
-                  className="w-full mt-2 flex items-center justify-center gap-2 border-4 rounded-lg px-3 py-2 text-xs font-extrabold"
+                  className="w-full mt-2 flex items-center justify-center gap-2 border-2 rounded-lg px-3 py-2 text-xs font-extrabold"
                   style={{
                     boxShadow: 'var(--shadow-sm)',
                     background: 'var(--accent-add)',
@@ -569,7 +569,7 @@ export default function MysteryBoxAdminPage() {
           {/* Box Form */}
           <form
             onSubmit={onSubmitBox}
-            className="space-y-3 p-4 border-4 rounded-lg"
+            className="space-y-3 p-4 border-2 rounded-lg"
             style={{
               boxShadow: 'var(--shadow-lg)',
               background: 'var(--panel-bg)',
@@ -689,7 +689,7 @@ export default function MysteryBoxAdminPage() {
               {/* Tier Form */}
               <form
                 onSubmit={onSubmitTier}
-                className="space-y-3 p-4 border-4 rounded-lg"
+                className="space-y-3 p-4 border-2 rounded-lg"
                 style={{
                   boxShadow: 'var(--shadow-lg)',
                   background: 'var(--panel-bg)',
@@ -1054,7 +1054,7 @@ export default function MysteryBoxAdminPage() {
         <div className="fixed inset-0 z-50 grid place-items-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmOpen(false)} />
           <div
-            className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6"
+            className="relative z-10 w-[92%] max-w-md border-2 rounded-xl p-4 sm:p-6"
             style={{
               boxShadow: 'var(--shadow-xl)',
               background: 'var(--panel-bg)',
@@ -1064,7 +1064,7 @@ export default function MysteryBoxAdminPage() {
           >
             <div className="flex items-center gap-3 mb-3">
               <div
-                className="grid place-items-center size-10 bg-[#FEB2B2] border-4 rounded-md"
+                className="grid place-items-center size-10 bg-[#FEB2B2] border-2 rounded-md"
                 style={{ boxShadow: 'var(--shadow-md)', borderColor: 'var(--panel-border)' }}
               >
                 <Trash2 className="size-5" />
@@ -1090,7 +1090,7 @@ export default function MysteryBoxAdminPage() {
                 type="button"
                 disabled={deleting}
                 onClick={() => setConfirmOpen(false)}
-                className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
+                className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60"
                 style={{
                   boxShadow: 'var(--shadow-md)',
                   background: 'var(--panel-bg)',
@@ -1104,7 +1104,7 @@ export default function MysteryBoxAdminPage() {
                 type="button"
                 disabled={deleting}
                 onClick={onConfirmDelete}
-                className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold disabled:opacity-60"
+                className="px-3 py-2 border-2 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold disabled:opacity-60"
                 style={{ boxShadow: 'var(--shadow-md)', borderColor: 'var(--panel-border)' }}
               >
                 {deleting ? 'Menghapus...' : 'Ya, Hapus'}

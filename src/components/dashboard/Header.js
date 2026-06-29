@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Sun, Moon, LogOut, Menu } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Header({ user, role, onLogout, onMenuClick }) {
   const getInitialTheme = () => {
@@ -51,7 +52,7 @@ export default function Header({ user, role, onLogout, onMenuClick }) {
       className="sticky top-0 z-30 hidden md:flex items-center justify-between px-6"
       style={{
         height: '56px',
-        borderBottom: '2px solid var(--border)',
+        borderBottom: '1px solid var(--border)',
         background: 'var(--surface-raised)',
         flexShrink: 0,
       }}
@@ -86,7 +87,17 @@ export default function Header({ user, role, onLogout, onMenuClick }) {
           title={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
           aria-label={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
         >
-          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          <AnimatePresence mode="wait">
+            {theme === 'dark' ? (
+              <motion.span key="sun" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
+                <Sun className="w-4 h-4" />
+              </motion.span>
+            ) : (
+              <motion.span key="moon" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
+                <Moon className="w-4 h-4" />
+              </motion.span>
+            )}
+          </AnimatePresence>
         </button>
 
         <button

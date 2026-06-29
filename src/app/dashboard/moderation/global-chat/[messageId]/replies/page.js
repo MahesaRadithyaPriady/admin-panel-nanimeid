@@ -14,7 +14,7 @@ function Badge({ tone = 'neutral', children }) {
   const fg = '#111';
   return (
     <span
-      className="inline-flex items-center px-2 py-1 border-4 rounded-full text-[10px] font-extrabold"
+      className="inline-flex items-center px-2 py-1 border-2 rounded-full text-[10px] font-extrabold"
       style={{
         boxShadow: 'var(--shadow-sm)',
         background: bg,
@@ -30,7 +30,7 @@ function Badge({ tone = 'neutral', children }) {
 function TextInput({ value, onChange, placeholder, icon: Icon }) {
   return (
     <div
-      className="flex items-center gap-2 border-4 rounded-lg px-3 py-2"
+      className="flex items-center gap-2 border-2 rounded-lg px-3 py-2"
       style={{
         boxShadow: 'var(--shadow-md)',
         background: 'var(--panel-bg)',
@@ -54,7 +54,7 @@ function Select({ value, onChange, children }) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full border-4 rounded-lg px-3 py-2 text-sm font-extrabold"
+      className="w-full border-2 rounded-lg px-3 py-2 text-sm font-extrabold"
       style={{
         boxShadow: 'var(--shadow-md)',
         background: 'var(--panel-bg)',
@@ -72,7 +72,7 @@ function StickerPreview({ sticker }) {
   if (!url) return null;
   return (
     <div
-      className="mt-3 border-4 rounded-xl p-2 inline-block"
+      className="mt-3 border-2 rounded-xl p-2 inline-block"
       style={{
         boxShadow: 'var(--shadow-md)',
         background: 'var(--panel-bg)',
@@ -108,7 +108,7 @@ function ImagePreview({ url }) {
   if (!url) return null;
   return (
     <div
-      className="mt-3 border-4 rounded-xl p-2 inline-block max-w-full"
+      className="mt-3 border-2 rounded-xl p-2 inline-block max-w-full"
       style={{
         boxShadow: 'var(--shadow-md)',
         background: 'var(--panel-bg)',
@@ -126,7 +126,7 @@ function ActionButton({ disabled, onClick, children }) {
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
+      className="px-4 py-2 border-2 rounded-lg font-extrabold text-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
       style={{
         boxShadow: 'var(--shadow-md)',
         background: '#FF4D4D',
@@ -143,7 +143,7 @@ function ActionButton({ disabled, onClick, children }) {
 function Panel({ title, icon: Icon, description, children }) {
   return (
     <div
-      className="border-4 rounded-xl p-4"
+      className="border-2 rounded-xl p-4"
       style={{
         boxShadow: 'var(--shadow-xl)',
         background: 'var(--panel-bg)',
@@ -153,7 +153,7 @@ function Panel({ title, icon: Icon, description, children }) {
       <div className="flex items-start gap-3">
         {Icon ? (
           <div
-            className="border-4 rounded-xl p-2"
+            className="border-2 rounded-xl p-2"
             style={{
               boxShadow: 'var(--shadow-md)',
               background: '#FFD803',
@@ -290,7 +290,7 @@ export default function ModerationGlobalChatRepliesPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/dashboard/moderation"
-            className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
+            className="px-3 py-2 border-2 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
             style={{
               boxShadow: 'var(--shadow-md)',
               background: 'var(--panel-bg)',
@@ -354,7 +354,7 @@ export default function ModerationGlobalChatRepliesPage() {
         <div className="flex gap-2">
           <button
             type="submit"
-            className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
+            className="px-4 py-2 border-2 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
             style={{
               boxShadow: 'var(--shadow-md)',
               background: '#FFD803',
@@ -367,7 +367,7 @@ export default function ModerationGlobalChatRepliesPage() {
           <button
             type="button"
             onClick={() => loadReplies()}
-            className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
+            className="px-4 py-2 border-2 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
             style={{
               boxShadow: 'var(--shadow-md)',
               background: 'var(--panel-bg)',
@@ -407,7 +407,7 @@ export default function ModerationGlobalChatRepliesPage() {
                 return (
                   <div
                     key={String(it?.id)}
-                    className="border-4 rounded-xl p-4"
+                    className="border-2 rounded-xl p-4"
                     style={{
                       boxShadow: 'var(--shadow-lg)',
                       background: 'var(--panel-bg)',
@@ -453,7 +453,7 @@ export default function ModerationGlobalChatRepliesPage() {
               type="button"
               disabled={loadingList || page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60"
+              className="px-3 py-2 border-2 rounded-lg font-extrabold text-sm disabled:opacity-60"
               style={{
                 boxShadow: 'var(--shadow-md)',
                 background: 'var(--panel-bg)',
@@ -473,7 +473,7 @@ export default function ModerationGlobalChatRepliesPage() {
                 (typeof totalPages === 'number' ? page >= totalPages : items.length < limit)
               }
               onClick={() => setPage((p) => p + 1)}
-              className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60"
+              className="px-3 py-2 border-2 rounded-lg font-extrabold text-sm disabled:opacity-60"
               style={{
                 boxShadow: 'var(--shadow-md)',
                 background: 'var(--panel-bg)',

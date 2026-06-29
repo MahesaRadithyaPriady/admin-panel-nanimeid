@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Grid2x2, X, LogOut, Sun, Moon } from 'lucide-react';
+import { Grid2x2, X, LogOut } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // 4 slots always pinned in the bar (by menu key)
 const PINNED_KEYS = ['overview', 'konten-group', 'kelola', 'settings'];
@@ -12,40 +13,6 @@ const ALL_KEY = '__all__';
 export default function BottomNav({ menus = [], currentPath, onLogout, user }) {
   // sheet: null = closed, ALL_KEY = full menu, otherwise a group key
   const [sheet, setSheet] = useState(null);
-  const [mounted, setMounted] = useState(false);
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    let initialDark = false;
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme');
-      if (saved === 'dark') initialDark = true;
-      else if (saved === 'light') initialDark = false;
-      else initialDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
-    }
-    setIsDark(initialDark);
-    document.documentElement.classList.toggle('dark', initialDark);
-    document.documentElement.classList.toggle('light', !initialDark);
-    document.body.classList.toggle('dark', initialDark);
-    document.body.classList.toggle('light', !initialDark);
-    const onThemeChange = (e) => setIsDark(e.detail === 'dark');
-    window.addEventListener('themechange', onThemeChange);
-    return () => window.removeEventListener('themechange', onThemeChange);
-  }, []);
-
-  const toggleTheme = () => {
-    const next = !isDark;
-    setIsDark(next);
-    try { localStorage.setItem('theme', next ? 'dark' : 'light'); } catch {}
-    document.documentElement.classList.toggle('dark', next);
-    document.documentElement.classList.toggle('light', !next);
-    document.body.classList.toggle('dark', next);
-    document.body.classList.toggle('light', !next);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('themechange', { detail: next ? 'dark' : 'light' }));
-    }
-  };
 
   // Close any sheet on route change
   useEffect(() => { setSheet(null); }, [currentPath]);
@@ -92,10 +59,10 @@ export default function BottomNav({ menus = [], currentPath, onLogout, user }) {
     const isOpenGroup = sheet === item.key;
     const lit = active || isOpenGroup;
 
-    const cellClass = 'flex-1 flex flex-col items-center justify-center gap-1 transition-colors';
+    const cellClass = 'flex-1 flex flex-col items-center justify-center gap-1 transition-all active:scale-90';
     const cellStyle = {
-      background: lit ? '#fff' : 'transparent',
-      color: lit ? '#000' : 'rgba(255,255,255,0.5)',
+      background: lit ? 'var(--foreground)' : 'transparent',
+      color: lit ? 'var(--background)' : 'rgba(255,255,255,0.45)',
     };
 
     const inner = (
@@ -148,7 +115,7 @@ export default function BottomNav({ menus = [], currentPath, onLogout, user }) {
         className="flex items-center gap-3 px-4 py-3"
         style={{
           background: active ? 'rgba(255,255,255,0.1)' : 'transparent',
-          borderLeft: active ? '3px solid var(--color-gray-300)' : '3px solid transparent',
+          borderLeft: active ? '2px solid var(--color-gray-300)' : '2px solid transparent',
         }}
         aria-current={active ? 'page' : undefined}
       >
@@ -174,21 +141,37 @@ export default function BottomNav({ menus = [], currentPath, onLogout, user }) {
   return (
     <>
       {/* Backdrop — shared for both sheet modes */}
-      {sheet && (
-        <button
-          type="button"
-          onClick={closeSheet}
-          className="md:hidden fixed inset-0 z-40 bg-black/60"
-          aria-label="Tutup menu"
-        />
-      )}
+      <AnimatePresence>
+        {sheet && (
+          <motion.button
+            type="button"
+            onClick={closeSheet}
+            className="md:hidden fixed inset-0 z-40 bg-black/60"
+            aria-label="Tutup menu"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Focused group sheet — slides above the bar, shows only that group's children */}
-      {activeGroup && (
-        <div
-          className="md:hidden fixed bottom-[62px] left-0 right-0 z-50 flex flex-col"
-          style={{ background: 'var(--color-black)', maxHeight: '60dvh', borderTop: '3px solid var(--color-gray-300)' }}
-        >
+      <AnimatePresence>
+        {activeGroup && (
+          <motion.div
+            className="md:hidden fixed bottom-[64px] left-2 right-2 z-50 flex flex-col overflow-hidden"
+            style={{
+              background: 'var(--color-black)',
+              maxHeight: '60dvh',
+              borderTop: '2px solid var(--color-gray-300)',
+              borderRadius: 'var(--radius) var(--radius) 0 0',
+            }}
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 20, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
           <div
             className="flex items-center justify-between px-4 py-3 flex-shrink-0"
             style={{ borderBottom: '1px solid rgba(212,212,212,0.12)' }}
@@ -206,15 +189,21 @@ export default function BottomNav({ menus = [], currentPath, onLogout, user }) {
           <div className="overflow-y-auto py-1">
             {activeGroup.children.map((child) => <SheetRow key={child.key} node={child} />)}
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* Full menu sheet */}
-      {sheet === ALL_KEY && (
-        <div
-          className="md:hidden fixed top-0 left-0 right-0 bottom-[62px] z-50 flex flex-col"
-          style={{ background: 'var(--color-black)' }}
-        >
+      <AnimatePresence>
+        {sheet === ALL_KEY && (
+          <motion.div
+            className="md:hidden fixed top-0 left-0 right-0 bottom-[64px] z-50 flex flex-col"
+            style={{ background: 'var(--color-black)' }}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+          >
           <div
             className="flex items-center justify-between px-5 py-4 flex-shrink-0"
             style={{ borderBottom: '1px solid rgba(212,212,212,0.12)' }}
@@ -256,36 +245,28 @@ export default function BottomNav({ menus = [], currentPath, onLogout, user }) {
                 <div className="text-xs text-white/70 font-semibold truncate" style={{ fontFamily: 'var(--font-mono)' }}>{user.email}</div>
               </div>
             )}
-            {mounted && (
-              <button onClick={toggleTheme} className="w-full flex items-center gap-3 px-3 py-2.5 border border-gray-300/15 text-white/60 hover:text-white">
-                {isDark ? <Sun className="w-4 h-4 flex-shrink-0" /> : <Moon className="w-4 h-4 flex-shrink-0" />}
-                <span className="text-xs font-bold uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)' }}>
-                  {isDark ? 'Mode Terang' : 'Mode Gelap'}
-                </span>
-              </button>
-            )}
             <button onClick={() => { closeSheet(); onLogout?.(); }} className="w-full flex items-center gap-3 px-3 py-2.5 bg-white text-black hover:bg-white/90">
               <LogOut className="w-4 h-4 flex-shrink-0" />
               <span className="text-xs font-bold uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)' }}>Keluar</span>
             </button>
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* Bottom bar — 4 pinned + Menu */}
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex"
         style={{
-          height: '62px',
+          height: '64px',
           background: 'var(--color-black)',
-          borderTop: '3px solid var(--color-gray-300)',
-          // hard cells separated by thin white rules
+          borderTop: '2px solid var(--color-gray-300)',
           gap: '1px',
         }}
         aria-label="Navigasi utama"
       >
         {/* divider background showing through the 1px gaps */}
-        <div className="absolute inset-0 -z-0" style={{ background: 'rgba(212,212,212,0.18)' }} aria-hidden="true" />
+        <div className="absolute inset-0 -z-0" style={{ background: 'rgba(212,212,212,0.12)' }} aria-hidden="true" />
 
         {pinned.map((item) => (
           <div key={item.key} className="relative z-10 flex-1 flex" style={{ background: 'var(--color-black)' }}>
@@ -299,8 +280,8 @@ export default function BottomNav({ menus = [], currentPath, onLogout, user }) {
             <div className="relative z-10 flex-1 flex" style={{ background: 'var(--color-black)' }}>
               <button
                 onClick={() => setSheet(sheet === ALL_KEY ? null : ALL_KEY)}
-                className="flex-1 flex flex-col items-center justify-center gap-1 transition-colors"
-                style={{ background: lit ? '#fff' : 'transparent', color: lit ? '#000' : 'rgba(255,255,255,0.5)' }}
+                className="flex-1 flex flex-col items-center justify-center gap-1 transition-all active:scale-90"
+                style={{ background: lit ? 'var(--foreground)' : 'transparent', color: lit ? 'var(--background)' : 'rgba(255,255,255,0.45)' }}
                 aria-label="Menu lainnya"
                 aria-expanded={sheet === ALL_KEY}
               >

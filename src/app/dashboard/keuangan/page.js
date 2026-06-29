@@ -72,22 +72,22 @@ export default function KeuanganPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-extrabold">Keuangan</h2>
-        <button onClick={refreshAll} disabled={refreshing} className="px-3 py-2 border-4 border-[var(--border)] rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)' }}>
+        <button onClick={refreshAll} disabled={refreshing} className="px-3 py-2 border-2 border-[var(--border)] rounded-lg bg-[#FFD803] font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)' }}>
           {refreshing ? 'Menyegarkan...' : (<><RefreshCw className="inline size-4" /> Refresh</>)}
         </button>
       </div>
 
       {/* Metrics */}
       <div className="grid sm:grid-cols-3 gap-4">
-        <div className="p-4 border-4 border-[var(--border)] rounded-lg bg-[#C6F6D5]" style={{ boxShadow: 'var(--shadow-md)' }}>
+        <div className="p-4 border-2 border-[var(--border)] rounded-lg bg-[#C6F6D5]" style={{ boxShadow: 'var(--shadow-md)' }}>
           <div className="flex items-center gap-2 text-xs font-bold mb-1"><TrendingUp className="size-4" /> Uang Masuk</div>
           <div className="text-2xl font-extrabold">{formatShort(finance.pemasukan)}</div>
         </div>
-        <div className="p-4 border-4 border-[var(--border)] rounded-lg bg-[#FED7D7]" style={{ boxShadow: 'var(--shadow-md)' }}>
+        <div className="p-4 border-2 border-[var(--border)] rounded-lg bg-[#FED7D7]" style={{ boxShadow: 'var(--shadow-md)' }}>
           <div className="flex items-center gap-2 text-xs font-bold mb-1"><TrendingDown className="size-4" /> Uang Keluar</div>
           <div className="text-2xl font-extrabold">{formatShort(finance.pengeluaran)}</div>
         </div>
-        <div className="p-4 border-4 border-[var(--border)] rounded-lg bg-[#FFE4A1]" style={{ boxShadow: 'var(--shadow-md)' }}>
+        <div className="p-4 border-2 border-[var(--border)] rounded-lg bg-[#FFE4A1]" style={{ boxShadow: 'var(--shadow-md)' }}>
           <div className="flex items-center gap-2 text-xs font-bold mb-1"><PiggyBank className="size-4" /> Kas</div>
           <div className="text-2xl font-extrabold">{formatShort(finance.kas)}</div>
         </div>
@@ -98,7 +98,7 @@ export default function KeuanganPage() {
         <h3 className="text-lg font-extrabold mb-3 flex items-center gap-2"><Wallet className="size-4" /> Penghasilan Aplikasi</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           {sources.map((s) => (
-            <div key={s.key} className="p-4 border-4 border-[var(--border)] rounded-lg bg-white" style={{ boxShadow: 'var(--shadow-md)' }}>
+            <div key={s.key} className="p-4 border-2 border-[var(--border)] rounded-lg bg-white" style={{ boxShadow: 'var(--shadow-md)' }}>
               <div className="text-xs font-bold opacity-70 mb-1">{s.label}</div>
               <div className="text-xl font-extrabold">{formatShort(s.amount)}</div>
             </div>
@@ -110,26 +110,26 @@ export default function KeuanganPage() {
       <div>
         <h3 className="text-lg font-extrabold mb-3">Transaksi Terakhir</h3>
         <div className="overflow-auto">
-          <table className="min-w-full border-4 border-[var(--border)] rounded-lg overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)' }}>
+          <table className="min-w-full border-2 border-[var(--border)] rounded-lg overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)' }}>
             <thead className="bg-[#E2E8F0]">
               <tr>
-                <th className="text-left px-3 py-2 border-b-4 border-[var(--border)]">Waktu</th>
-                <th className="text-left px-3 py-2 border-b-4 border-[var(--border)]">Tipe</th>
-                <th className="text-left px-3 py-2 border-b-4 border-[var(--border)]">Deskripsi</th>
-                <th className="text-left px-3 py-2 border-b-4 border-[var(--border)]">Jumlah</th>
+                <th className="text-left px-3 py-2 border-b-2 border-[var(--border)]">Waktu</th>
+                <th className="text-left px-3 py-2 border-b-2 border-[var(--border)]">Tipe</th>
+                <th className="text-left px-3 py-2 border-b-2 border-[var(--border)]">Deskripsi</th>
+                <th className="text-left px-3 py-2 border-b-2 border-[var(--border)]">Jumlah</th>
               </tr>
             </thead>
             <tbody>
               {transactions.map((tr) => (
                 <tr key={tr.id} className="odd:bg-white even:bg-[#F7F7F0]">
-                  <td className="px-3 py-2 border-b-4 border-[var(--border)] text-sm opacity-80">{new Date(tr.ts).toLocaleString('id-ID')}</td>
-                  <td className="px-3 py-2 border-b-4 border-[var(--border)]">
+                  <td className="px-3 py-2 border-b-2 border-[var(--border)] text-sm opacity-80">{new Date(tr.ts).toLocaleString('id-ID')}</td>
+                  <td className="px-3 py-2 border-b-2 border-[var(--border)]">
                     <span className={`px-2 py-1 border-2 border-[var(--border)] rounded text-xs font-extrabold ${tr.type==='in' ? 'bg-[#C6F6D5]' : 'bg-[#FED7D7]'}`}>
                       {tr.type === 'in' ? 'MASUK' : 'KELUAR'}
                     </span>
                   </td>
-                  <td className="px-3 py-2 border-b-4 border-[var(--border)]">{tr.desc}</td>
-                  <td className="px-3 py-2 border-b-4 border-[var(--border)] font-extrabold">{formatShort(tr.amount)}</td>
+                  <td className="px-3 py-2 border-b-2 border-[var(--border)]">{tr.desc}</td>
+                  <td className="px-3 py-2 border-b-2 border-[var(--border)] font-extrabold">{formatShort(tr.amount)}</td>
                 </tr>
               ))}
               {transactions.length === 0 && (

@@ -304,7 +304,7 @@ export default function AvatarBordersPage() {
                     <input type="url" value={form.image_url} onChange={onChange('image_url')} placeholder="https://..." className="input w-full" />
                   )}
                   {(form.preview_url || form.image_url || form.existing_image_url) && (
-                    <img src={form.preview_url || form.image_url || form.existing_image_url} alt="Preview" className="mt-1 max-h-32 border-4 border-[var(--border)]" loading="lazy" decoding="async" />
+                    <img src={form.preview_url || form.image_url || form.existing_image_url} alt="Preview" className="mt-1 max-h-32 border-2 border-[var(--border)]" loading="lazy" decoding="async" />
                   )}
                 </div>
 
@@ -371,28 +371,28 @@ export default function AvatarBordersPage() {
             {/* Table + Pagination */}
             <div className="space-y-4">
               <div className="overflow-auto">
-                <table className="min-w-full border-4 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
+                <table className="min-w-full border-2 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
                   <thead className="bg-[var(--panel-bg)]">
                     <tr>
-                      <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Code</th>
-                      <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Title</th>
-                      <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Harga</th>
-                      <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aktif</th>
-                      <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Terbatas</th>
-                      <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Stok</th>
-                      <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aksi</th>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Code</th>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Title</th>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Harga</th>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Aktif</th>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Terbatas</th>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Stok</th>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((it) => (
                       <tr key={it.id}>
-                        <td className="px-3 py-2 border-b-4 border-[var(--border)] font-extrabold">{it.code}</td>
-                        <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.title}</td>
-                        <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.coin_price == null ? '-' : it.coin_price}</td>
-                        <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.is_active ? 'Ya' : 'Tidak'}</td>
-                        <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.is_limited ? 'Ya' : 'Tidak'}</td>
-                        <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.total_supply == null ? '-' : it.total_supply}</td>
-                        <td className="px-3 py-2 border-b-4 border-[var(--border)]">
+                        <td className="px-3 py-2 border-b-2 border-[var(--border)] font-extrabold">{it.code}</td>
+                        <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.title}</td>
+                        <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.coin_price == null ? '-' : it.coin_price}</td>
+                        <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.is_active ? 'Ya' : 'Tidak'}</td>
+                        <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.is_limited ? 'Ya' : 'Tidak'}</td>
+                        <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.total_supply == null ? '-' : it.total_supply}</td>
+                        <td className="px-3 py-2 border-b-2 border-[var(--border)]">
                           <div className="flex items-center gap-2">
                             <button onClick={() => onEdit(it)} className="btn btn--secondary btn--sm"><Pencil className="size-4" /></button>
                             <button onClick={() => onRequestDelete(it)} className="btn btn--danger btn--sm"><Trash2 className="size-4" /></button>
@@ -422,7 +422,7 @@ export default function AvatarBordersPage() {
               <div className="absolute inset-0 bg-black/40" onClick={onCancelDelete} />
               <div className="relative z-10 w-[92%] max-w-md card p-4 sm:p-6" style={{ boxShadow: 'var(--shadow-xl)' }}>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 border-[var(--border)]" style={{ boxShadow: 'var(--shadow-md)' }}>
+                  <div className="grid place-items-center size-10 bg-[#FEB2B2] border-2 border-[var(--border)]" style={{ boxShadow: 'var(--shadow-md)' }}>
                     <Trash2 className="size-5" />
                   </div>
                   <div>

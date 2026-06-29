@@ -631,7 +631,7 @@ export default function GachaAdminPage() {
                       key={c.event_code}
                       type="button"
                       onClick={() => handleSelectEvent(c.event_code)}
-                      className={`w-full text-left px-3 py-2 border-4 border-[var(--border)] text-sm font-extrabold ${active ? 'bg-[#FFD803]' : ''}`}
+                      className={`w-full text-left px-3 py-2 border-2 border-[var(--border)] text-sm font-extrabold ${active ? 'bg-[#FFD803]' : ''}`}
                       style={{ boxShadow: 'var(--shadow-sm)' }}
                     >
                       <div>{c.event_code}</div>

@@ -256,20 +256,20 @@ export default function AdminVipPage() {
 
       {/* History Table */}
       <div className="overflow-auto">
-        <table className="min-w-full border-4 border-[var(--border)] overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)' }}>
+        <table className="min-w-full border-2 border-[var(--border)] overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)' }}>
           <thead style={{ background: 'var(--panel-bg)' }}>
             <tr>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Action</th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Duration (days)</th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Tanggal</th>
+              <th className="text-left px-3 py-2 border-b-2" style={{ borderColor: 'var(--panel-border)' }}>Action</th>
+              <th className="text-left px-3 py-2 border-b-2" style={{ borderColor: 'var(--panel-border)' }}>Duration (days)</th>
+              <th className="text-left px-3 py-2 border-b-2" style={{ borderColor: 'var(--panel-border)' }}>Tanggal</th>
             </tr>
           </thead>
           <tbody>
             {history.items.map((it, idx) => (
               <tr key={idx}>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>{it.action}</td>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>{it.duration_days ?? '-'}</td>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>{it.createdAt ? new Date(it.createdAt).toLocaleString() : '-'}</td>
+                <td className="px-3 py-2 border-b-2" style={{ borderColor: 'var(--panel-border)' }}>{it.action}</td>
+                <td className="px-3 py-2 border-b-2" style={{ borderColor: 'var(--panel-border)' }}>{it.duration_days ?? '-'}</td>
+                <td className="px-3 py-2 border-b-2" style={{ borderColor: 'var(--panel-border)' }}>{it.createdAt ? new Date(it.createdAt).toLocaleString() : '-'}</td>
               </tr>
             ))}
             {history.items.length === 0 && (

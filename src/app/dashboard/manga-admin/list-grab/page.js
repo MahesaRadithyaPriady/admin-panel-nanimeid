@@ -193,13 +193,13 @@ export default function MangaGrabListPage() {
                 return (
                   <div key={`${job?.id || 'job'}-${manga?.id || index}`} className="card overflow-hidden">
                     <div className="grid gap-0 lg:grid-cols-[220px_minmax(0,1fr)]">
-                      <div className="relative min-h-[220px] border-b-4 lg:border-b-0 lg:border-r-4 border-[var(--border)]" style={{ background: '#0f172a' }}>
+                      <div className="relative min-h-[220px] border-b-2 lg:border-b-0 lg:border-r-2 border-[var(--border)]" style={{ background: '#0f172a' }}>
                         {manga?.cover_manga ? (
                           <img src={manga.cover_manga} alt={manga?.judul_manga || 'manga'} className="absolute inset-0 h-full w-full object-cover opacity-80" loading="lazy" decoding="async" />
                         ) : null}
                         <div className="absolute inset-0 bg-black/40" />
                         <div className="relative flex h-full flex-col justify-between p-4 text-white">
-                          <div className="inline-flex w-fit items-center gap-2 rounded-full border-4 px-3 py-1 text-xs font-black" style={{ borderColor: 'rgba(212,212,212,0.35)', background: tone.bg, color: tone.fg }}>
+                          <div className="inline-flex w-fit items-center gap-2 rounded-full border-2 px-3 py-1 text-xs font-black" style={{ borderColor: 'rgba(212,212,212,0.35)', background: tone.bg, color: tone.fg }}>
                             {renderStatusIcon(job?.status)}
                             {String(job?.status || 'UNKNOWN').toUpperCase()}
                           </div>

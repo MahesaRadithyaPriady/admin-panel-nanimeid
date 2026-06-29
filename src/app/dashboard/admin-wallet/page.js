@@ -179,7 +179,7 @@ export default function AdminWalletPage() {
       {/* Header */}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div className="grid gap-2">
-          <div className="inline-flex w-fit items-center gap-2 px-3 py-2 border-4 border-[var(--border)] font-extrabold text-sm" style={{ boxShadow: 'var(--shadow-md)' }}>
+          <div className="inline-flex w-fit items-center gap-2 px-3 py-2 border-2 border-[var(--border)] font-extrabold text-sm" style={{ boxShadow: 'var(--shadow-md)' }}>
             <Wallet className="size-4" /> Admin Wallet
           </div>
           <div>
@@ -244,9 +244,9 @@ export default function AdminWalletPage() {
           </div>
           <div className="flex items-center gap-4">
             {userInfo.user?.profile?.avatar_url ? (
-              <img src={userInfo.user.profile.avatar_url} alt="avatar" className="w-16 h-16 object-cover border-4 border-[var(--border)]" loading="lazy" decoding="async" />
+              <img src={userInfo.user.profile.avatar_url} alt="avatar" className="w-16 h-16 object-cover border-2 border-[var(--border)]" loading="lazy" decoding="async" />
             ) : (
-              <div className="w-16 h-16 border-4 border-[var(--border)] flex items-center justify-center" style={{ background: 'var(--background)' }}>
+              <div className="w-16 h-16 border-2 border-[var(--border)] flex items-center justify-center" style={{ background: 'var(--background)' }}>
                 <UserIcon className="size-6 opacity-50" />
               </div>
             )}
@@ -352,7 +352,7 @@ export default function AdminWalletPage() {
 
       {/* Transactions Table */}
       <div className="card overflow-hidden">
-        <div className="p-4 border-b-4 border-[var(--border)]" style={{ background: 'var(--background)' }}>
+        <div className="p-4 border-b-2 border-[var(--border)]" style={{ background: 'var(--background)' }}>
           <h3 className="font-extrabold flex items-center gap-2">
             <Calendar className="size-4" /> Riwayat Transaksi
           </h3>
@@ -370,7 +370,7 @@ export default function AdminWalletPage() {
             </thead>
             <tbody>
               {tx.items.map((transaction) => (
-                <tr key={transaction.id} className="border-t-4 border-[var(--border)]">
+                <tr key={transaction.id} className="border-t-2 border-[var(--border)]">
                   <td className="px-4 py-3 font-mono text-sm">#{transaction.id}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">

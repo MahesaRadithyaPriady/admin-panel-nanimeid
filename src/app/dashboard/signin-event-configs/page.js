@@ -480,7 +480,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
               const needsId = t !== "NONE";
 
               return (
-                <div key={idx} className="rounded-[22px] border-4 p-4 space-y-3 min-w-0 overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)', background: idx % 2 === 0 ? "var(--background)" : "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
+                <div key={idx} className="rounded-[22px] border-2 p-4 space-y-3 min-w-0 overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)', background: idx % 2 === 0 ? "var(--background)" : "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
                   <div className="flex items-center justify-between gap-2 min-w-0 flex-wrap">
                     <div className="text-sm font-black min-w-0">Hari #{idx + 1}</div>
                     <span className="px-2 py-0.5 rounded-full bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] text-[11px] font-bold">
@@ -535,7 +535,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                         ))}
                       </select>
                     ) : (
-                      <div className="rounded-xl border-4 px-3 py-2 text-xs font-semibold opacity-80" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
+                      <div className="rounded-xl border-2 px-3 py-2 text-xs font-semibold opacity-80" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
                         Tidak ada item tambahan untuk hari ini.
                       </div>
                     )}
@@ -549,7 +549,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
             <button
               type="submit"
               disabled={submitting}
-              className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
+              className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60"
               style={{
                 boxShadow: 'var(--shadow-md)',
                 background: mode === "add" ? "var(--accent-add)" : "var(--accent-edit)",
@@ -567,7 +567,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-3 py-2 border-4 rounded-lg font-extrabold"
+                className="px-3 py-2 border-2 rounded-lg font-extrabold"
                 style={{
                   boxShadow: 'var(--shadow-md)',
                   background: "var(--panel-bg)",
@@ -593,7 +593,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
             const preview = renderRewardPreview(it);
 
             return (
-              <div key={it.id} className="rounded-[22px] border-4 p-4" style={{ boxShadow: 'var(--shadow-lg)', background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
+              <div key={it.id} className="rounded-[22px] border-2 p-4" style={{ boxShadow: 'var(--shadow-lg)', background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="grid gap-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -611,7 +611,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                     <button
                       type="button"
                       onClick={() => onEdit(it)}
-                      className="px-3 py-2 border-4 rounded-xl font-extrabold"
+                      className="px-3 py-2 border-2 rounded-xl font-extrabold"
                       style={{ boxShadow: 'var(--shadow-md)', background: "var(--accent-edit)", color: "var(--accent-edit-foreground)", borderColor: "var(--panel-border)" }}
                     >
                       <span className="inline-flex items-center gap-2">
@@ -622,7 +622,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                       type="button"
                       disabled={togglingId === it.id}
                       onClick={() => onToggle(it)}
-                      className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
+                      className="px-3 py-2 border-2 rounded-xl font-extrabold disabled:opacity-60"
                       style={{ boxShadow: 'var(--shadow-md)', background: it.is_active ? "#22c55e" : "var(--panel-bg)", color: it.is_active ? "#fff" : "var(--foreground)", borderColor: "var(--panel-border)" }}
                     >
                       {togglingId === it.id ? "..." : it.is_active ? (
@@ -639,7 +639,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                       type="button"
                       disabled={deletingId === it.id}
                       onClick={() => onDelete(it)}
-                      className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
+                      className="px-3 py-2 border-2 rounded-xl font-extrabold disabled:opacity-60"
                       style={{ boxShadow: 'var(--shadow-md)', background: "var(--panel-bg)", color: "var(--foreground)", borderColor: "var(--panel-border)" }}
                     >
                       <span className="inline-flex items-center gap-2">
@@ -652,7 +652,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                 <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
                   <div className="grid gap-2 sm:grid-cols-3">
                     {preview.map((day) => (
-                      <div key={`${it.id}-${day.day}`} className="rounded-[18px] border-4 p-3" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
+                      <div key={`${it.id}-${day.day}`} className="rounded-[18px] border-2 p-3" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
                         <div className="text-xs font-black opacity-70">Hari {day.day}</div>
                         <div className="mt-1 text-sm font-black">{day.coin} coin</div>
                         <div className="mt-1 text-xs font-semibold opacity-80">{day.rewardLabel}</div>
@@ -666,11 +666,11 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                   </div>
 
                   <div className="grid gap-2">
-                    <div className="rounded-[18px] border-4 p-3" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
+                    <div className="rounded-[18px] border-2 p-3" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
                       <div className="text-xs font-black opacity-70">Mulai</div>
                       <div className="mt-1 text-sm font-semibold">{renderDateTime(it.starts_at)}</div>
                     </div>
-                    <div className="rounded-[18px] border-4 p-3" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
+                    <div className="rounded-[18px] border-2 p-3" style={{ borderColor: "var(--panel-border)", background: "var(--panel-bg)" }}>
                       <div className="text-xs font-black opacity-70">Selesai</div>
                       <div className="mt-1 text-sm font-semibold">{renderDateTime(it.ends_at)}</div>
                     </div>
@@ -696,7 +696,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
         <button
           disabled={page <= 1}
           onClick={() => setPage((p) => Math.max(1, p - 1))}
-          className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold"
+          className="px-3 py-2 border-2 rounded-lg disabled:opacity-60 font-extrabold"
           style={{
             boxShadow: 'var(--shadow-md)',
             background: "var(--panel-bg)",
@@ -712,7 +712,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
         <button
           disabled={page >= totalPages}
           onClick={() => setPage((p) => p + 1)}
-          className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold"
+          className="px-3 py-2 border-2 rounded-lg disabled:opacity-60 font-extrabold"
           style={{
             boxShadow: 'var(--shadow-md)',
             background: "var(--panel-bg)",

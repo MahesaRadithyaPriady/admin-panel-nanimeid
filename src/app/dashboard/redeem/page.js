@@ -251,34 +251,34 @@ export default function RedeemCodesPage() {
 
           {/* Table */}
           <div className="overflow-auto">
-            <table className="min-w-full border-4 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
+            <table className="min-w-full border-2 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
               <thead className="bg-[var(--panel-bg)]">
                 <tr>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">ID</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Kode</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Tipe</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aktif</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Dipakai</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Kuota</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Per User</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Rentang</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aksi</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">ID</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Kode</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Tipe</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Aktif</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Dipakai</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Kuota</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Per User</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Rentang</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((it) => (
                   <tr key={it.id}>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.id}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-extrabold">{it.code}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.type}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{String(it.is_active)}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.used_count ?? '-'}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.max_uses ?? '-'}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.per_user_limit ?? '-'}</td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold max-w-[260px] break-words">
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.id}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-extrabold">{it.code}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.type}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{String(it.is_active)}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.used_count ?? '-'}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.max_uses ?? '-'}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.per_user_limit ?? '-'}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold max-w-[260px] break-words">
                       {(it.starts_at ? new Date(it.starts_at).toLocaleString() : '-') + ' → ' + (it.expires_at ? new Date(it.expires_at).toLocaleString() : '-')}
                     </td>
-                    <td className="px-3 py-2 border-b-4 border-[var(--border)]">
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)]">
                       <button onClick={() => onDelete(it.id)} className="btn btn--danger btn--sm" title="Hapus">
                         <Trash2 className="size-4" />
                       </button>

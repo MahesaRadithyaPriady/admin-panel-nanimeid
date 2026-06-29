@@ -121,7 +121,7 @@ export function ConfigEditor({
         </div>
 
         {/* Submit */}
-        <div className="pt-3" style={{ borderTop: '2px solid var(--border)' }}>
+        <div className="pt-3" style={{ borderTop: '1px solid var(--border)' }}>
           <button type="submit" className="btn btn--primary">
             {form.id ? 'Simpan Perubahan' : 'Tambah Config'}
           </button>

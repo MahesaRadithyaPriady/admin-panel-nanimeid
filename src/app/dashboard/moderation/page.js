@@ -131,7 +131,7 @@ function Chip({ active, onClick, icon: Icon, children }) {
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-1 border-4 border-[var(--border)] font-extrabold text-xs hover:brightness-95 flex items-center gap-2 ${active ? 'bg-[#FFD803]' : ''}`}
+      className={`px-3 py-1 border-2 border-[var(--border)] font-extrabold text-xs hover:brightness-95 flex items-center gap-2 ${active ? 'bg-[#FFD803]' : ''}`}
       style={{ boxShadow: 'var(--shadow-sm)' }}
     >
       {Icon ? <Icon className="size-3" /> : null}
@@ -278,7 +278,7 @@ function Badge({ children, tone = 'neutral', background, color }) {
   const fg = color ?? (tone === 'warn' ? '#111' : 'var(--foreground)');
   return (
     <span
-      className="px-2 py-1 border-4 border-[var(--border)] font-extrabold text-[10px] inline-flex items-center"
+      className="px-2 py-1 border-2 border-[var(--border)] font-extrabold text-[10px] inline-flex items-center"
       style={{
         boxShadow: 'var(--shadow-sm)',
         background: bg,
@@ -329,7 +329,7 @@ function Panel({ title, icon: Icon, description, children }) {
       <div className="flex items-start gap-3">
         {Icon ? (
           <div
-            className="border-4 border-[var(--border)] p-2 bg-[#FFD803] text-[#111]"
+            className="border-2 border-[var(--border)] p-2 bg-[#FFD803] text-[#111]"
             style={{
               boxShadow: 'var(--shadow-md)',
             }}
@@ -1125,7 +1125,7 @@ export default function ModerationPage() {
                         <div className="flex flex-col gap-3 md:flex-row md:items-start">
                           <div className="w-full md:w-40 shrink-0">
                             {it?.url ? (
-                              <img src={it.url} alt={`upload-${it.id}`} className="h-36 w-full border-4 border-[var(--border)] object-cover" loading="lazy" decoding="async" />
+                              <img src={it.url} alt={`upload-${it.id}`} className="h-36 w-full border-2 border-[var(--border)] object-cover" loading="lazy" decoding="async" />
                             ) : (
                               <div className="card grid h-36 place-items-center text-sm font-semibold opacity-70">Preview belum tersedia</div>
                             )}
@@ -1206,7 +1206,7 @@ export default function ModerationPage() {
                     </div>
 
                     {selectedUpload?.url ? (
-                      <img src={selectedUpload.url} alt={`selected-${selectedUpload.id}`} className="w-full border-4 border-[var(--border)] object-cover max-h-[340px]" loading="lazy" decoding="async" />
+                      <img src={selectedUpload.url} alt={`selected-${selectedUpload.id}`} className="w-full border-2 border-[var(--border)] object-cover max-h-[340px]" loading="lazy" decoding="async" />
                     ) : (
                       <div className="card grid h-52 place-items-center text-sm font-semibold opacity-70">Preview belum tersedia</div>
                     )}

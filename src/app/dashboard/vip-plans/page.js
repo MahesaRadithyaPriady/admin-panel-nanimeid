@@ -262,7 +262,7 @@ export default function VipPlansPage() {
             </div>
             <div className="grid gap-1">
               <div className="text-xs font-extrabold">Status</div>
-              <label className="flex items-center gap-2 text-sm font-semibold px-3 py-2 border-4 border-[var(--border)]" style={{ boxShadow: 'var(--shadow-md)' }}>
+              <label className="flex items-center gap-2 text-sm font-semibold px-3 py-2 border-2 border-[var(--border)]" style={{ boxShadow: 'var(--shadow-md)' }}>
                 <input
                   type="checkbox"
                   checked={!!form.is_active}
@@ -303,26 +303,26 @@ export default function VipPlansPage() {
       {/* Tabel List VIP Plans */}
       <div className="overflow-auto">
         <table
-          className="min-w-full border-4 border-[var(--border)] text-sm"
+          className="min-w-full border-2 border-[var(--border)] text-sm"
           style={{ boxShadow: 'var(--shadow-lg)' }}
         >
           <thead className="bg-[var(--panel-bg)]">
             <tr>
-              <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">ID</th>
-              <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Name</th>
-              <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Price (coins)</th>
-              <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Color</th>
-              <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Active</th>
-              <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aksi</th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">ID</th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Name</th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Price (coins)</th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Color</th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Active</th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {items.map((it) => (
               <tr key={it.id}>
-                <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.id}</td>
-                <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.name}</td>
-                <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.price_coins}</td>
-                <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">
+                <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.id}</td>
+                <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.name}</td>
+                <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.price_coins}</td>
+                <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">
                   <span
                     className="inline-flex items-center gap-2 px-2 py-1 border-2 border-[var(--border)] text-xs font-bold"
                     style={{ background: it.color || "#FFF", color: "#000" }}
@@ -331,8 +331,8 @@ export default function VipPlansPage() {
                     {it.color}
                   </span>
                 </td>
-                <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.is_active ? "Ya" : "Tidak"}</td>
-                <td className="px-3 py-2 border-b-4 border-[var(--border)]">
+                <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.is_active ? "Ya" : "Tidak"}</td>
+                <td className="px-3 py-2 border-b-2 border-[var(--border)]">
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => onEdit(it)} className="btn btn--secondary btn--sm">
                       <Pencil className="size-4" />
