@@ -212,7 +212,7 @@ export default function BottomNav({ menus = [], currentPath, onLogout, user }) {
       {/* Full menu sheet */}
       {sheet === ALL_KEY && (
         <div
-          className="md:hidden fixed inset-0 z-50 flex flex-col"
+          className="md:hidden fixed top-0 left-0 right-0 bottom-[62px] z-50 flex flex-col"
           style={{ background: 'var(--color-black)' }}
         >
           <div
