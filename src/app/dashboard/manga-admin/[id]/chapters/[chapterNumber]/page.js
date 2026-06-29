@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, LoaderCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
@@ -116,32 +116,32 @@ export default function ChapterPagesPage() {
     <div className="space-y-4">
       {loading || !user ? null : (
         <>
-          <div className="flex items-center justify-between">
-            <div className="text-lg font-extrabold">Chapter {chapter?.chapter_number || chapterNumber}: {chapter?.title || '-'}</div>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h2 className="section-title flex items-center gap-2">Chapter {chapter?.chapter_number || chapterNumber}: {chapter?.title || '-'}</h2>
+            <div className="flex items-center gap-2 flex-wrap">
               {loadingPages && (<span className="text-xs font-extrabold opacity-70">Memuat...</span>)}
-              <button onClick={() => router.back()} className="btn-pg flex items-center gap-2"><ArrowLeft className="size-4" /> Kembali</button>
+              <button onClick={() => router.back()} className="btn btn--secondary btn--sm"><ArrowLeft className="size-4" /> Kembali</button>
             </div>
           </div>
-          <form className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-extrabold">Page {(Array.isArray(pages) && pages.length ? Math.max(...pages.map(p=>Number(p.page_number)||0)) + queueFiles.length + 1 : (queueFiles.length + 1))}</span>
-            <input placeholder="Judul (opsional)" value={title} onChange={(e)=>setTitle(e.target.value)} className="inp" />
-            <input type="file" accept="image/*" onChange={(e)=>setFiles(e.target.files)} className="inp" />
-            <button onClick={onAddToQueue} disabled={uploading || !files || (files instanceof FileList && files.length === 0)} className="btn-add">{uploading ? 'Menambah...' : (<><Plus className="size-4" /> Tambah Page</>)}</button>
-            <button onClick={onUploadAll} disabled={uploading || !queueFiles.length} className="btn-pri">{uploading ? 'Mengupload...' : 'Upload Semua'}</button>
+          <form className="card flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
+            <span className="text-sm font-extrabold self-center">Page {(Array.isArray(pages) && pages.length ? Math.max(...pages.map(p=>Number(p.page_number)||0)) + queueFiles.length + 1 : (queueFiles.length + 1))}</span>
+            <input placeholder="Judul (opsional)" value={title} onChange={(e)=>setTitle(e.target.value)} className="input" />
+            <input type="file" accept="image/*" onChange={(e)=>setFiles(e.target.files)} className="input" />
+            <button onClick={onAddToQueue} disabled={uploading || !files || (files instanceof FileList && files.length === 0)} className="btn btn--secondary btn--sm">{uploading ? 'Menambah...' : (<><Plus className="size-4" /> Tambah Page</>)}</button>
+            <button onClick={onUploadAll} disabled={uploading || !queueFiles.length} className="btn btn--primary btn--sm">{uploading ? 'Mengupload...' : 'Upload Semua'}</button>
           </form>
 
           {queueFiles.length > 0 && (
-            <div className="space-y-2">
-              <div className="text-sm font-extrabold">Antrean (belum dikirim): {queueFiles.length} file</div>
+            <div className="card space-y-4">
+              <div className="section-title">Antrean (belum dikirim): {queueFiles.length} file</div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {queueFiles.map((f, idx) => (
-                  <div key={idx} className="border-4 rounded-lg p-2" style={{ borderColor: 'var(--panel-border)' }}>
+                  <div key={idx} className="card p-2">
                     <div className="text-xs font-extrabold mb-1">Draft Page { (Array.isArray(pages) && pages.length ? Math.max(...pages.map(p=>Number(p.page_number)||0)) : 0) + idx + 1 }</div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={URL.createObjectURL(f)} alt={`draft-${idx}`} className="w-full h-auto" loading="lazy" decoding="async" />
                     <div className="mt-2">
-                      <button onClick={() => onRemoveQueued(idx)} className="btn-act">Hapus</button>
+                      <button onClick={() => onRemoveQueued(idx)} className="btn btn--danger btn--sm btn--icon" title="Hapus"><Trash2 className="size-4" /></button>
                     </div>
                   </div>
                 ))}
@@ -153,11 +153,11 @@ export default function ChapterPagesPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {pages.map((p) => (
-                <div key={p.id || p.page_number} className="border-4 rounded-lg p-2 space-y-2" style={{ borderColor: 'var(--panel-border)' }}>
+                <div key={p.id || p.page_number} className="card p-2 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="text-xs font-extrabold">Page {p.page_number}</div>
-                    <button onClick={() => onDeletePage(p)} disabled={deletingPageId === (p.id || `num-${p.page_number}`)} className="btn-act">
-                      {deletingPageId === (p.id || `num-${p.page_number}`) ? 'Menghapus...' : 'Hapus'}
+                    <button onClick={() => onDeletePage(p)} disabled={deletingPageId === (p.id || `num-${p.page_number}`)} className="btn btn--danger btn--sm btn--icon" title="Hapus">
+                      {deletingPageId === (p.id || `num-${p.page_number}`) ? <LoaderCircle className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
                     </button>
                   </div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -165,7 +165,7 @@ export default function ChapterPagesPage() {
                 </div>
               ))}
               {pages.length === 0 && (
-                <div className="text-sm">Tidak ada halaman.</div>
+                <div className="card p-6 text-center text-sm opacity-70">Tidak ada halaman.</div>
               )}
             </div>
           )}
@@ -175,17 +175,3 @@ export default function ChapterPagesPage() {
   );
 }
 
-// Local styles (consistent with other admin pages)
-const styles = `
-.inp { padding: 0.5rem 0.75rem; border-width: 2px; border-radius: 0.5rem; font-weight: 600; background: var(--background); color: var(--foreground); border-color: var(--panel-border); }
-.btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:2px; border-radius:0.5rem; font-weight:700; box-shadow:3px 3px 0 rgba(0,0,0,0.15); background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
-.btn-pri { padding:0.5rem 0.75rem; border-width:2px; border-radius:0.5rem; font-weight:700; box-shadow:3px 3px 0 rgba(0,0,0,0.15); background: var(--accent-primary); color: var(--accent-primary-foreground); border-color: var(--panel-border); }
-.btn-act { padding:0.25rem 0.5rem; border-width:2px; border-radius:0.5rem; font-weight:600; box-shadow:2px 2px 0 rgba(0,0,0,0.15); background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }
-.btn-pg { padding:0.5rem 0.75rem; border-width:2px; border-radius:0.5rem; background: var(--panel-bg); color: var(--foreground); font-weight:700; box-shadow:3px 3px 0 rgba(0,0,0,0.15); border-color: var(--panel-border); }
-`;
-if (typeof document !== 'undefined' && !document.getElementById('chapter-pages-styles')) {
-  const style = document.createElement('style');
-  style.id = 'chapter-pages-styles';
-  style.innerHTML = styles;
-  document.head.appendChild(style);
-}

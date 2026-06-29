@@ -265,19 +265,19 @@ export default function MangaDetailPage() {
     <div className="space-y-6">
       {loading || !user ? null : (
         <>
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-extrabold flex items-center gap-2"><BookOpen className="size-5" /> Detail Manga</h2>
-            <div className="flex items-center gap-2">
-              <button onClick={() => router.push('/dashboard/manga-admin')} className="btn-pg flex items-center gap-2"><ArrowLeft className="size-4" /> Kembali</button>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h2 className="section-title flex items-center gap-2"><BookOpen className="size-5" /> Detail Manga</h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button onClick={() => router.push('/dashboard/manga-admin')} className="btn btn--secondary btn--sm"><ArrowLeft className="size-4" /> Kembali</button>
             </div>
           </div>
 
           {loadingItem ? (
             <div className="text-sm">Memuat...</div>
           ) : (
-            <form onSubmit={onSave} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: 'var(--shadow-lg)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <L label="Judul"><input value={form.judul_manga} onChange={(e)=>updateField('judul_manga', e.target.value)} required className="inp" /></L>
+            <form onSubmit={onSave} className="card card--lg space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <L label="Judul"><input value={form.judul_manga} onChange={(e)=>updateField('judul_manga', e.target.value)} required className="input" /></L>
                 <L label="Cover">
                   <div className="space-y-2">
                     <select
@@ -291,7 +291,7 @@ export default function MangaDetailPage() {
                           setCoverPreviewUrl('');
                         }
                       }}
-                      className="sel"
+                      className="select"
                     >
                       <option value="upload">Upload cover</option>
                       <option value="url">Gunakan URL</option>
@@ -307,7 +307,7 @@ export default function MangaDetailPage() {
                           const url = URL.createObjectURL(file);
                           setCoverPreviewUrl(url);
                         }}
-                        className="inp"
+                        className="input"
                       />
                     ) : (
                       <input
@@ -315,21 +315,21 @@ export default function MangaDetailPage() {
                         value={coverUrl}
                         onChange={(e) => setCoverUrl(e.target.value)}
                         placeholder="https://..."
-                        className="inp"
+                        className="input"
                       />
                     )}
                     {(coverPreviewUrl || (coverMode === 'url' ? String(coverUrl || '').trim() : existingCoverUrl)) && (
                       <div className="flex items-center gap-2 text-xs">
-                        <span>Preview:</span>
-                        <img src={coverPreviewUrl || (coverMode === 'url' ? coverUrl : existingCoverUrl)} alt="cover" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} loading="lazy" decoding="async" />
+                        <span className="label">Preview:</span>
+                        <img src={coverPreviewUrl || (coverMode === 'url' ? coverUrl : existingCoverUrl)} alt="cover" className="w-10 h-10 object-contain border-2 border-[var(--border)] rounded" style={{ background: 'var(--surface)' }} loading="lazy" decoding="async" />
                       </div>
                     )}
                   </div>
                 </L>
-                <L label="Sinopsis"><input value={form.sinopsis_manga} onChange={(e)=>updateField('sinopsis_manga', e.target.value)} className="inp" /></L>
-                <L label="Genre (comma)"><input value={form.genre_manga} onChange={(e)=>updateField('genre_manga', e.target.value)} className="inp" placeholder="Action,Comedy" /></L>
+                <L label="Sinopsis"><input value={form.sinopsis_manga} onChange={(e)=>updateField('sinopsis_manga', e.target.value)} className="input" /></L>
+                <L label="Genre (comma)"><input value={form.genre_manga} onChange={(e)=>updateField('genre_manga', e.target.value)} className="input" placeholder="Action,Comedy" /></L>
                 <L label="Type">
-                  <select value={form.type_manga} onChange={(e)=>updateField('type_manga', e.target.value)} className="sel">
+                  <select value={form.type_manga} onChange={(e)=>updateField('type_manga', e.target.value)} className="select">
                     <option value="MANGA">MANGA</option>
                     <option value="MANHWA">MANHWA</option>
                     <option value="MANHUA">MANHUA</option>
@@ -337,62 +337,62 @@ export default function MangaDetailPage() {
                   </select>
                 </L>
                 <L label="Status">
-                  <select value={form.status_manga} onChange={(e)=>updateField('status_manga', e.target.value)} className="sel">
+                  <select value={form.status_manga} onChange={(e)=>updateField('status_manga', e.target.value)} className="select">
                     <option value="ONGOING">ONGOING</option>
                     <option value="COMPLETED">COMPLETED</option>
                     <option value="HIATUS">HIATUS</option>
                     <option value="UPCOMING">UPCOMING</option>
                   </select>
                 </L>
-                <L label="Author"><input value={form.author} onChange={(e)=>updateField('author', e.target.value)} className="inp" /></L>
-                <L label="Artist"><input value={form.artist} onChange={(e)=>updateField('artist', e.target.value)} className="inp" /></L>
-                <L label="Label"><input value={form.label_manga} onChange={(e)=>updateField('label_manga', e.target.value)} className="inp" /></L>
-                <L label="Rilis"><input type="date" value={form.tanggal_rilis_manga} onChange={(e)=>updateField('tanggal_rilis_manga', e.target.value)} className="inp" /></L>
-                <L label="Rating"><input type="number" step="0.1" min="0" max="10" value={form.rating_manga} onChange={(e)=>updateField('rating_manga', e.target.value)} className="inp" /></L>
+                <L label="Author"><input value={form.author} onChange={(e)=>updateField('author', e.target.value)} className="input" /></L>
+                <L label="Artist"><input value={form.artist} onChange={(e)=>updateField('artist', e.target.value)} className="input" /></L>
+                <L label="Label"><input value={form.label_manga} onChange={(e)=>updateField('label_manga', e.target.value)} className="input" /></L>
+                <L label="Rilis"><input type="date" value={form.tanggal_rilis_manga} onChange={(e)=>updateField('tanggal_rilis_manga', e.target.value)} className="input" /></L>
+                <L label="Rating"><input type="number" step="0.1" min="0" max="10" value={form.rating_manga} onChange={(e)=>updateField('rating_manga', e.target.value)} className="input" /></L>
               </div>
-              <div className="flex items-center gap-2">
-                <button disabled={saving} type="submit" className="btn-add flex items-center gap-2">{saving ? 'Menyimpan...' : (<><Save className="size-4" /> Simpan</>)}</button>
-                <button type="button" onClick={onDelete} className="btn-act flex items-center gap-2"><Trash2 className="size-4" /> Hapus</button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button disabled={saving} type="submit" className="btn btn--primary">{saving ? 'Menyimpan...' : (<><Save className="size-4" /> Simpan</>)}</button>
+                <button type="button" onClick={onDelete} className="btn btn--danger btn--sm" title="Hapus"><Trash2 className="size-4" /> Hapus</button>
               </div>
             </form>
           )}
 
           {/* Chapters */}
-          <div className="space-y-3">
-            <div className="text-lg font-extrabold">Chapters</div>
+          <div className="card card--lg space-y-4">
+            <div className="section-title">Chapters</div>
             <form onSubmit={onCreateChapter} className="flex flex-wrap items-center gap-2">
-              <input type="number" placeholder="chapter_number" value={newChapter.chapter_number} onChange={(e)=>setNewChapter(c=>({...c, chapter_number: e.target.value}))} className="inp" />
-              <input placeholder="title (opsional)" value={newChapter.title} onChange={(e)=>setNewChapter(c=>({...c, title: e.target.value}))} className="inp" />
-              <button className="btn-add"><Plus className="size-4" /> Tambah</button>
+              <input type="number" placeholder="chapter_number" value={newChapter.chapter_number} onChange={(e)=>setNewChapter(c=>({...c, chapter_number: e.target.value}))} className="input" style={{ maxWidth: '160px' }} />
+              <input placeholder="title (opsional)" value={newChapter.title} onChange={(e)=>setNewChapter(c=>({...c, title: e.target.value}))} className="input" style={{ maxWidth: '240px' }} />
+              <button className="btn btn--primary btn--sm"><Plus className="size-4" /> Tambah</button>
             </form>
 
-            <div className="overflow-auto">
-              <table className="tbl">
+            <div className="card overflow-auto">
+              <table className="min-w-full">
                 <thead>
-                  <tr>
-                    <Th>ID</Th>
-                    <Th>Chapter</Th>
-                    <Th>Judul</Th>
-                    <Th>Aksi</Th>
+                  <tr className="border-b-2 border-[var(--border)]">
+                    <th className="text-left px-4 py-3 label">ID</th>
+                    <th className="text-left px-4 py-3 label">Chapter</th>
+                    <th className="text-left px-4 py-3 label">Judul</th>
+                    <th className="text-left px-4 py-3 label">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {chapters.map((ch) => (
-                    <tr key={ch.id}>
-                      <Td>{ch.id}</Td>
-                      <Td className="font-extrabold">{ch.chapter_number}</Td>
-                      <Td>{ch.title || '-'}</Td>
-                      <Td>
-                        <div className="flex items-center gap-2">
-                          <a href={`/dashboard/manga-admin/${id}/chapters/${ch.chapter_number}`} className="btn-link">Lihat Halaman</a>
-                          <button onClick={() => onDeleteChapter(ch.id)} className="btn-act" title="Hapus"><Trash2 className="size-4" /></button>
+                    <tr key={ch.id} className="border-b border-[var(--border)]">
+                      <td className="px-4 py-3 font-semibold">{ch.id}</td>
+                      <td className="px-4 py-3 font-extrabold">{ch.chapter_number}</td>
+                      <td className="px-4 py-3">{ch.title || '-'}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <a href={`/dashboard/manga-admin/${id}/chapters/${ch.chapter_number}`} className="btn btn--secondary btn--sm">Lihat Halaman</a>
+                          <button onClick={() => onDeleteChapter(ch.id)} className="btn btn--danger btn--sm btn--icon" title="Hapus"><Trash2 className="size-4" /></button>
                         </div>
-                      </Td>
+                      </td>
                     </tr>
                   ))}
                   {chapters.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="td-empty">{loadingChapters ? 'Memuat...' : 'Tidak ada data.'}</td>
+                      <td colSpan={4} className="px-4 py-6 text-center text-sm opacity-70">{loadingChapters ? 'Memuat...' : 'Tidak ada data.'}</td>
                     </tr>
                   )}
                 </tbody>
@@ -401,18 +401,18 @@ export default function MangaDetailPage() {
           </div>
 
           {/* Grab Tab */}
-          <div className="space-y-3">
-            <div className="text-lg font-extrabold flex items-center gap-2"><Download className="size-4" /> Grab Komiku</div>
+          <div className="card card--lg space-y-4">
+            <div className="section-title flex items-center gap-2"><Download className="size-4" /> Grab Komiku</div>
             <div className="text-sm font-semibold opacity-80">
               Grab sekarang memakai flow backend-managed upload. Backend akan download gambar dari source, upload ke storage, lalu replace/update pages chapter secara otomatis.
             </div>
-            <form onSubmit={onGrab} className="flex flex-wrap items-center gap-2">
-              <input type="number" placeholder="chapter_number" value={grab.chapter_number} onChange={(e)=>setGrab(g=>({...g, chapter_number: e.target.value}))} className="inp" />
-              <input placeholder="Komiku chapter URL" value={grab.url} onChange={(e)=>setGrab(g=>({...g, url: e.target.value}))} className="inp" />
-              <input placeholder="Judul (opsional)" value={grab.title} onChange={(e)=>setGrab(g=>({...g, title: e.target.value}))} className="inp" />
-              <button disabled={grabbing} className="btn-add">{grabbing ? 'Mengambil...' : (<><Download className="size-4" /> Grab</>)}</button>
+            <form onSubmit={onGrab} className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
+              <input type="number" placeholder="chapter_number" value={grab.chapter_number} onChange={(e)=>setGrab(g=>({...g, chapter_number: e.target.value}))} className="input" style={{ maxWidth: '160px' }} />
+              <input placeholder="Komiku chapter URL" value={grab.url} onChange={(e)=>setGrab(g=>({...g, url: e.target.value}))} className="input" />
+              <input placeholder="Judul (opsional)" value={grab.title} onChange={(e)=>setGrab(g=>({...g, title: e.target.value}))} className="input" style={{ maxWidth: '200px' }} />
+              <button disabled={grabbing} className="btn btn--primary btn--sm">{grabbing ? 'Mengambil...' : (<><Download className="size-4" /> Grab</>)}</button>
             </form>
-            <div className="px-3 py-2 border-4 rounded-lg text-sm font-semibold" style={{ boxShadow: 'var(--shadow-sm)', background: grabStatusTone.bg, color: grabStatusTone.fg, borderColor: 'var(--panel-border)' }}>
+            <div className="card px-3 py-2 text-sm font-semibold" style={{ background: grabStatusTone.bg, color: grabStatusTone.fg }}>
               {grabStatusText}
             </div>
           </div>
@@ -428,14 +428,12 @@ export default function MangaDetailPage() {
 
 function L({ label, children }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-      <label className="lbl">{label}</label>
-      {children}
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+      <label className="label sm:w-28 sm:flex-shrink-0">{label}</label>
+      <div className="flex-1 min-w-0">{children}</div>
     </div>
   );
 }
-function Th({ children }) { return <th className="th">{children}</th>; }
-function Td({ children, className='' }) { return <td className={`td ${className}`}>{children}</td>; }
 
 function buildMangaUpdate(form) {
   const out = {};
@@ -481,23 +479,3 @@ function formatGrabJobStatus(job) {
   return 'Proses grab sedang berjalan...';
 }
 
-const styles = `
-.inp { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 2px; border-radius: 0.5rem; font-weight: 600; background: var(--background); color: var(--foreground); border-color: var(--panel-border); }
-.sel { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 2px; border-radius: 0.5rem; font-weight: 600; background: var(--background); color: var(--foreground); border-color: var(--panel-border); }
-.lbl { font-size: 0.875rem; font-weight: 700; color: var(--foreground); }
-.btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:2px; border-radius:0.5rem; font-weight:700; box-shadow:3px 3px 0 rgba(0,0,0,0.15); background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
-.btn-act { padding:0.25rem 0.5rem; border-width:2px; border-radius:0.5rem; font-weight:600; box-shadow:2px 2px 0 rgba(0,0,0,0.15); background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }
-.btn-link { padding:0.25rem 0.5rem; border-width:2px; border-radius:0.5rem; font-weight:600; box-shadow:2px 2px 0 rgba(0,0,0,0.15); background: var(--accent-edit); color: var(--accent-edit-foreground); border-color: var(--panel-border); }
-.tbl { min-width: 100%; border-width:2px; border-radius:0.5rem; overflow:hidden; box-shadow:3px 3px 0 rgba(0,0,0,0.15); border-color: var(--panel-border); color: var(--foreground); }
-.tbl thead { background: var(--panel-bg); }
-.th { text-align:left; padding:0.5rem 0.75rem; border-bottom-width:2px; border-color: var(--panel-border); }
-.td { padding:0.5rem 0.75rem; border-bottom-width:2px; border-color: var(--panel-border); font-weight:600; }
-.td-empty { padding:1.5rem; text-align:center; font-size:0.875rem; opacity:0.7; color: var(--foreground); }
-.btn-pg { padding:0.5rem 0.75rem; border-width:2px; border-radius:0.5rem; background: var(--panel-bg); color: var(--foreground); font-weight:700; box-shadow:3px 3px 0 rgba(0,0,0,0.15); border-color: var(--panel-border); }
-`;
-if (typeof document !== 'undefined' && !document.getElementById('manga-admin-detail-styles')) {
-  const style = document.createElement('style');
-  style.id = 'manga-admin-detail-styles';
-  style.innerHTML = styles;
-  document.head.appendChild(style);
-}

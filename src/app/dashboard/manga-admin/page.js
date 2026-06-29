@@ -140,128 +140,133 @@ export default function MangaAdminPage() {
     <div className="space-y-6">
       {loading || !user ? null : (
         <>
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-extrabold flex items-center gap-2"><BookOpen className="size-5" /> Manga Admin</h2>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h2 className="section-title flex items-center gap-2"><BookOpen className="size-5" /> Manga Admin</h2>
           </div>
 
-          <form onSubmit={onSearch} className="flex flex-wrap items-center gap-2">
-            <input placeholder="Cari..." value={q} onChange={(e)=>setQ(e.target.value)} className="inp" />
-            <button disabled={loadingList} className="btn-add">{loadingList ? 'Memuat...' : (<><Plus className="size-4" /> Cari</>)}</button>
+          <form onSubmit={onSearch} className="filter-bar">
+            <input placeholder="Cari manga..." value={q} onChange={(e)=>setQ(e.target.value)} className="input" />
+            <button disabled={loadingList} className="btn btn--primary btn--sm">{loadingList ? 'Memuat...' : (<><Plus className="size-4" /> Cari</>)}</button>
           </form>
 
-          <form onSubmit={onCreate} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: 'var(--shadow-lg)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <L label="Judul"><input value={form.judul_manga} onChange={(e)=>updateForm('judul_manga', e.target.value)} required className="inp" /></L>
-              <L label="Cover">
-                <div className="space-y-2">
-                  <select
-                    value={coverMode}
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      setCoverMode(next);
-                      if (next === 'upload') setCoverUrl('');
-                      if (next === 'url') {
-                        setCoverFile(null);
-                        setCoverPreviewUrl('');
-                      }
-                    }}
-                    className="sel"
-                  >
-                    <option value="upload">Upload cover</option>
-                    <option value="url">Gunakan URL</option>
-                  </select>
-                  {coverMode === 'upload' ? (
-                    <input
-                      type="file"
-                      accept="image/*"
+          <div className="card card--lg space-y-4">
+            <div className="section-title">Tambah Manga Baru</div>
+            <form onSubmit={onCreate} className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <L label="Judul"><input value={form.judul_manga} onChange={(e)=>updateForm('judul_manga', e.target.value)} required className="input" /></L>
+                <L label="Cover">
+                  <div className="space-y-2">
+                    <select
+                      value={coverMode}
                       onChange={(e) => {
-                        const file = e.target.files?.[0] || null;
-                        setCoverFile(file);
-                        if (!file) return setCoverPreviewUrl('');
-                        const url = URL.createObjectURL(file);
-                        setCoverPreviewUrl(url);
+                        const next = e.target.value;
+                        setCoverMode(next);
+                        if (next === 'upload') setCoverUrl('');
+                        if (next === 'url') {
+                          setCoverFile(null);
+                          setCoverPreviewUrl('');
+                        }
                       }}
-                      className="inp"
-                    />
-                  ) : (
-                    <input
-                      type="url"
-                      value={coverUrl}
-                      onChange={(e) => setCoverUrl(e.target.value)}
-                      placeholder="https://..."
-                      className="inp"
-                    />
-                  )}
-                  {(coverPreviewUrl || (coverMode === 'url' ? String(coverUrl || '').trim() : '')) && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span>Preview:</span>
-                      <img src={coverPreviewUrl || coverUrl} alt="cover" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} loading="lazy" decoding="async" />
-                    </div>
-                  )}
-                </div>
-              </L>
-              <L label="Sinopsis"><input value={form.sinopsis_manga} onChange={(e)=>updateForm('sinopsis_manga', e.target.value)} className="inp" /></L>
-              <L label="Genre (comma)"><input value={form.genre_manga} onChange={(e)=>updateForm('genre_manga', e.target.value)} className="inp" placeholder="Action,Comedy" /></L>
-              <L label="Type">
-                <select value={form.type_manga} onChange={(e)=>updateForm('type_manga', e.target.value)} className="sel">
-                  <option value="MANGA">MANGA</option>
-                  <option value="MANHWA">MANHWA</option>
-                  <option value="MANHUA">MANHUA</option>
-                  <option value="COMIC">COMIC</option>
-                </select>
-              </L>
-              <L label="Author"><input value={form.author} onChange={(e)=>updateForm('author', e.target.value)} className="inp" /></L>
-              <L label="Artist"><input value={form.artist} onChange={(e)=>updateForm('artist', e.target.value)} className="inp" /></L>
-              <L label="Label"><input value={form.label_manga} onChange={(e)=>updateForm('label_manga', e.target.value)} className="inp" /></L>
-              <L label="Rilis"><input type="date" value={form.tanggal_rilis_manga} onChange={(e)=>updateForm('tanggal_rilis_manga', e.target.value)} className="inp" /></L>
-              <L label="Rating"><input type="number" step="0.1" min="0" max="10" value={form.rating_manga} onChange={(e)=>updateForm('rating_manga', e.target.value)} className="inp" /></L>
-            </div>
-            <div>
-              <button disabled={creating} type="submit" className="btn-add">{creating ? 'Membuat...' : (<><Plus className="size-4" /> Buat Manga</>)}</button>
-            </div>
-          </form>
+                      className="select"
+                    >
+                      <option value="upload">Upload cover</option>
+                      <option value="url">Gunakan URL</option>
+                    </select>
+                    {coverMode === 'upload' ? (
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          setCoverFile(file);
+                          if (!file) return setCoverPreviewUrl('');
+                          const url = URL.createObjectURL(file);
+                          setCoverPreviewUrl(url);
+                        }}
+                        className="input"
+                      />
+                    ) : (
+                      <input
+                        type="url"
+                        value={coverUrl}
+                        onChange={(e) => setCoverUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="input"
+                      />
+                    )}
+                    {(coverPreviewUrl || (coverMode === 'url' ? String(coverUrl || '').trim() : '')) && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="label">Preview:</span>
+                        <img src={coverPreviewUrl || coverUrl} alt="cover" className="w-10 h-10 object-contain border-2 border-[var(--border)] rounded" style={{ background: 'var(--surface)' }} loading="lazy" decoding="async" />
+                      </div>
+                    )}
+                  </div>
+                </L>
+                <L label="Sinopsis"><input value={form.sinopsis_manga} onChange={(e)=>updateForm('sinopsis_manga', e.target.value)} className="input" /></L>
+                <L label="Genre (comma)"><input value={form.genre_manga} onChange={(e)=>updateForm('genre_manga', e.target.value)} className="input" placeholder="Action,Comedy" /></L>
+                <L label="Type">
+                  <select value={form.type_manga} onChange={(e)=>updateForm('type_manga', e.target.value)} className="select">
+                    <option value="MANGA">MANGA</option>
+                    <option value="MANHWA">MANHWA</option>
+                    <option value="MANHUA">MANHUA</option>
+                    <option value="COMIC">COMIC</option>
+                  </select>
+                </L>
+                <L label="Author"><input value={form.author} onChange={(e)=>updateForm('author', e.target.value)} className="input" /></L>
+                <L label="Artist"><input value={form.artist} onChange={(e)=>updateForm('artist', e.target.value)} className="input" /></L>
+                <L label="Label"><input value={form.label_manga} onChange={(e)=>updateForm('label_manga', e.target.value)} className="input" /></L>
+                <L label="Rilis"><input type="date" value={form.tanggal_rilis_manga} onChange={(e)=>updateForm('tanggal_rilis_manga', e.target.value)} className="input" /></L>
+                <L label="Rating"><input type="number" step="0.1" min="0" max="10" value={form.rating_manga} onChange={(e)=>updateForm('rating_manga', e.target.value)} className="input" /></L>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button disabled={creating} type="submit" className="btn btn--primary">{creating ? 'Membuat...' : (<><Plus className="size-4" /> Buat Manga</>)}</button>
+              </div>
+            </form>
+          </div>
 
-          {/* Grab Range (Komiku) */}
-          <form onSubmit={onGrabRange} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: 'var(--shadow-lg)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <L label="Manga ID"><input value={grabRange.mangaId} onChange={(e)=>setGrabRange(g=>({...g, mangaId: e.target.value}))} className="inp" placeholder="ID manga target" /></L>
-              <L label="Sample URL"><input value={grabRange.sample_url} onChange={(e)=>setGrabRange(g=>({...g, sample_url: e.target.value}))} className="inp" placeholder="https://komiku.org/...-chapter-02/" /></L>
-              <L label="Mulai"><input type="number" value={grabRange.start} onChange={(e)=>setGrabRange(g=>({...g, start: e.target.value}))} className="inp" placeholder="2" /></L>
-              <L label="Akhir"><input type="number" value={grabRange.end} onChange={(e)=>setGrabRange(g=>({...g, end: e.target.value}))} className="inp" placeholder="38" /></L>
-              <L label="Title Prefix"><input value={grabRange.title_prefix} onChange={(e)=>setGrabRange(g=>({...g, title_prefix: e.target.value}))} className="inp" placeholder="Opsional, mis. Chapter" /></L>
-            </div>
-            <div>
-              <button disabled={grabbingRange} className="btn-add">{grabbingRange ? 'Memproses...' : (<><Plus className="size-4" /> Grab Range</>)}</button>
-            </div>
-          </form>
+          <div className="card card--lg space-y-4">
+            <div className="section-title">Grab Range (Komiku)</div>
+            <form onSubmit={onGrabRange} className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <L label="Manga ID"><input value={grabRange.mangaId} onChange={(e)=>setGrabRange(g=>({...g, mangaId: e.target.value}))} className="input" placeholder="ID manga target" /></L>
+                <L label="Sample URL"><input value={grabRange.sample_url} onChange={(e)=>setGrabRange(g=>({...g, sample_url: e.target.value}))} className="input" placeholder="https://komiku.org/...-chapter-02/" /></L>
+                <L label="Mulai"><input type="number" value={grabRange.start} onChange={(e)=>setGrabRange(g=>({...g, start: e.target.value}))} className="input" placeholder="2" /></L>
+                <L label="Akhir"><input type="number" value={grabRange.end} onChange={(e)=>setGrabRange(g=>({...g, end: e.target.value}))} className="input" placeholder="38" /></L>
+                <L label="Title Prefix"><input value={grabRange.title_prefix} onChange={(e)=>setGrabRange(g=>({...g, title_prefix: e.target.value}))} className="input" placeholder="Opsional, mis. Chapter" /></L>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button disabled={grabbingRange} className="btn btn--primary">{grabbingRange ? 'Memproses...' : (<><Plus className="size-4" /> Grab Range</>)}</button>
+              </div>
+            </form>
+          </div>
 
-          <div className="overflow-auto">
-            <table className="tbl">
+          <div className="card overflow-auto">
+            <table className="min-w-full">
               <thead>
-                <tr>
-                  <Th>ID</Th>
-                  <Th>Judul</Th>
-                  <Th>Type</Th>
-                  <Th>Aksi</Th>
+                <tr className="border-b-2 border-[var(--border)]">
+                  <th className="text-left px-4 py-3 label">ID</th>
+                  <th className="text-left px-4 py-3 label">Judul</th>
+                  <th className="text-left px-4 py-3 label">Type</th>
+                  <th className="text-left px-4 py-3 label">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((it) => (
-                  <tr key={it.id}>
-                    <Td>{it.id}</Td>
-                    <Td className="font-extrabold">{it.judul_manga}</Td>
-                    <Td>{it.type_manga}</Td>
-                    <Td>
-                      <div className="flex items-center gap-2">
-                        <a href={`/dashboard/manga-admin/${it.id}`} className="btn-link" title="Detail/Edit"><ExternalLink className="size-4" /></a>
-                        <button onClick={() => onDelete(it.id)} className="btn-act" title="Hapus"><Trash2 className="size-4" /></button>
+                  <tr key={it.id} className="border-b border-[var(--border)]">
+                    <td className="px-4 py-3 font-semibold">{it.id}</td>
+                    <td className="px-4 py-3 font-extrabold">{it.judul_manga}</td>
+                    <td className="px-4 py-3 font-semibold">{it.type_manga}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <a href={`/dashboard/manga-admin/${it.id}`} className="btn btn--secondary btn--sm btn--icon" title="Detail/Edit"><ExternalLink className="size-4" /></a>
+                        <button onClick={() => onDelete(it.id)} className="btn btn--danger btn--sm btn--icon" title="Hapus"><Trash2 className="size-4" /></button>
                       </div>
-                    </Td>
+                    </td>
                   </tr>
                 ))}
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="td-empty">{loadingList ? 'Memuat...' : 'Tidak ada data.'}</td>
+                    <td colSpan={4} className="px-4 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Tidak ada data.'}</td>
                   </tr>
                 )}
               </tbody>
@@ -275,14 +280,12 @@ export default function MangaAdminPage() {
 
 function L({ label, children }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-      <label className="lbl">{label}</label>
-      {children}
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+      <label className="label sm:w-28 sm:flex-shrink-0">{label}</label>
+      <div className="flex-1 min-w-0">{children}</div>
     </div>
   );
 }
-function Th({ children }) { return <th className="th">{children}</th>; }
-function Td({ children, className='' }) { return <td className={`td ${className}`}>{children}</td>; }
 
 function buildMangaPayload(form) {
   const out = {};
@@ -302,24 +305,4 @@ function buildMangaPayload(form) {
   if (form?.tanggal_rilis_manga) out.tanggal_rilis_manga = form.tanggal_rilis_manga;
   str('rating_manga');
   return out;
-}
-
-const styles = `
-.inp { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 2px; border-radius: 0.5rem; font-weight: 600; background: var(--background); color: var(--foreground); border-color: var(--panel-border); }
-.sel { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 2px; border-radius: 0.5rem; font-weight: 600; background: var(--background); color: var(--foreground); border-color: var(--panel-border); }
-.lbl { font-size: 0.875rem; font-weight: 700; color: var(--foreground); }
-.btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:2px; border-radius:0.5rem; font-weight:700; box-shadow:3px 3px 0 rgba(0,0,0,0.15); background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
-.btn-act { padding:0.25rem 0.5rem; border-width:2px; border-radius:0.5rem; font-weight:600; box-shadow:2px 2px 0 rgba(0,0,0,0.15); background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }
-.btn-link { padding:0.25rem 0.5rem; border-width:2px; border-radius:0.5rem; font-weight:600; box-shadow:2px 2px 0 rgba(0,0,0,0.15); background: var(--accent-edit); color: var(--accent-edit-foreground); border-color: var(--panel-border); }
-.tbl { min-width: 100%; border-width:2px; border-radius:0.5rem; overflow:hidden; box-shadow:3px 3px 0 rgba(0,0,0,0.15); border-color: var(--panel-border); color: var(--foreground); }
-.tbl thead { background: var(--panel-bg); }
-.th { text-align:left; padding:0.5rem 0.75rem; border-bottom-width:2px; border-color: var(--panel-border); }
-.td { padding:0.5rem 0.75rem; border-bottom-width:2px; border-color: var(--panel-border); font-weight:600; }
-.td-empty { padding:1.5rem; text-align:center; font-size:0.875rem; opacity:0.7; color: var(--foreground); }
-`;
-if (typeof document !== 'undefined' && !document.getElementById('manga-admin-styles')) {
-  const style = document.createElement('style');
-  style.id = 'manga-admin-styles';
-  style.innerHTML = styles;
-  document.head.appendChild(style);
 }
