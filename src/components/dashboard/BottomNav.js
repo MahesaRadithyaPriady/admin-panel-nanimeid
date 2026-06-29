@@ -17,7 +17,21 @@ export default function BottomNav({ menus = [], currentPath, onLogout, user }) {
 
   useEffect(() => {
     setMounted(true);
-    setIsDark(document.documentElement.classList.contains('dark'));
+    let initialDark = false;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark') initialDark = true;
+      else if (saved === 'light') initialDark = false;
+      else initialDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+    }
+    setIsDark(initialDark);
+    document.documentElement.classList.toggle('dark', initialDark);
+    document.documentElement.classList.toggle('light', !initialDark);
+    document.body.classList.toggle('dark', initialDark);
+    document.body.classList.toggle('light', !initialDark);
+    const onThemeChange = (e) => setIsDark(e.detail === 'dark');
+    window.addEventListener('themechange', onThemeChange);
+    return () => window.removeEventListener('themechange', onThemeChange);
   }, []);
 
   const toggleTheme = () => {
@@ -28,6 +42,9 @@ export default function BottomNav({ menus = [], currentPath, onLogout, user }) {
     document.documentElement.classList.toggle('light', !next);
     document.body.classList.toggle('dark', next);
     document.body.classList.toggle('light', !next);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('themechange', { detail: next ? 'dark' : 'light' }));
+    }
   };
 
   // Close any sheet on route change

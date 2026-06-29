@@ -111,9 +111,9 @@
   --accent-secondary-hover:    var(--color-gray-600);
 }
 
-/* Dark mode — invert */
+/* Dark mode — invert (only when user hasn't explicitly chosen light) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --background:      var(--color-black);
     --foreground:      var(--color-white);
     --surface:         var(--color-black);
@@ -137,6 +137,32 @@
     --accent-primary-foreground: var(--color-black);
     --accent-secondary:          var(--color-gray-300);
   }
+}
+
+/* Explicit light mode override — beats prefers-color-scheme: dark */
+:root.light {
+  --background:      var(--color-white);
+  --foreground:      var(--color-black);
+  --surface:         var(--color-gray-50);
+  --surface-raised:  var(--color-white);
+  --border:          var(--color-black);
+  --border-muted:    var(--color-gray-300);
+  --muted:           var(--color-gray-500);
+  --muted-bg:        var(--color-gray-100);
+  --shadow-sm:   2px 2px 0 var(--color-black);
+  --shadow-md:   4px 4px 0 var(--color-black);
+  --shadow-lg:   6px 6px 0 var(--color-black);
+  --shadow-xl:   8px 8px 0 var(--color-black);
+  --panel-bg:     var(--surface-raised);
+  --panel-border: var(--border);
+  --glass-bg:     var(--surface-raised);
+  --glass-border: var(--border);
+  --input-bg:     var(--surface-raised);
+  --input-border: var(--border);
+  --accent-primary:            var(--color-black);
+  --accent-primary-hover:      var(--color-gray-800);
+  --accent-primary-foreground: var(--color-white);
+  --accent-secondary:          var(--color-gray-700);
 }
 
 [data-theme="dark"] {
