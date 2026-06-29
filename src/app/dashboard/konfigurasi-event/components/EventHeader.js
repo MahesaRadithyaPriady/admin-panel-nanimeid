@@ -1,17 +1,12 @@
 'use client';
 
 import { Sparkles } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { ANIMATIONS, STYLES, TABS } from '../constants';
 import { TabButton } from './TabButton';
 
 export function EventHeader({ activeTab, availableTabs, onTabChange }) {
   return (
-    <motion.div 
-      variants={ANIMATIONS.item} 
-      className={STYLES.card} 
-      style={STYLES.cardShadow}
-    >
+    <div className={STYLES.card} style={STYLES.cardShadow}>
       {/* Title Section */}
       <div className="flex items-center gap-3 mb-4">
         <div className={STYLES.icon.wrapper}>
@@ -50,6 +45,6 @@ export function EventHeader({ activeTab, availableTabs, onTabChange }) {
           />
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

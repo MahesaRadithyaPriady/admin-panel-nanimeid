@@ -164,20 +164,20 @@ export default function StoreItemDetailPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-extrabold flex items-center gap-2"><ShoppingBag className="size-5" /> Detail Item Store</h2>
             <div className="flex items-center gap-2">
-              <button onClick={() => router.push('/dashboard/store-admin')} className="btn-pg flex items-center gap-2"><ArrowLeft className="size-4" /> Kembali</button>
+              <button onClick={() => router.push('/dashboard/store-admin')} className="btn btn--secondary flex items-center gap-2"><ArrowLeft className="size-4" /> Kembali</button>
             </div>
           </div>
 
           {loadingItem ? (
             <div className="text-sm">Memuat...</div>
           ) : (
-            <form onSubmit={onSave} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            <form onSubmit={onSave} className="card p-4 space-y-3">
               <div className="grid sm:grid-cols-2 gap-3">
-                <L label="SKU"><input value={form.sku} onChange={(e)=>updateField('sku', e.target.value)} required className="inp" /></L>
-                <L label="Judul"><input value={form.title} onChange={(e)=>updateField('title', e.target.value)} required className="inp" /></L>
-                <L label="Deskripsi"><input value={form.description} onChange={(e)=>updateField('description', e.target.value)} className="inp" /></L>
+                <L label="SKU"><input value={form.sku} onChange={(e)=>updateField('sku', e.target.value)} required className="input w-full" /></L>
+                <L label="Judul"><input value={form.title} onChange={(e)=>updateField('title', e.target.value)} required className="input w-full" /></L>
+                <L label="Deskripsi"><input value={form.description} onChange={(e)=>updateField('description', e.target.value)} className="input w-full" /></L>
                 <L label="Tipe">
-                  <select value={form.item_type} onChange={(e)=>updateField('item_type', e.target.value)} className="sel">
+                  <select value={form.item_type} onChange={(e)=>updateField('item_type', e.target.value)} className="select w-full">
                     <option value="COIN">COIN</option>
                     <option value="VIP">VIP</option>
                     <option value="BADGE">BADGE</option>
@@ -188,13 +188,13 @@ export default function StoreItemDetailPage() {
                   </select>
                 </L>
 
-                {form.item_type === 'COIN' && (<L label="Coin Amount"><input type="number" value={form.coin_amount} onChange={(e)=>updateField('coin_amount', e.target.value)} className="inp" /></L>)}
-                {form.item_type === 'VIP' && (<L label="Hari VIP"><input type="number" value={form.vip_days} onChange={(e)=>updateField('vip_days', e.target.value)} className="inp" /></L>)}
+                {form.item_type === 'COIN' && (<L label="Coin Amount"><input type="number" value={form.coin_amount} onChange={(e)=>updateField('coin_amount', e.target.value)} className="input w-full" /></L>)}
+                {form.item_type === 'VIP' && (<L label="Hari VIP"><input type="number" value={form.vip_days} onChange={(e)=>updateField('vip_days', e.target.value)} className="input w-full" /></L>)}
                 {form.item_type === 'BADGE' && (
                   <>
-                    <L label="Nama Badge"><input value={form.badge_name} onChange={(e)=>updateField('badge_name', e.target.value)} className="inp" /></L>
-                    <L label="Icon URL"><input value={form.badge_icon} onChange={(e)=>updateField('badge_icon', e.target.value)} className="inp" /></L>
-                    <L label="Title Color"><input value={form.title_color} onChange={(e)=>updateField('title_color', e.target.value)} className="inp" /></L>
+                    <L label="Nama Badge"><input value={form.badge_name} onChange={(e)=>updateField('badge_name', e.target.value)} className="input w-full" /></L>
+                    <L label="Icon URL"><input value={form.badge_icon} onChange={(e)=>updateField('badge_icon', e.target.value)} className="input w-full" /></L>
+                    <L label="Title Color"><input value={form.title_color} onChange={(e)=>updateField('title_color', e.target.value)} className="input w-full" /></L>
                   </>
                 )}
 
@@ -204,7 +204,7 @@ export default function StoreItemDetailPage() {
                       <select
                         value={form.badge_id}
                         onChange={(e)=>updateField('badge_id', e.target.value)}
-                        className="sel"
+                        className="select w-full"
                       >
                         <option value="">Pilih Super Badge...</option>
                         {badges.map((b) => (
@@ -226,7 +226,7 @@ export default function StoreItemDetailPage() {
                       <select
                         value={form.sticker_id}
                         onChange={(e)=>updateField('sticker_id', e.target.value)}
-                        className="sel"
+                        className="select w-full"
                       >
                         <option value="">Pilih Sticker...</option>
                         {stickers.map((s) => (
@@ -248,7 +248,7 @@ export default function StoreItemDetailPage() {
                       <select
                         value={form.avatar_border_id}
                         onChange={(e)=>updateField('avatar_border_id', e.target.value)}
-                        className="sel"
+                        className="select w-full"
                       >
                         <option value="">Pilih Avatar Border...</option>
                         {avatarBorders.map((ab) => (
@@ -264,18 +264,18 @@ export default function StoreItemDetailPage() {
                   </>
                 )}
 
-                <L label="Harga Koin"><input type="number" value={form.coin_price} onChange={(e)=>updateField('coin_price', e.target.value)} className="inp" /></L>
+                <L label="Harga Koin"><input type="number" value={form.coin_price} onChange={(e)=>updateField('coin_price', e.target.value)} className="input w-full" /></L>
                 <L label="Aktif?">
-                  <select value={String(form.is_active)} onChange={(e)=>updateField('is_active', e.target.value === 'true')} className="sel">
+                  <select value={String(form.is_active)} onChange={(e)=>updateField('is_active', e.target.value === 'true')} className="select w-full">
                     <option value="true">Ya</option>
                     <option value="false">Tidak</option>
                   </select>
                 </L>
-                <L label="Urutan"><input type="number" value={form.sort_order} onChange={(e)=>updateField('sort_order', e.target.value)} className="inp" /></L>
+                <L label="Urutan"><input type="number" value={form.sort_order} onChange={(e)=>updateField('sort_order', e.target.value)} className="input w-full" /></L>
               </div>
               <div className="flex items-center gap-2">
-                <button disabled={saving} type="submit" className="btn-add flex items-center gap-2"><Save className="size-4" /> Simpan</button>
-                <button type="button" onClick={onDelete} className="btn-act flex items-center gap-2"><Trash2 className="size-4" /> Hapus</button>
+                <button disabled={saving} type="submit" className="btn btn--primary disabled:opacity-60 flex items-center gap-2"><Save className="size-4" /> {saving ? 'Menyimpan...' : 'Simpan'}</button>
+                <button type="button" onClick={onDelete} className="btn btn--danger flex items-center gap-2"><Trash2 className="size-4" /> Hapus</button>
               </div>
             </form>
           )}
@@ -288,7 +288,7 @@ export default function StoreItemDetailPage() {
 function L({ label, children }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-      <label className="lbl">{label}</label>
+      <label className="text-sm font-extrabold">{label}</label>
       {children}
     </div>
   );
@@ -329,18 +329,3 @@ function buildUpdatePayload(form) {
   return out;
 }
 
-// Styles (re-use from store-admin page if present)
-const styles = `
-.inp { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
-.sel { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
-.lbl { font-size: 0.875rem; font-weight: 800; }
-.btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
-.btn-act { padding:0.25rem 0.5rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }
-.btn-pg { padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; background:#fff; font-weight:800; box-shadow:4px 4px 0 #000; }
-`;
-if (typeof document !== 'undefined' && !document.getElementById('store-admin-detail-styles')) {
-  const style = document.createElement('style');
-  style.id = 'store-admin-detail-styles';
-  style.innerHTML = styles;
-  document.head.appendChild(style);
-}

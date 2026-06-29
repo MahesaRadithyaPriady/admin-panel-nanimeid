@@ -291,7 +291,7 @@ export default function ClientLogsPage() {
       {/* Header */}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div className="grid gap-2">
-          <div className="inline-flex w-fit items-center gap-2 px-3 py-2 border-4 rounded-full font-extrabold text-sm" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <div className="inline-flex w-fit items-center gap-2 px-3 py-2 border-4 rounded-full font-extrabold text-sm" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <Terminal className="size-4" /> Client Logs
           </div>
           <div>
@@ -304,7 +304,7 @@ export default function ClientLogsPage() {
             type="button" 
             onClick={() => setShowFilters(!showFilters)} 
             className="px-3 py-2 border-4 rounded-lg font-extrabold"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           >
             <Filter className="size-4 inline-block mr-1" /> Filter
           </button>
@@ -312,7 +312,7 @@ export default function ClientLogsPage() {
             type="button" 
             onClick={handleExport} 
             className="px-3 py-2 border-4 rounded-lg font-extrabold"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}
+            style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}
           >
             <Download className="size-4 inline-block mr-1" /> Export
           </button>
@@ -321,7 +321,7 @@ export default function ClientLogsPage() {
               type="button" 
               onClick={() => setShowCleanupModal(true)} 
               className="px-3 py-2 border-4 rounded-lg font-extrabold"
-              style={{ boxShadow: '4px 4px 0 #000', background: '#EF4444', borderColor: 'var(--panel-border)', color: 'white' }}
+              style={{ boxShadow: 'var(--shadow-md)', background: '#EF4444', borderColor: 'var(--panel-border)', color: 'white' }}
             >
               <Trash2 className="size-4 inline-block mr-1" /> Cleanup
             </button>
@@ -332,16 +332,16 @@ export default function ClientLogsPage() {
       {/* Stats Cards */}
       {stats && (
         <div className="grid gap-3 md:grid-cols-5">
-          <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #FDE68A 0%, #FCD34D 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
-            <div className="text-xs font-black uppercase tracking-wide opacity-80">Total Logs</div>
+          <div className="stat-card">
+            <div className="label">Total Logs</div>
             <div className="mt-2 text-3xl font-black">{stats.total || 0}</div>
-            <div className="text-sm font-semibold opacity-80 mt-1">Semua logs tercatat</div>
+            <div className="text-sm text-[var(--muted)] mt-1">Semua logs tercatat</div>
           </div>
           
           {stats.byStatus?.map((status) => {
             const Icon = STATUS_ICONS[status.status];
             return (
-              <div key={status.status} className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
+              <div key={status.status} className="stat-card">
                 <div className="flex items-center gap-2">
                   <Icon className="size-4" />
                   <div className="text-xs font-black uppercase tracking-wide opacity-80">{status.status}</div>
@@ -355,7 +355,7 @@ export default function ClientLogsPage() {
 
       {/* Filters */}
       {showFilters && (
-        <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+        <div className="card p-4">
           <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
             <div>
               <label className="text-xs font-bold">Status</label>
@@ -363,7 +363,7 @@ export default function ClientLogsPage() {
                 value={filters.status}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
                 className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold"
-                style={{ boxShadow: '3px 3px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               >
                 <option value="">Semua</option>
                 <option value="NEW">NEW</option>
@@ -379,7 +379,7 @@ export default function ClientLogsPage() {
                 value={filters.level}
                 onChange={(e) => handleFilterChange('level', e.target.value)}
                 className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold"
-                style={{ boxShadow: '3px 3px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               >
                 <option value="">Semua</option>
                 {metadata?.levels?.map((level) => (
@@ -394,7 +394,7 @@ export default function ClientLogsPage() {
                 value={filters.source}
                 onChange={(e) => handleFilterChange('source', e.target.value)}
                 className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold"
-                style={{ boxShadow: '3px 3px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               >
                 <option value="">Semua</option>
                 {metadata?.sources?.map((source) => (
@@ -411,7 +411,7 @@ export default function ClientLogsPage() {
                 onChange={(e) => handleFilterChange('userId', e.target.value)}
                 placeholder="ID user"
                 className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold"
-                style={{ boxShadow: '3px 3px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               />
             </div>
             
@@ -423,7 +423,7 @@ export default function ClientLogsPage() {
                 onChange={(e) => handleFilterChange('q', e.target.value)}
                 placeholder="Cari di title, message, stack..."
                 className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold"
-                style={{ boxShadow: '3px 3px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               />
             </div>
           </div>
@@ -432,35 +432,35 @@ export default function ClientLogsPage() {
 
       {/* Bulk Actions */}
       {showBulkActions && (
-        <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
+        <div className="card p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="font-black">{selectedLogs.size} logs dipilih</span>
               <button
                 onClick={() => handleBulkStatusUpdate('REVIEWED')}
                 className="px-3 py-2 border-4 rounded-xl font-extrabold text-sm"
-                style={{ boxShadow: '3px 3px 0 #000', background: '#3B82F6', borderColor: 'var(--panel-border)', color: 'white' }}
+                style={{ boxShadow: 'var(--shadow-sm)', background: '#3B82F6', borderColor: 'var(--panel-border)', color: 'white' }}
               >
                 <Eye className="size-3 inline-block mr-1" /> Mark Reviewed
               </button>
               <button
                 onClick={() => handleBulkStatusUpdate('RESOLVED')}
                 className="px-3 py-2 border-4 rounded-xl font-extrabold text-sm"
-                style={{ boxShadow: '3px 3px 0 #000', background: '#10B981', borderColor: 'var(--panel-border)', color: 'white' }}
+                style={{ boxShadow: 'var(--shadow-sm)', background: '#10B981', borderColor: 'var(--panel-border)', color: 'white' }}
               >
                 <CheckCircle className="size-3 inline-block mr-1" /> Mark Resolved
               </button>
               <button
                 onClick={() => handleBulkStatusUpdate('IGNORED')}
                 className="px-3 py-2 border-4 rounded-xl font-extrabold text-sm"
-                style={{ boxShadow: '3px 3px 0 #000', background: '#6B7280', borderColor: 'var(--panel-border)', color: 'white' }}
+                style={{ boxShadow: 'var(--shadow-sm)', background: '#6B7280', borderColor: 'var(--panel-border)', color: 'white' }}
               >
                 <EyeOff className="size-3 inline-block mr-1" /> Ignore
               </button>
               <button
                 onClick={handleBulkDelete}
                 className="px-3 py-2 border-4 rounded-xl font-extrabold text-sm"
-                style={{ boxShadow: '3px 3px 0 #000', background: '#EF4444', borderColor: 'var(--panel-border)', color: 'white' }}
+                style={{ boxShadow: 'var(--shadow-sm)', background: '#EF4444', borderColor: 'var(--panel-border)', color: 'white' }}
               >
                 <Trash2 className="size-3 inline-block mr-1" /> Delete
               </button>
@@ -471,7 +471,7 @@ export default function ClientLogsPage() {
                 setShowBulkActions(false);
               }}
               className="px-3 py-2 border-4 rounded-xl font-extrabold text-sm"
-              style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             >
               <X className="size-3 inline-block mr-1" /> Clear Selection
             </button>
@@ -480,7 +480,7 @@ export default function ClientLogsPage() {
       )}
 
       {/* Logs Table */}
-      <div className="border-4 rounded-2xl overflow-hidden" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+      <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead style={{ background: 'var(--background)' }}>
@@ -489,7 +489,7 @@ export default function ClientLogsPage() {
                   <button
                     onClick={handleSelectAll}
                     className="p-1 border-4 rounded font-extrabold"
-                    style={{ boxShadow: '2px 2px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                   >
                     {selectedLogs.size === logs.length ? <CheckSquare className="size-4" /> : <Square className="size-4" />}
                   </button>
@@ -536,7 +536,7 @@ export default function ClientLogsPage() {
                             onClick={() => handleSelectLog(log.id)}
                             className="p-1 border-4 rounded font-extrabold"
                             style={{ 
-                              boxShadow: '2px 2px 0 #000', 
+                              boxShadow: 'var(--shadow-sm)', 
                               background: isSelected ? 'var(--accent-add)' : 'var(--panel-bg)', 
                               borderColor: 'var(--panel-border)', 
                               color: isSelected ? 'var(--accent-add-foreground)' : 'var(--foreground)' 
@@ -584,7 +584,7 @@ export default function ClientLogsPage() {
                             <button
                               onClick={() => setExpandedLog(isExpanded ? null : log.id)}
                               className="p-1 border-4 rounded font-extrabold"
-                              style={{ boxShadow: '2px 2px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                              style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                             >
                               {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
                             </button>
@@ -649,7 +649,7 @@ export default function ClientLogsPage() {
               onClick={() => handlePageChange(Math.max(0, pagination.skip - pagination.take))}
               disabled={pagination.skip === 0}
               className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             >
               Previous
             </button>
@@ -660,7 +660,7 @@ export default function ClientLogsPage() {
               onClick={() => handlePageChange(pagination.skip + pagination.take)}
               disabled={pagination.skip + pagination.take >= pagination.total}
               className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             >
               Next
             </button>
@@ -671,7 +671,7 @@ export default function ClientLogsPage() {
       {/* Cleanup Modal */}
       {showCleanupModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="border-4 rounded-2xl p-6 max-w-md w-full" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <div className="card p-6 max-w-md w-full">
             <h3 className="text-lg font-black mb-4">Cleanup Old Logs</h3>
             <p className="text-sm opacity-80 mb-4">Hapus semua logs yang lebih tua dari jumlah hari tertentu.</p>
             <div className="mb-4">
@@ -682,21 +682,21 @@ export default function ClientLogsPage() {
                 value={cleanupDays}
                 onChange={(e) => setCleanupDays(parseInt(e.target.value) || 30)}
                 className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold"
-                style={{ boxShadow: '3px 3px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               />
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowCleanupModal(false)}
                 className="flex-1 px-4 py-3 border-4 rounded-xl font-extrabold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               >
                 Batal
               </button>
               <button
                 onClick={handleCleanup}
                 className="flex-1 px-4 py-3 border-4 rounded-xl font-extrabold"
-                style={{ boxShadow: '4px 4px 0 #000', background: '#EF4444', borderColor: 'var(--panel-border)', color: 'white' }}
+                style={{ boxShadow: 'var(--shadow-md)', background: '#EF4444', borderColor: 'var(--panel-border)', color: 'white' }}
               >
                 Hapus Logs
               </button>

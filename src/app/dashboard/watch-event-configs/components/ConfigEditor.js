@@ -1,7 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Plus, Trash2, Clock, RotateCcw, Gift, Check } from 'lucide-react';
+import { Plus, Trash2, Clock, RotateCcw, Gift, Check, Calendar, Hash, Film } from 'lucide-react';
 import { ANIMATIONS, STYLES, LABELS, REWARD_TYPES } from '../constants';
 
 export function ConfigEditor({ 
@@ -14,11 +13,7 @@ export function ConfigEditor({
   randomThresholdId
 }) {
   return (
-    <motion.div 
-      variants={ANIMATIONS.item} 
-      className={`${STYLES.card} p-4 sm:p-5`} 
-      style={STYLES.cardShadow}
-    >
+    <div className={`${STYLES.card} p-4 sm:p-5`} style={STYLES.cardShadow}>
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-4 pb-4 border-b border-[var(--panel-border)]">
         <div>
@@ -30,13 +25,8 @@ export function ConfigEditor({
           </p>
         </div>
         {form.id && (
-          <button
-            type="button"
-            onClick={onReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold text-[var(--foreground)]/70 hover:bg-[var(--panel-bg)] transition-colors"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Reset
+          <button type="button" onClick={onReset} className="btn btn--secondary btn--sm">
+            <RotateCcw className="w-4 h-4" /> Reset
           </button>
         )}
       </div>
@@ -93,20 +83,8 @@ export function ConfigEditor({
               <Gift className="w-4 h-4" />
               Threshold Reward
             </h4>
-            <button
-              type="button"
-              onClick={() => setForm(f => ({
-                ...f,
-                thresholds: [
-                  ...(Array.isArray(f.thresholds) ? f.thresholds : []),
-                  { id: randomThresholdId(), minutes: "", episodes: "", coin_reward: 0, reward_type: "NONE", reward_id: 0 }
-                ]
-              }))}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--accent-primary)] text-white text-xs font-bold hover:opacity-90 transition-opacity"
-              style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.2)' }}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              {LABELS.addThreshold}
+            <button type="button" onClick={() => setForm(f => ({ ...f, thresholds: [...(Array.isArray(f.thresholds) ? f.thresholds : []), { id: randomThresholdId(), minutes: "", episodes: "", coin_reward: 0, reward_type: "NONE", reward_id: 0 }] }))} className="btn btn--secondary btn--sm">
+              <Plus className="w-3.5 h-3.5" /> {LABELS.addThreshold}
             </button>
           </div>
 
@@ -143,17 +121,13 @@ export function ConfigEditor({
         </div>
 
         {/* Submit */}
-        <div className="pt-3 border-t border-[var(--panel-border)]">
-          <button
-            type="submit"
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[var(--accent-primary)] text-white font-bold hover:opacity-90 transition-opacity"
-            style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}
-          >
+        <div className="pt-3" style={{ borderTop: '2px solid var(--border)' }}>
+          <button type="submit" className="btn btn--primary">
             {form.id ? 'Simpan Perubahan' : 'Tambah Config'}
           </button>
         </div>
       </form>
-    </motion.div>
+    </div>
   );
 }
 
@@ -161,13 +135,10 @@ function DateInput({ label, value, onChange }) {
   return (
     <label className="space-y-1">
       <span className="text-xs font-bold text-[var(--foreground)]/70">{label}</span>
-      <input
-        type="datetime-local"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 rounded-xl border-2 bg-[var(--panel-bg)] text-[var(--foreground)] text-sm font-bold"
-        style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', borderColor: 'var(--panel-border)' }}
-      />
+      <div className="input-icon">
+        <Calendar className="input-icon__icon" />
+        <input type="datetime-local" value={value} onChange={(e) => onChange(e.target.value)} className="input" />
+      </div>
     </label>
   );
 }
@@ -182,9 +153,7 @@ function ThresholdRow({ data, index, onChange, onDelete, rewardOptions }) {
       <div className="flex flex-col lg:flex-row lg:items-center gap-3">
         {/* Index Badge */}
         <div className="flex items-center gap-2 lg:w-24">
-          <span className="px-2 py-0.5 rounded bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] text-xs font-black">
-            #{index + 1}
-          </span>
+          <span className="badge">#{index + 1}</span>
           <span className="text-xs font-bold text-[var(--foreground)]/50 lg:hidden">
             Threshold
           </span>
@@ -192,53 +161,11 @@ function ThresholdRow({ data, index, onChange, onDelete, rewardOptions }) {
         
         {/* Inputs Grid */}
         <div className="flex-1 grid sm:grid-cols-2 lg:grid-cols-5 gap-2">
-          {/* ID */}
-          <input
-            type="text"
-            placeholder="ID (e.g., T25)"
-            value={data.id || ''}
-            onChange={(e) => onChange('id', e.target.value)}
-            className="px-2 py-1.5 rounded-lg border-2 bg-[var(--panel-bg)] text-[var(--foreground)] text-sm font-bold"
-            style={{ borderColor: 'var(--panel-border)' }}
-          />
-          
-          {/* Coin */}
-          <input
-            type="number"
-            placeholder="Koin"
-            value={data.coin_reward || 0}
-            onChange={(e) => onChange('coin_reward', parseInt(e.target.value) || 0)}
-            className="px-2 py-1.5 rounded-lg border-2 bg-[var(--panel-bg)] text-[var(--foreground)] text-sm font-bold"
-            style={{ borderColor: 'var(--panel-border)' }}
-          />
-          
-          {/* Minutes */}
-          <input
-            type="number"
-            placeholder="Menit"
-            value={data.minutes || ''}
-            onChange={(e) => onChange('minutes', e.target.value)}
-            className="px-2 py-1.5 rounded-lg border-2 bg-[var(--panel-bg)] text-[var(--foreground)] text-sm font-bold"
-            style={{ borderColor: 'var(--panel-border)' }}
-          />
-          
-          {/* Episodes */}
-          <input
-            type="number"
-            placeholder="Episode"
-            value={data.episodes || ''}
-            onChange={(e) => onChange('episodes', e.target.value)}
-            className="px-2 py-1.5 rounded-lg border-2 bg-[var(--panel-bg)] text-[var(--foreground)] text-sm font-bold"
-            style={{ borderColor: 'var(--panel-border)' }}
-          />
-          
-          {/* Reward Type */}
-          <select
-            value={rt}
-            onChange={(e) => onChange('reward_type', e.target.value)}
-            className="px-2 py-1.5 rounded-lg border-2 bg-[var(--panel-bg)] text-[var(--foreground)] text-sm font-bold"
-            style={{ borderColor: 'var(--panel-border)' }}
-          >
+          <div className="input-icon"><Hash className="input-icon__icon" /><input type="text" placeholder="ID" value={data.id || ''} onChange={(e) => onChange('id', e.target.value)} className="input" /></div>
+          <div className="input-icon"><Gift className="input-icon__icon" /><input type="number" placeholder="Koin" value={data.coin_reward || 0} onChange={(e) => onChange('coin_reward', parseInt(e.target.value) || 0)} className="input" /></div>
+          <div className="input-icon"><Clock className="input-icon__icon" /><input type="number" placeholder="Menit" value={data.minutes || ''} onChange={(e) => onChange('minutes', e.target.value)} className="input" /></div>
+          <div className="input-icon"><Film className="input-icon__icon" /><input type="number" placeholder="Episode" value={data.episodes || ''} onChange={(e) => onChange('episodes', e.target.value)} className="input" /></div>
+          <select value={rt} onChange={(e) => onChange('reward_type', e.target.value)} className="select">
             {Object.entries(REWARD_TYPES).map(([key, config]) => (
               <option key={key} value={key}>{config.label}</option>
             ))}
@@ -247,12 +174,7 @@ function ThresholdRow({ data, index, onChange, onDelete, rewardOptions }) {
         
         {/* Reward ID (conditional) */}
         {needsRewardId && (
-          <select
-            value={data.reward_id || 0}
-            onChange={(e) => onChange('reward_id', parseInt(e.target.value))}
-            className="lg:w-32 px-2 py-1.5 rounded-lg border-2 bg-[var(--panel-bg)] text-[var(--foreground)] text-sm font-bold"
-            style={{ borderColor: 'var(--panel-border)' }}
-          >
+          <select value={data.reward_id || 0} onChange={(e) => onChange('reward_id', parseInt(e.target.value))} className="select lg:w-32">
             <option value={0}>Pilih {REWARD_TYPES[rt]?.label}</option>
             {rewardOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -261,11 +183,7 @@ function ThresholdRow({ data, index, onChange, onDelete, rewardOptions }) {
         )}
         
         {/* Delete */}
-        <button
-          type="button"
-          onClick={onDelete}
-          className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors"
-        >
+        <button type="button" onClick={onDelete} className="btn btn--danger btn--sm btn--icon">
           <Trash2 className="w-4 h-4" />
         </button>
       </div>

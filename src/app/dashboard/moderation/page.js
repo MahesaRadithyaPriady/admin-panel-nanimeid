@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { motion } from 'framer-motion';
 import { Shield, MessageCircle, Globe2, Trash2, RefreshCw, Search, Image, Eye, CheckCircle2, XCircle, Ban, ShieldCheck, Clock3, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
@@ -20,24 +19,6 @@ import {
   softDeleteComment,
   softDeleteGlobalChat,
 } from '@/lib/api';
-
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08 }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: 'easeOut' }
-  }
-};
 
 const QUARANTINE_STATUS_OPTIONS = [
   { value: 'PENDING_REVIEW', label: 'Menunggu peninjauan' },
@@ -150,13 +131,8 @@ function Chip({ active, onClick, icon: Icon, children }) {
     <button
       type="button"
       onClick={onClick}
-      className="px-3 py-1 border-4 rounded-full font-extrabold text-xs hover:brightness-95 flex items-center gap-2"
-      style={{
-        boxShadow: '3px 3px 0 #000',
-        background: active ? '#FFD803' : 'var(--panel-bg)',
-        borderColor: 'var(--panel-border)',
-        color: 'var(--foreground)',
-      }}
+      className={`px-3 py-1 border-4 border-[var(--border)] font-extrabold text-xs hover:brightness-95 flex items-center gap-2 ${active ? 'bg-[#FFD803]' : ''}`}
+      style={{ boxShadow: 'var(--shadow-sm)' }}
     >
       {Icon ? <Icon className="size-3" /> : null}
       {children}
@@ -170,13 +146,7 @@ function LinkButton({ href, children }) {
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
-      style={{
-        boxShadow: '4px 4px 0 #000',
-        background: 'var(--panel-bg)',
-        borderColor: 'var(--panel-border)',
-        color: 'var(--foreground)',
-      }}
+      className="btn btn--secondary text-sm inline-flex items-center gap-2"
     >
       {children}
     </a>
@@ -188,14 +158,9 @@ function StickerPreview({ sticker }) {
   if (!url) return null;
   return (
     <div
-      className="mt-3 border-4 rounded-xl p-2 inline-block"
-      style={{
-        boxShadow: '4px 4px 0 #000',
-        background: 'var(--panel-bg)',
-        borderColor: 'var(--panel-border)',
-      }}
+      className="card mt-3 p-2 inline-block"
     >
-      <img src={url} alt="sticker" className="w-24 h-24 object-contain" />
+      <img src={url} alt="sticker" className="w-24 h-24 object-contain" loading="lazy" decoding="async" />
     </div>
   );
 }
@@ -224,14 +189,9 @@ function ImagePreview({ url }) {
   if (!url) return null;
   return (
     <div
-      className="mt-3 border-4 rounded-xl p-2 inline-block max-w-full"
-      style={{
-        boxShadow: '4px 4px 0 #000',
-        background: 'var(--panel-bg)',
-        borderColor: 'var(--panel-border)',
-      }}
+      className="card mt-3 p-2 inline-block max-w-full"
     >
-      <img src={url} alt="image" className="max-w-full w-[320px] h-auto object-contain rounded" />
+      <img src={url} alt="image" className="max-w-full w-[320px] h-auto object-contain rounded" loading="lazy" decoding="async" />
     </div>
   );
 }
@@ -244,13 +204,7 @@ function ActionButton({ disabled, onClick, children, tone = 'danger' }) {
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
-      style={{
-        boxShadow: '4px 4px 0 #000',
-        background: bg,
-        borderColor: 'var(--panel-border)',
-        color: fg,
-      }}
+      className={`btn ${tone === 'neutral' ? 'btn--secondary' : 'btn--danger'} text-sm disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2`}
     >
       <Trash2 className="size-4" />
       {children}
@@ -324,11 +278,10 @@ function Badge({ children, tone = 'neutral', background, color }) {
   const fg = color ?? (tone === 'warn' ? '#111' : 'var(--foreground)');
   return (
     <span
-      className="px-2 py-1 border-4 rounded-full font-extrabold text-[10px] inline-flex items-center"
+      className="px-2 py-1 border-4 border-[var(--border)] font-extrabold text-[10px] inline-flex items-center"
       style={{
-        boxShadow: '2px 2px 0 #000',
+        boxShadow: 'var(--shadow-sm)',
         background: bg,
-        borderColor: 'var(--panel-border)',
         color: fg,
       }}
     >
@@ -340,12 +293,8 @@ function Badge({ children, tone = 'neutral', background, color }) {
 function TextInput({ value, onChange, placeholder, icon: Icon }) {
   return (
     <div
-      className="flex items-center gap-2 border-4 rounded-lg px-3 py-2"
+      className="input flex items-center gap-2 px-3 py-2"
       style={{
-        boxShadow: '4px 4px 0 #000',
-        background: 'var(--panel-bg)',
-        borderColor: 'var(--panel-border)',
-        color: 'var(--foreground)',
       }}
     >
       {Icon ? <Icon className="size-4 opacity-80" /> : null}
@@ -364,13 +313,8 @@ function Select({ value, onChange, children }) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full border-4 rounded-lg px-3 py-2 text-sm font-extrabold"
-      style={{
-        boxShadow: '4px 4px 0 #000',
-        background: 'var(--panel-bg)',
-        borderColor: 'var(--panel-border)',
-        color: 'var(--foreground)',
-      }}
+      className="select w-full text-sm"
+      style={{}}
     >
       {children}
     </select>
@@ -380,22 +324,14 @@ function Select({ value, onChange, children }) {
 function Panel({ title, icon: Icon, description, children }) {
   return (
     <div
-      className="border-4 rounded-xl p-4"
-      style={{
-        boxShadow: '8px 8px 0 #000',
-        background: 'var(--panel-bg)',
-        borderColor: 'var(--panel-border)',
-      }}
+      className="card p-4"
     >
       <div className="flex items-start gap-3">
         {Icon ? (
           <div
-            className="border-4 rounded-xl p-2"
+            className="border-4 border-[var(--border)] p-2 bg-[#FFD803] text-[#111]"
             style={{
-              boxShadow: '4px 4px 0 #000',
-              background: '#FFD803',
-              borderColor: 'var(--panel-border)',
-              color: '#111',
+              boxShadow: 'var(--shadow-md)',
             }}
           >
             <Icon className="size-5" />
@@ -813,7 +749,7 @@ export default function ModerationPage() {
         </div>
       </div>
 
-      <form onSubmit={onSearch} className="grid gap-3 rounded-xl border-4 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+      <form onSubmit={onSearch} className="card p-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         {tab === 'quarantine' ? (
           <>
             <div className="grid gap-3 lg:grid-cols-4">
@@ -859,13 +795,7 @@ export default function ModerationPage() {
               <div className="flex gap-2 items-end">
                 <button
                   type="submit"
-                  className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
-                  style={{
-                    boxShadow: '4px 4px 0 #000',
-                    background: '#FFD803',
-                    borderColor: 'var(--panel-border)',
-                    color: '#111',
-                  }}
+                  className="btn btn--primary text-sm inline-flex items-center gap-2"
                 >
                   <Search className="size-4" /> Tampilkan
                 </button>
@@ -879,26 +809,14 @@ export default function ModerationPage() {
                     setPage(1);
                     setLimit(20);
                   }}
-                  className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
-                  style={{
-                    boxShadow: '4px 4px 0 #000',
-                    background: 'var(--background)',
-                    borderColor: 'var(--panel-border)',
-                    color: 'var(--foreground)',
-                  }}
+                  className="btn btn--secondary text-sm inline-flex items-center gap-2"
                 >
                   Reset
                 </button>
                 <button
                   type="button"
                   onClick={() => loadList()}
-                  className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
-                  style={{
-                    boxShadow: '4px 4px 0 #000',
-                    background: 'var(--panel-bg)',
-                    borderColor: 'var(--panel-border)',
-                    color: 'var(--foreground)',
-                  }}
+                  className="btn btn--secondary text-sm inline-flex items-center gap-2"
                 >
                   <RefreshCw className="size-4" /> Refresh
                 </button>
@@ -935,26 +853,14 @@ export default function ModerationPage() {
             <div className="flex gap-2 lg:justify-end">
               <button
                 type="submit"
-                className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
-                style={{
-                  boxShadow: '4px 4px 0 #000',
-                  background: '#FFD803',
-                  borderColor: 'var(--panel-border)',
-                  color: '#111',
-                }}
+                className="btn btn--primary text-sm inline-flex items-center gap-2"
               >
                 <Search className="size-4" /> Cari
               </button>
               <button
                 type="button"
                 onClick={() => loadList()}
-                className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
-                style={{
-                  boxShadow: '4px 4px 0 #000',
-                  background: 'var(--panel-bg)',
-                  borderColor: 'var(--panel-border)',
-                  color: 'var(--foreground)',
-                }}
+                className="btn btn--secondary text-sm inline-flex items-center gap-2"
               >
                 <RefreshCw className="size-4" /> Refresh
               </button>
@@ -987,13 +893,7 @@ export default function ModerationPage() {
                     return (
                       <div
                         key={String(it?.id)}
-                        className="border-4 rounded-xl p-4"
-                        style={{
-                          boxShadow: '6px 6px 0 #000',
-                          background: 'var(--panel-bg)',
-                          borderColor: 'var(--panel-border)',
-                          color: 'var(--foreground)',
-                        }}
+                        className="card p-4"
                       >
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                           <div className="space-y-1">
@@ -1044,13 +944,7 @@ export default function ModerationPage() {
                   type="button"
                   disabled={loadingList || page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60"
-                  style={{
-                    boxShadow: '4px 4px 0 #000',
-                    background: 'var(--panel-bg)',
-                    borderColor: 'var(--panel-border)',
-                    color: 'var(--foreground)',
-                  }}
+                  className="btn btn--secondary text-sm disabled:opacity-60"
                 >
                   Prev
                 </button>
@@ -1064,13 +958,7 @@ export default function ModerationPage() {
                     (typeof totalPages === 'number' ? page >= totalPages : items.length < limit)
                   }
                   onClick={() => setPage((p) => p + 1)}
-                  className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60"
-                  style={{
-                    boxShadow: '4px 4px 0 #000',
-                    background: 'var(--panel-bg)',
-                    borderColor: 'var(--panel-border)',
-                    color: 'var(--foreground)',
-                  }}
+                  className="btn btn--secondary text-sm disabled:opacity-60"
                 >
                   Next
                 </button>
@@ -1105,13 +993,7 @@ export default function ModerationPage() {
                   return (
                     <div
                       key={String(it?.id)}
-                      className="border-4 rounded-xl p-4"
-                      style={{
-                        boxShadow: '6px 6px 0 #000',
-                        background: 'var(--panel-bg)',
-                        borderColor: 'var(--panel-border)',
-                        color: 'var(--foreground)',
-                      }}
+                      className="card p-4"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div className="space-y-1">
@@ -1173,13 +1055,7 @@ export default function ModerationPage() {
                 type="button"
                 disabled={loadingList || page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60"
-                style={{
-                  boxShadow: '4px 4px 0 #000',
-                  background: 'var(--panel-bg)',
-                  borderColor: 'var(--panel-border)',
-                  color: 'var(--foreground)',
-                }}
+                className="btn btn--secondary text-sm disabled:opacity-60"
               >
                 Prev
               </button>
@@ -1188,18 +1064,9 @@ export default function ModerationPage() {
 
               <button
                 type="button"
-                disabled={
-                  loadingList ||
-                  (typeof totalPages === 'number' ? page >= totalPages : items.length < limit)
-                }
+                disabled={loadingList || (typeof totalPages === 'number' ? page >= totalPages : items.length < limit)}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60"
-                style={{
-                  boxShadow: '4px 4px 0 #000',
-                  background: 'var(--panel-bg)',
-                  borderColor: 'var(--panel-border)',
-                  color: 'var(--foreground)',
-                }}
+                className="btn btn--secondary text-sm disabled:opacity-60"
               >
                 Next
               </button>
@@ -1214,17 +1081,17 @@ export default function ModerationPage() {
         >
           <div className="space-y-4">
             <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-xl border-4 p-4" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+              <div className="card p-4">
                 <div className="text-[11px] font-black uppercase tracking-wide opacity-70">Item di halaman ini</div>
                 <div className="mt-2 text-2xl font-black">{items.length}</div>
                 <div className="mt-1 text-xs font-semibold opacity-70">Dari total {total} gambar yang cocok dengan filter saat ini.</div>
               </div>
-              <div className="rounded-xl border-4 p-4" style={{ boxShadow: '4px 4px 0 #000', background: '#FEF3C7', borderColor: 'var(--panel-border)', color: '#92400E' }}>
+              <div className="stat-card p-4" style={{ background: '#FEF3C7', color: '#92400E' }}>
                 <div className="text-[11px] font-black uppercase tracking-wide opacity-70">Perlu perhatian cepat</div>
                 <div className="mt-2 text-2xl font-black">{quarantineSummary.pending}</div>
                 <div className="mt-1 text-xs font-semibold opacity-80">Masih menunggu keputusan admin pada halaman ini.</div>
               </div>
-              <div className="rounded-xl border-4 p-4" style={{ boxShadow: '4px 4px 0 #000', background: '#DBEAFE', borderColor: 'var(--panel-border)', color: '#1D4ED8' }}>
+              <div className="stat-card p-4" style={{ background: '#DBEAFE', color: '#1D4ED8' }}>
                 <div className="text-[11px] font-black uppercase tracking-wide opacity-70">Akun berstatus peringatan</div>
                 <div className="mt-2 text-2xl font-black">{quarantineSummary.warnedUsers}</div>
                 <div className="mt-1 text-xs font-semibold opacity-80">Bisa dipulihkan jika hasil pemeriksaan sudah aman.</div>
@@ -1238,9 +1105,9 @@ export default function ModerationPage() {
                 </div>
 
                 {loadingList ? (
-                  <div className="rounded-xl border-4 p-6 text-sm font-semibold" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)' }}>Memuat daftar gambar...</div>
+                  <div className="card p-6 text-sm font-semibold">Memuat daftar gambar...</div>
                 ) : items.length === 0 ? (
-                  <div className="rounded-xl border-4 p-6 text-sm font-semibold" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)' }}>Belum ada item yang cocok dengan filter saat ini.</div>
+                  <div className="card p-6 text-sm font-semibold">Belum ada item yang cocok dengan filter saat ini.</div>
                 ) : (
                   items.map((it) => {
                     const isActive = String(selectedUploadId) === String(it?.id);
@@ -1253,20 +1120,14 @@ export default function ModerationPage() {
                         key={String(it?.id)}
                         type="button"
                         onClick={() => setSelectedUploadId(it?.id ?? null)}
-                        className="w-full text-left rounded-[22px] border-4 p-4 transition hover:brightness-95"
-                        style={{
-                          boxShadow: '6px 6px 0 #000',
-                          background: isActive ? 'rgba(255, 216, 3, 0.18)' : 'var(--background)',
-                          borderColor: 'var(--panel-border)',
-                          color: 'var(--foreground)',
-                        }}
+                        className={`w-full text-left card p-4 transition hover:brightness-95 ${isActive ? 'bg-[rgba(255,216,3,0.18)]' : ''}`}
                       >
                         <div className="flex flex-col gap-3 md:flex-row md:items-start">
                           <div className="w-full md:w-40 shrink-0">
                             {it?.url ? (
-                              <img src={it.url} alt={`upload-${it.id}`} className="h-36 w-full rounded-xl border-4 object-cover" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                              <img src={it.url} alt={`upload-${it.id}`} className="h-36 w-full border-4 border-[var(--border)] object-cover" loading="lazy" decoding="async" />
                             ) : (
-                              <div className="grid h-36 place-items-center rounded-xl border-4 text-sm font-semibold opacity-70" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>Preview belum tersedia</div>
+                              <div className="card grid h-36 place-items-center text-sm font-semibold opacity-70">Preview belum tersedia</div>
                             )}
                           </div>
 
@@ -1284,9 +1145,9 @@ export default function ModerationPage() {
                             </div>
 
                             <div className="grid gap-2 text-xs font-semibold md:grid-cols-2 xl:grid-cols-3">
-                              <div className="rounded-xl border-4 px-3 py-2" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>User ID: {it?.user_id ?? '-'}</div>
-                              <div className="rounded-xl border-4 px-3 py-2" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>Ukuran: {formatBytes(it?.size_bytes)}</div>
-                              <div className="rounded-xl border-4 px-3 py-2" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>Format: {it?.mimetype || '-'}</div>
+                              <div className="card px-3 py-2">User ID: {it?.user_id ?? '-'}</div>
+                              <div className="card px-3 py-2">Ukuran: {formatBytes(it?.size_bytes)}</div>
+                              <div className="card px-3 py-2">Format: {it?.mimetype || '-'}</div>
                             </div>
 
                             <div className="flex flex-wrap gap-2">
@@ -1311,13 +1172,7 @@ export default function ModerationPage() {
                     type="button"
                     disabled={loadingList || page <= 1}
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60"
-                    style={{
-                      boxShadow: '4px 4px 0 #000',
-                      background: 'var(--panel-bg)',
-                      borderColor: 'var(--panel-border)',
-                      color: 'var(--foreground)',
-                    }}
+                    className="btn btn--secondary text-sm disabled:opacity-60"
                   >
                     Prev
                   </button>
@@ -1328,20 +1183,14 @@ export default function ModerationPage() {
                     type="button"
                     disabled={loadingList || (typeof totalPages === 'number' ? page >= totalPages : items.length < limit)}
                     onClick={() => setPage((p) => p + 1)}
-                    className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60"
-                    style={{
-                      boxShadow: '4px 4px 0 #000',
-                      background: 'var(--panel-bg)',
-                      borderColor: 'var(--panel-border)',
-                      color: 'var(--foreground)',
-                    }}
+                    className="btn btn--secondary text-sm disabled:opacity-60"
                   >
                     Next
                   </button>
                 </div>
               </div>
 
-              <div className="rounded-[24px] border-4 p-4 xl:sticky xl:top-4" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <div className="card p-4 xl:sticky xl:top-4">
                 {selectedUploadLoading ? (
                   <div className="text-sm font-semibold">Memuat detail gambar...</div>
                 ) : !selectedUpload ? (
@@ -1357,13 +1206,13 @@ export default function ModerationPage() {
                     </div>
 
                     {selectedUpload?.url ? (
-                      <img src={selectedUpload.url} alt={`selected-${selectedUpload.id}`} className="w-full rounded-[20px] border-4 object-cover max-h-[340px]" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                      <img src={selectedUpload.url} alt={`selected-${selectedUpload.id}`} className="w-full border-4 border-[var(--border)] object-cover max-h-[340px]" loading="lazy" decoding="async" />
                     ) : (
-                      <div className="grid h-52 place-items-center rounded-[20px] border-4 text-sm font-semibold opacity-70" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>Preview belum tersedia</div>
+                      <div className="card grid h-52 place-items-center text-sm font-semibold opacity-70">Preview belum tersedia</div>
                     )}
 
                     <div className="grid gap-2 sm:grid-cols-2">
-                      <div className="rounded-xl border-4 p-3" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
+                      <div className="card p-3">
                         <div className="text-[11px] font-black uppercase tracking-wide opacity-70">Status item</div>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {(() => {
@@ -1376,7 +1225,7 @@ export default function ModerationPage() {
                           })() : <Badge>Belum diputuskan</Badge>}
                         </div>
                       </div>
-                      <div className="rounded-xl border-4 p-3" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
+                      <div className="card p-3">
                         <div className="text-[11px] font-black uppercase tracking-wide opacity-70">Status akun</div>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {selectedUpload?.user?.account_status ? (() => {
@@ -1387,7 +1236,7 @@ export default function ModerationPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-[20px] border-4 p-4 space-y-3" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
+                    <div className="card p-4 space-y-3">
                       <div className="font-black text-sm">Ringkasan upload</div>
                       <div className="grid gap-2 text-xs font-semibold">
                         <div>User: {selectedUpload?.user?.username || `#${selectedUpload?.user_id}`}</div>
@@ -1400,7 +1249,7 @@ export default function ModerationPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-[20px] border-4 p-4 space-y-3" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
+                    <div className="card p-4 space-y-3">
                       <div className="font-black text-sm">Analisis visual</div>
                       {selectedSafeSearchEntries.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
@@ -1414,7 +1263,7 @@ export default function ModerationPage() {
                       )}
                     </div>
 
-                    <form onSubmit={onSubmitQuarantineReview} className="rounded-[20px] border-4 p-4 space-y-3" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
+                    <form onSubmit={onSubmitQuarantineReview} className="card p-4 space-y-3">
                       <div className="font-black text-sm">Simpan hasil pemeriksaan</div>
                       <div className="grid gap-3 sm:grid-cols-2">
                         <Select value={reviewVerdict} onChange={setReviewVerdict}>
@@ -1424,8 +1273,7 @@ export default function ModerationPage() {
                         <button
                           type="submit"
                           disabled={quarantineActionLoading === `review:${selectedUpload.id}`}
-                          className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2"
-                          style={{ boxShadow: '4px 4px 0 #000', background: reviewVerdict === 'APPROVED' ? '#DCFCE7' : '#FECACA', borderColor: 'var(--panel-border)', color: reviewVerdict === 'APPROVED' ? '#166534' : '#991B1B' }}
+                          className={`btn ${reviewVerdict === 'APPROVED' ? 'btn--primary' : 'btn--danger'} text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2`}
                         >
                           {reviewVerdict === 'APPROVED' ? <CheckCircle2 className="size-4" /> : <XCircle className="size-4" />}
                           {quarantineActionLoading === `review:${selectedUpload.id}` ? 'Menyimpan...' : 'Simpan keputusan'}
@@ -1436,20 +1284,18 @@ export default function ModerationPage() {
                         onChange={(e) => setReviewNotes(e.target.value)}
                         rows={3}
                         placeholder="Tambahkan catatan singkat bila diperlukan"
-                        className="w-full border-4 rounded-xl px-3 py-2 text-sm font-semibold"
-                        style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                        className="input w-full resize-none text-sm"
                       />
                     </form>
 
-                    <div className="rounded-[20px] border-4 p-4 space-y-3" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
+                    <div className="card p-4 space-y-3">
                       <div className="font-black text-sm">Tindakan lanjutan</div>
 
                       <button
                         type="button"
                         disabled={quarantineActionLoading === `delete:${selectedUpload.id}`}
                         onClick={onDeleteQuarantineUpload}
-                        className="w-full px-4 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2"
-                        style={{ boxShadow: '4px 4px 0 #000', background: '#FECACA', borderColor: 'var(--panel-border)', color: '#991B1B' }}
+                        className="btn btn--danger w-full text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2"
                       >
                         <Trash2 className="size-4" />
                         {quarantineActionLoading === `delete:${selectedUpload.id}` ? 'Menghapus...' : 'Hapus file dari antrian'}
@@ -1464,8 +1310,7 @@ export default function ModerationPage() {
                           type="button"
                           disabled={quarantineActionLoading === `suspend:${selectedUpload.id}`}
                           onClick={onSuspendUser}
-                          className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2"
-                          style={{ boxShadow: '4px 4px 0 #000', background: '#FDE68A', borderColor: 'var(--panel-border)', color: '#78350F' }}
+                          className="btn btn--secondary text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2"
                         >
                           <Clock3 className="size-4" />
                           {quarantineActionLoading === `suspend:${selectedUpload.id}` ? 'Memproses...' : 'Tangguhkan akun'}
@@ -1487,8 +1332,7 @@ export default function ModerationPage() {
                           type="button"
                           disabled={quarantineActionLoading === `ban:${selectedUpload.id}`}
                           onClick={onBanUser}
-                          className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2"
-                          style={{ boxShadow: '4px 4px 0 #000', background: '#FECACA', borderColor: 'var(--panel-border)', color: '#991B1B' }}
+                          className="btn btn--danger text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2"
                         >
                           <Ban className="size-4" />
                           {quarantineActionLoading === `ban:${selectedUpload.id}` ? 'Memproses...' : 'Blokir akun'}
@@ -1499,8 +1343,7 @@ export default function ModerationPage() {
                         type="button"
                         disabled={quarantineActionLoading === `clear:${selectedUpload.id}` || String(selectedUpload?.user?.account_status || '').toUpperCase() !== 'WARNED'}
                         onClick={onClearWarnedUser}
-                        className="w-full px-4 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2"
-                        style={{ boxShadow: '4px 4px 0 #000', background: '#DBEAFE', borderColor: 'var(--panel-border)', color: '#1D4ED8' }}
+                        className="btn btn--secondary w-full text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2"
                       >
                         <ShieldCheck className="size-4" />
                         {quarantineActionLoading === `clear:${selectedUpload.id}` ? 'Memulihkan...' : 'Pulihkan status peringatan'}

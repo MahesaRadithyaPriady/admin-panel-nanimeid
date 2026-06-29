@@ -85,7 +85,7 @@ export default function StatusKontenPage() {
   if (!allowed.includes(user.role)) {
     return (
       <div className="text-sm font-semibold">
-        Halaman ini untuk role <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">superadmin</span> atau <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">uploader</span>.
+        Halaman ini untuk role <span className="px-2 py-1 border-2 border-[var(--border)] rounded bg-[#F2F2F2]">superadmin</span> atau <span className="px-2 py-1 border-2 border-[var(--border)] rounded bg-[#F2F2F2]">uploader</span>.
       </div>
     );
   }
@@ -94,9 +94,9 @@ export default function StatusKontenPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-xl font-extrabold flex items-center gap-2"><BadgeCheck className="size-5" /> Status Konten</h2>
-        <button onClick={refresh} disabled={loadingData} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
+        <button onClick={refresh} disabled={loadingData} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
           {loadingData ? 'Memuat...' : (<><RefreshCw className="inline size-4" /> Refresh</>)}
         </button>
       </div>
@@ -106,14 +106,14 @@ export default function StatusKontenPage() {
         <button
           onClick={() => setFilter('approved')}
           className={`px-3 py-1 border-4 rounded-lg text-sm font-extrabold`}
-          style={{ boxShadow: '3px 3px 0 #000', background: filter==='approved' ? 'var(--accent-add)' : 'var(--panel-bg)', color: filter==='approved' ? 'var(--accent-add-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+          style={{ boxShadow: 'var(--shadow-sm)', background: filter==='approved' ? 'var(--accent-add)' : 'var(--panel-bg)', color: filter==='approved' ? 'var(--accent-add-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}
         >
           <span className="inline-flex items-center gap-1"><CheckCircle2 className="size-4" /> Approved</span>
         </button>
         <button
           onClick={() => setFilter('rejected')}
           className={`px-3 py-1 border-4 rounded-lg text-sm font-extrabold`}
-          style={{ boxShadow: '3px 3px 0 #000', background: filter==='rejected' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: filter==='rejected' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+          style={{ boxShadow: 'var(--shadow-sm)', background: filter==='rejected' ? 'var(--accent-edit)' : 'var(--panel-bg)', color: filter==='rejected' ? 'var(--accent-edit-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}
         >
           <span className="inline-flex items-center gap-1"><XCircle className="size-4" /> Rejected</span>
         </button>
@@ -121,7 +121,7 @@ export default function StatusKontenPage() {
 
       {/* Grouped table: Anime rows expandable to episodes */}
       <div className="overflow-auto">
-        <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+        <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
           <thead style={{ background: 'var(--panel-bg)' }}>
             <tr>
               <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Anime</th>
@@ -150,7 +150,7 @@ export default function StatusKontenPage() {
                       <td colSpan={2} className="px-0 py-0 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
                         <div className="p-3" style={{ background: 'var(--panel-bg)' }}>
                           <div className="overflow-auto">
-                            <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                            <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: 'var(--shadow-md)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                               <thead style={{ background: 'var(--panel-bg)' }}>
                                 <tr>
                                   <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Waktu</th>

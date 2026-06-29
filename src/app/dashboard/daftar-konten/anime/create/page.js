@@ -3,23 +3,18 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, Save, Upload, Image as ImageIcon, X, Plus, Film, CheckCircle2, Loader2, Trash2, Copy, ChevronDown, ChevronUp, AlertCircle, Tag as TagIcon, Clock, Calendar, Play } from 'lucide-react';
+import { ArrowLeft, Save, Upload, Image as ImageIcon, X, Plus, Film, CheckCircle2, Loader2, Trash2, Copy, ChevronDown, ChevronUp, AlertCircle, Tag as TagIcon, Clock, Calendar, Play, Link, Star, Layers, BookOpen, Hash, Building2, LayoutList } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { createAnime, batchCreateEpisodes } from '@/lib/api';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
+const pageVariants = {
+  hidden:  { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.15, ease: 'easeOut' } },
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const CONTENT_TYPES = ['ANIME', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'];
+const CONTENT_TYPES = ['ANIME', 'DONGHUA', 'MOVIE'];
 const STATUS_OPTIONS = ['ONGOING', 'COMPLETED', 'HIATUS', 'UPCOMING'];
 
 const QUALITIES = [
@@ -47,8 +42,19 @@ const createEmptyEpisode = (startNumber) => ({
     '720p': '',
     '1080p': '',
   },
+  customQualities: [],
   status: 'pending',
 });
+
+const getEpisodeQualities = (ep) => {
+  const all = { ...ep.qualities };
+  ep.customQualities?.forEach((cq) => {
+    if (cq.name?.trim()) {
+      all[cq.name.trim()] = cq.url || '';
+    }
+  });
+  return all;
+};
 
 export default function CreateAnimePage() {
   const router = useRouter();
@@ -71,6 +77,7 @@ export default function CreateAnimePage() {
     cover_mode: 'upload',
     cover_url: '',
     aliases: '',
+    fakta_menarik: '',
   });
 
   // Schedule state for ONGOING anime
@@ -115,6 +122,7 @@ export default function CreateAnimePage() {
         tags_anime: form.tags_anime,
         label_anime: form.label_anime,
         tanggal_rilis_anime: form.tanggal_rilis_anime || undefined,
+        fakta_menarik: form.fakta_menarik || undefined,
       };
 
       // Add aliases if filled
@@ -159,7 +167,8 @@ export default function CreateAnimePage() {
       // Step 2: Create Episodes if any filled episodes exist
       const filledEpisodes = episodes.filter(ep => {
         const hasJudul = ep.judul_episode?.trim?.() || false;
-        const hasQuality = Object.values(ep.qualities || {}).some(q => q?.trim?.() !== '');
+        const allQualities = getEpisodeQualities(ep);
+        const hasQuality = Object.values(allQualities).some(q => q?.trim?.() !== '');
         return hasJudul && hasQuality;
       });
 
@@ -174,13 +183,13 @@ export default function CreateAnimePage() {
           const epData = {
             nomor_episode: Number(ep.nomor_episode),
             judul_episode: ep.judul_episode,
-            durasi_episode: Number(ep.durasi_episode) || 24,
+            durasi_episode: (Number(ep.durasi_episode) || 24) * 60,
             deskripsi_episode: ep.deskripsi_episode || null,
             intro_start_seconds: ep.intro_start_seconds ?? 0,
             intro_duration_seconds: ep.intro_duration_seconds ?? 90,
             outro_start_seconds: ep.outro_start_seconds ?? null,
             outro_duration_seconds: ep.outro_duration_seconds ?? 90,
-            qualities: Object.entries(ep.qualities)
+            qualities: Object.entries(getEpisodeQualities(ep))
               .filter(([_, url]) => url.trim() !== '')
               .map(([quality, url]) => ({
                 nama_quality: quality,
@@ -258,6 +267,28 @@ export default function CreateAnimePage() {
     }));
   };
 
+  const addCustomQuality = (tempId) => {
+    setEpisodes(episodes.map(ep => {
+      if (ep.id !== tempId) return ep;
+      return { ...ep, customQualities: [...ep.customQualities, { name: '', url: '' }] };
+    }));
+  };
+
+  const updateCustomQuality = (tempId, index, field, value) => {
+    setEpisodes(episodes.map(ep => {
+      if (ep.id !== tempId) return ep;
+      const updated = ep.customQualities.map((cq, i) => i === index ? { ...cq, [field]: value } : cq);
+      return { ...ep, customQualities: updated };
+    }));
+  };
+
+  const removeCustomQuality = (tempId, index) => {
+    setEpisodes(episodes.map(ep => {
+      if (ep.id !== tempId) return ep;
+      return { ...ep, customQualities: ep.customQualities.filter((_, i) => i !== index) };
+    }));
+  };
+
   const copyFromPrevious = (index) => {
     if (index === 0) return;
     const prev = episodes[index - 1];
@@ -275,6 +306,7 @@ export default function CreateAnimePage() {
         outro_duration_seconds: prev.outro_duration_seconds,
         thumbnailUrl: prev.thumbnailUrl || '',
         qualities: { ...prev.qualities },
+        customQualities: prev.customQualities ? [...prev.customQualities] : [],
         deskripsi_episode: prev.deskripsi_episode || '',
       };
     }));
@@ -287,7 +319,8 @@ export default function CreateAnimePage() {
       if (!ep.judul_episode.trim()) {
         errors.push(`Episode ${ep.nomor_episode}: Judul wajib diisi`);
       }
-      const hasAnyQuality = Object.values(ep.qualities).some(q => q.trim() !== '');
+      const allQualities = getEpisodeQualities(ep);
+      const hasAnyQuality = Object.values(allQualities).some(q => q.trim() !== '');
       if (!hasAnyQuality) {
         errors.push(`Episode ${ep.nomor_episode}: Minimal 1 link video wajib diisi`);
       }
@@ -316,13 +349,13 @@ export default function CreateAnimePage() {
         const epData = {
           nomor_episode: Number(ep.nomor_episode),
           judul_episode: ep.judul_episode,
-          durasi_episode: Number(ep.durasi_episode) || 24,
+          durasi_episode: (Number(ep.durasi_episode) || 24) * 60,
           deskripsi_episode: ep.deskripsi_episode || null,
           intro_start_seconds: ep.intro_start_seconds ?? 0,
           intro_duration_seconds: ep.intro_duration_seconds ?? 90,
           outro_start_seconds: ep.outro_start_seconds ?? null,
           outro_duration_seconds: ep.outro_duration_seconds ?? 90,
-          qualities: Object.entries(ep.qualities)
+          qualities: Object.entries(getEpisodeQualities(ep))
             .filter(([_, url]) => url.trim() !== '')
             .map(([quality, url]) => ({
               nama_quality: quality,
@@ -381,22 +414,22 @@ export default function CreateAnimePage() {
 
   const filledCount = episodes.filter(ep => {
     const hasJudul = ep.judul_episode?.trim?.() || false;
-    const qualitiesObj = ep.qualities || {};
-    const hasQuality = Object.values(qualitiesObj).some(q => q?.trim?.() !== '');
+    const allQualities = getEpisodeQualities(ep);
+    const hasQuality = Object.values(allQualities).some(q => q?.trim?.() !== '');
     return hasJudul && hasQuality;
   }).length;
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6 min-w-0 max-w-4xl mx-auto">
+    <motion.div variants={pageVariants} initial="hidden" animate="visible" className="space-y-6 min-w-0 max-w-4xl mx-auto">
       {loading || !user ? null : (
         // Anime Creation Form with optional Episode section
         <>
           {/* Header */}
-          <motion.div variants={itemVariants} className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/dashboard/daftar-konten/anime')}
               className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2 font-bold transition-all hover:translate-y-[-2px]"
-              style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             >
               <ArrowLeft className="w-4 h-4" /> Kembali
             </button>
@@ -406,12 +439,12 @@ export default function CreateAnimePage() {
                 {addEpisodesAfter ? `Anime + ${filledCount} episode akan dibuat` : 'Isi detail anime di bawah ini'}
               </p>
             </div>
-          </motion.div>
+          </div>
 
           {/* Form */}
-          <motion.form variants={itemVariants} onSubmit={onSubmit} className="space-y-6">
+          <form onSubmit={onSubmit} className="space-y-6">
             {/* Cover Section */}
-            <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+            <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
               <h2 className="text-lg font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
                 <ImageIcon className="w-5 h-5" /> Cover Anime
               </h2>
@@ -421,7 +454,7 @@ export default function CreateAnimePage() {
                 <div className="w-full sm:w-48">
                   <div className="aspect-[3/4] rounded-xl border-2 overflow-hidden flex items-center justify-center" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
                     {coverPreview ? (
-                      <img src={coverPreview} alt="Preview" className="w-full h-full object-cover" />
+                      <img src={coverPreview} alt="Preview" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                       <div className="text-center p-4">
                         <ImageIcon className="w-10 h-10 mx-auto text-[var(--foreground)]/30" />
@@ -457,25 +490,26 @@ export default function CreateAnimePage() {
                       type="file"
                       accept="image/*"
                       onChange={onCoverChange}
-                      className="w-full rounded-lg border-2 px-3 py-2.5 text-sm"
-                      style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                      className="input"
                     />
                   ) : (
-                    <input
-                      type="url"
-                      placeholder="https://example.com/cover.jpg"
-                      value={form.cover_url}
-                      onChange={(e) => updateField('cover_url', e.target.value)}
-                      className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                      style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                    />
+                    <div className="input-icon">
+                      <Link className="input-icon__icon" />
+                      <input
+                        type="url"
+                        placeholder="https://example.com/cover.jpg"
+                        value={form.cover_url}
+                        onChange={(e) => updateField('cover_url', e.target.value)}
+                        className="input"
+                      />
+                    </div>
                   )}
                 </div>
               </div>
             </div>
 
             {/* Basic Info */}
-            <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+            <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
               <h2 className="text-lg font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
                 <Film className="w-5 h-5" /> Informasi Dasar
               </h2>
@@ -483,61 +517,47 @@ export default function CreateAnimePage() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Judul Anime *</label>
-                  <input
-                    required
-                    type="text"
-                    value={form.nama_anime}
-                    onChange={(e) => updateField('nama_anime', e.target.value)}
-                    placeholder="Masukkan judul anime"
-                    className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                    style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                  />
+                  <div className="input-icon">
+                    <Film className="input-icon__icon" />
+                    <input required type="text" value={form.nama_anime} onChange={(e) => updateField('nama_anime', e.target.value)} placeholder="Masukkan judul anime" className="input" />
+                  </div>
                 </div>
 
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Sinopsis</label>
-                  <textarea
-                    rows={4}
-                    value={form.sinopsis_anime}
-                    onChange={(e) => updateField('sinopsis_anime', e.target.value)}
-                    placeholder="Ceritakan tentang anime ini..."
-                    className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold resize-none"
-                    style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                  />
+                  <div className="input-icon">
+                    <BookOpen className="input-icon__icon input-icon__icon--top" />
+                    <textarea rows={4} value={form.sinopsis_anime} onChange={(e) => updateField('sinopsis_anime', e.target.value)} placeholder="Ceritakan tentang anime ini..." className="input resize-none" />
+                  </div>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Fakta Menarik</label>
+                  <div className="input-icon">
+                    <Star className="input-icon__icon input-icon__icon--top" />
+                    <textarea rows={3} value={form.fakta_menarik} onChange={(e) => updateField('fakta_menarik', e.target.value)} placeholder="Tuliskan fakta unik atau menarik tentang anime ini..." className="input resize-none" />
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Genre</label>
-                  <input
-                    type="text"
-                    value={form.genre_anime}
-                    onChange={(e) => updateField('genre_anime', e.target.value)}
-                    placeholder="Action, Comedy, Romance"
-                    className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                    style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                  />
+                  <div className="input-icon">
+                    <Layers className="input-icon__icon" />
+                    <input type="text" value={form.genre_anime} onChange={(e) => updateField('genre_anime', e.target.value)} placeholder="Action, Comedy, Romance" className="input" />
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Studio</label>
-                  <input
-                    type="text"
-                    value={form.studio_anime}
-                    onChange={(e) => updateField('studio_anime', e.target.value)}
-                    placeholder="Nama studio"
-                    className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                    style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                  />
+                  <div className="input-icon">
+                    <Building2 className="input-icon__icon" />
+                    <input type="text" value={form.studio_anime} onChange={(e) => updateField('studio_anime', e.target.value)} placeholder="Nama studio" className="input" />
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Tipe Konten</label>
-                  <select
-                    value={form.content_type}
-                    onChange={(e) => updateField('content_type', e.target.value)}
-                    className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                    style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                  >
+                  <select value={form.content_type} onChange={(e) => updateField('content_type', e.target.value)} className="select">
                     {CONTENT_TYPES.map((t) => (
                       <option key={t} value={t}>{t}</option>
                     ))}
@@ -546,12 +566,7 @@ export default function CreateAnimePage() {
 
                 <div>
                   <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Status</label>
-                  <select
-                    value={form.status_anime}
-                    onChange={(e) => updateField('status_anime', e.target.value)}
-                    className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                    style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                  >
+                  <select value={form.status_anime} onChange={(e) => updateField('status_anime', e.target.value)} className="select">
                     {STATUS_OPTIONS.map((s) => (
                       <option key={s} value={s}>{s}</option>
                     ))}
@@ -560,52 +575,34 @@ export default function CreateAnimePage() {
 
                 <div>
                   <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Rating (0-10)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="10"
-                    step="0.1"
-                    value={form.rating_anime}
-                    onChange={(e) => updateField('rating_anime', e.target.value)}
-                    placeholder="8.5"
-                    className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                    style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                  />
+                  <div className="input-icon">
+                    <Star className="input-icon__icon" />
+                    <input type="number" min="0" max="10" step="0.1" value={form.rating_anime} onChange={(e) => updateField('rating_anime', e.target.value)} placeholder="8.5" className="input" />
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Tanggal Rilis</label>
-                  <input
-                    type="date"
-                    value={form.tanggal_rilis_anime}
-                    onChange={(e) => updateField('tanggal_rilis_anime', e.target.value)}
-                    className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                    style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                  />
+                  <div className="input-icon">
+                    <Calendar className="input-icon__icon" />
+                    <input type="date" value={form.tanggal_rilis_anime} onChange={(e) => updateField('tanggal_rilis_anime', e.target.value)} className="input" />
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Tags</label>
-                  <input
-                    type="text"
-                    value={form.tags_anime}
-                    onChange={(e) => updateField('tags_anime', e.target.value)}
-                    placeholder="spring-2024, popular"
-                    className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                    style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                  />
+                  <div className="input-icon">
+                    <Hash className="input-icon__icon" />
+                    <input type="text" value={form.tags_anime} onChange={(e) => updateField('tags_anime', e.target.value)} placeholder="spring-2024, popular" className="input" />
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Label</label>
-                  <input
-                    type="text"
-                    value={form.label_anime}
-                    onChange={(e) => updateField('label_anime', e.target.value)}
-                    placeholder="Featured, Trending"
-                    className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                    style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                  />
+                  <div className="input-icon">
+                    <LayoutList className="input-icon__icon" />
+                    <input type="text" value={form.label_anime} onChange={(e) => updateField('label_anime', e.target.value)} placeholder="Featured, Trending" className="input" />
+                  </div>
                 </div>
               </div>
 
@@ -643,7 +640,7 @@ export default function CreateAnimePage() {
             )}
 
             {/* Aliases Field */}
-            <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+            <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
               <h2 className="text-lg font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
                 <TagIcon className="w-5 h-5" /> Alias / Judul Lain
               </h2>
@@ -662,7 +659,7 @@ export default function CreateAnimePage() {
 
             {/* Episode Batch Section - Shows inline when toggle is on */}
             {addEpisodesAfter && (
-              <EpisodeSection 
+              <EpisodeSection
                 episodes={episodes}
                 setEpisodes={setEpisodes}
                 expandedEpisode={expandedEpisode}
@@ -672,6 +669,9 @@ export default function CreateAnimePage() {
                 removeEpisode={removeEpisode}
                 updateEpisode={updateEpisode}
                 copyFromPrevious={copyFromPrevious}
+                addCustomQuality={addCustomQuality}
+                updateCustomQuality={updateCustomQuality}
+                removeCustomQuality={removeCustomQuality}
               />
             )}
 
@@ -681,7 +681,7 @@ export default function CreateAnimePage() {
                 type="button"
                 onClick={() => router.push('/dashboard/daftar-konten/anime')}
                 className="rounded-xl border-2 px-6 py-3 font-bold transition-all hover:translate-y-[-2px]"
-                style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
               >
                 Batal
               </button>
@@ -689,7 +689,7 @@ export default function CreateAnimePage() {
                 type="submit"
                 disabled={saving}
                 className="inline-flex items-center gap-2 rounded-xl border-2 px-6 py-3 font-bold disabled:opacity-60 transition-all hover:translate-y-[-2px]"
-                style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}
+                style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}
               >
                 <Save className={`w-4 h-4 ${saving ? 'animate-pulse' : ''}`} />
                 {saving 
@@ -698,7 +698,7 @@ export default function CreateAnimePage() {
                 }
               </button>
             </div>
-          </motion.form>
+          </form>
         </>
       )}
     </motion.div>
@@ -716,14 +716,17 @@ function EpisodeSection({
   removeEpisode,
   updateEpisode,
   copyFromPrevious,
+  addCustomQuality,
+  updateCustomQuality,
+  removeCustomQuality,
 }) {
   return (
     <>
       {/* Episode Section Header */}
-      <motion.div variants={itemVariants} className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+      <div className="card p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-[var(--foreground)] flex items-center gap-2">
+            <h2 className="section-title flex items-center gap-2">
               <Film className="w-5 h-5" /> Episode Anime
             </h2>
             <p className="text-sm text-[var(--foreground)]/70 mt-1">
@@ -735,32 +738,23 @@ function EpisodeSection({
             type="button"
             onClick={addOneEpisode}
             className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 font-bold transition-all hover:translate-y-[-2px]"
-            style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+            style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
           >
             <Plus className="w-4 h-4" /> Tambah Episode
           </button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Episode List */}
-      <motion.div variants={itemVariants} className="space-y-4">
+      <div className="space-y-4">
         <AnimatePresence mode="popLayout">
           {episodes.map((ep, index) => (
-            <motion.div
+            <div
               key={ep.id}
-              layout
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95, x: -100 }}
-              className="rounded-2xl border-2 overflow-hidden"
-              style={{ 
-                boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', 
-                borderColor: 'var(--panel-border)',
-                background: 'var(--panel-bg)',
-              }}
+              className="card overflow-hidden"
             >
               {/* Episode Header */}
-              <div className="flex items-center gap-4 p-4">
+              <div className="flex items-center gap-4 p-4 flex-wrap sm:flex-nowrap">
                 {/* Episode Number (Click to expand) */}
                 <button
                   type="button"
@@ -784,16 +778,16 @@ function EpisodeSection({
                     onClick={(e) => e.stopPropagation()}
                     className="w-full text-lg font-bold bg-transparent border-none focus:outline-none focus:ring-0 placeholder:text-[var(--foreground)]/30 text-[var(--foreground)]"
                   />
-                  <div className="flex items-center gap-2 text-xs text-[var(--foreground)]/50">
+                  <div className="flex items-center gap-2 text-xs text-[var(--foreground)]/50 flex-wrap">
                     <span>Ep #{ep.nomor_episode}</span>
                     <span>•</span>
-                    <span>{Object.values(ep.qualities).filter(q => q.trim()).length} quality</span>
+                    <span>{Object.values(getEpisodeQualities(ep)).filter(q => q.trim()).length} quality</span>
                     {ep.durasi_episode && <span>• {ep.durasi_episode} menit</span>}
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {index > 0 && (
                     <button
                       type="button"
@@ -859,12 +853,13 @@ function EpisodeSection({
                           <label className="block text-xs font-bold text-[var(--foreground)]/60 mb-1.5">Thumbnail URL (opsional)</label>
                           <div className="flex items-center gap-3">
                             {ep.thumbnailUrl && (
-                              <img 
-                                src={ep.thumbnailUrl} 
+                              <img src={ep.thumbnailUrl} 
                                 alt="Preview"
                                 className="w-16 h-12 object-cover rounded-lg border-2"
                                 style={{ borderColor: 'var(--panel-border)' }}
-                                onError={(e) => e.target.style.display = 'none'}
+                                loading="lazy"
+                                decoding="async"
+                                onError={(e) => { e.target.style.display = 'none'; }}
                               />
                             )}
                             <div className="flex-1">
@@ -889,9 +884,9 @@ function EpisodeSection({
                         <div className="flex items-center justify-between mb-2">
                           <label className="block text-xs font-bold text-[var(--foreground)]/60">Link Video (isi minimal 1)</label>
                           {/* Preview Button - Opens popup with video player */}
-                          {Object.values(ep.qualities).some(url => url?.trim() && isValidVideoUrl(url)) && (
+                          {Object.values(getEpisodeQualities(ep)).some(url => url?.trim() && isValidVideoUrl(url)) && (
                             <EpisodeVideoPreview
-                              qualities={ep.qualities}
+                              qualities={getEpisodeQualities(ep)}
                               episodeId={ep.id}
                               updateEpisode={updateEpisode}
                               introStart={ep.intro_start_seconds}
@@ -921,6 +916,48 @@ function EpisodeSection({
                               />
                             </div>
                           ))}
+                          {ep.customQualities.map((cq, idx) => (
+                            <div key={idx} className="relative">
+                              <input
+                                type="text"
+                                placeholder="Resolusi"
+                                value={cq.name}
+                                onChange={(e) => updateCustomQuality(ep.id, idx, 'name', e.target.value)}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 w-16 text-xs font-bold px-2 py-0.5 rounded text-center z-10"
+                                style={{
+                                  background: cq.url ? 'rgba(34,197,94,0.2)' : 'var(--background)',
+                                  color: cq.url ? '#22c55e' : 'var(--foreground)',
+                                  border: `1px solid ${cq.url ? '#22c55e' : 'var(--panel-border)'}`,
+                                }}
+                              />
+                              <input
+                                type="url"
+                                placeholder="Link video custom"
+                                value={cq.url}
+                                onChange={(e) => updateCustomQuality(ep.id, idx, 'url', e.target.value)}
+                                className="w-full rounded-lg border-2 pl-20 pr-10 py-2.5 text-sm font-semibold"
+                                style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeCustomQuality(ep.id, idx)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:opacity-70"
+                                title="Hapus resolusi"
+                              >
+                                <X className="w-4 h-4" style={{ color: 'var(--foreground)' }} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3">
+                          <button
+                            type="button"
+                            onClick={() => addCustomQuality(ep.id)}
+                            className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-lg border-2"
+                            style={{ background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                          >
+                            <Plus className="w-3 h-3" /> Tambah Resolusi
+                          </button>
                         </div>
                       </div>
 
@@ -998,28 +1035,24 @@ function EpisodeSection({
                   </motion.div>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </div>
           ))}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
       {/* Tips Card */}
-      <motion.div
-        variants={itemVariants}
-        className="rounded-2xl border-2 p-5"
-        style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'rgba(59,130,246,0.1)', borderColor: 'var(--panel-border)' }}
-      >
+      <div className="card p-5">
         <h3 className="font-bold text-[var(--foreground)] mb-2 flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-blue-500" /> Tips Mengisi Episode
         </h3>
         <ul className="text-sm text-[var(--foreground)]/80 space-y-1 list-disc list-inside">
           <li>Klik episode untuk expand dan isi detail</li>
           <li>Gunakan icon <Copy className="w-3 h-3 inline" /> untuk salin data dari episode sebelumnya (termasuk intro/outro)</li>
-          <li>Minimal 1 link video (360p/480p/720p/1080p) wajib diisi per episode</li>
+          <li>Minimal 1 link video (360p/480p/720p/1080p atau resolusi custom) wajib diisi per episode</li>
           <li>Intro/Outro default: Intro 0s-90s, Outro auto (dihitung dari durasi)</li>
           <li>Semua episode akan diproses sekaligus saat klik Simpan Anime</li>
         </ul>
-      </motion.div>
+      </div>
     </>
   );
 }
@@ -1042,7 +1075,7 @@ function ScheduleSection({ schedules, setSchedules }) {
   };
 
   return (
-    <motion.div variants={itemVariants} className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+    <div className="card p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-[var(--foreground)] flex items-center gap-2">
           <Calendar className="w-5 h-5" /> Jadwal Rilis <span className="text-red-500">*</span>
@@ -1054,11 +1087,11 @@ function ScheduleSection({ schedules, setSchedules }) {
 
       <div className="space-y-3">
         {schedules.map((schedule, index) => (
-          <div key={index} className="flex items-center gap-3 p-3 rounded-xl border-2" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+          <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-xl border-2" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
             <select
               value={schedule.hari}
               onChange={(e) => updateSchedule(index, 'hari', e.target.value)}
-              className="rounded-lg border-2 px-3 py-2 text-sm font-semibold"
+              className="w-full sm:w-auto rounded-lg border-2 px-3 py-2 text-sm font-semibold"
               style={{ background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
             >
               {HARI_OPTIONS.map(h => (
@@ -1066,13 +1099,13 @@ function ScheduleSection({ schedules, setSchedules }) {
               ))}
             </select>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <Clock className="w-4 h-4 text-[var(--foreground)]/50" />
               <input
                 type="time"
                 value={schedule.jam}
                 onChange={(e) => updateSchedule(index, 'jam', e.target.value)}
-                className="rounded-lg border-2 px-3 py-2 text-sm font-semibold"
+                className="flex-1 sm:flex-none rounded-lg border-2 px-3 py-2 text-sm font-semibold"
                 style={{ background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
               />
             </div>
@@ -1080,7 +1113,7 @@ function ScheduleSection({ schedules, setSchedules }) {
             <button
               type="button"
               onClick={() => updateSchedule(index, 'is_active', !schedule.is_active)}
-              className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${schedule.is_active ? 'bg-green-500/20 text-green-600' : 'bg-gray-500/20 text-gray-600'}`}
+              className={`w-full sm:w-auto px-3 py-2 rounded-lg text-sm font-bold transition-colors ${schedule.is_active ? 'bg-green-500/20 text-green-600' : 'bg-gray-500/20 text-gray-600'}`}
             >
               {schedule.is_active ? 'Aktif' : 'Nonaktif'}
             </button>
@@ -1102,11 +1135,11 @@ function ScheduleSection({ schedules, setSchedules }) {
         type="button"
         onClick={addSchedule}
         className="mt-3 inline-flex items-center gap-2 rounded-lg border-2 px-4 py-2 text-sm font-bold transition-all hover:translate-y-[-2px]"
-        style={{ boxShadow: '2px 2px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+        style={{ boxShadow: '2px 2px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
       >
         <Plus className="w-4 h-4" /> Tambah Jadwal
       </button>
-    </motion.div>
+    </div>
   );
 }
 

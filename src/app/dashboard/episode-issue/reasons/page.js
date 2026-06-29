@@ -156,11 +156,11 @@ export default function EpisodeIssueReasonsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-xl font-extrabold flex items-center gap-2"><ListChecks className="size-5" /> Episode Issue - Reasons</h2>
       </div>
 
-      <div className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+      <div className="p-3 border-4 rounded-lg" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
         <div className="flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-sm font-semibold">
             <input type="checkbox" checked={includeInactive} onChange={(e) => setIncludeInactive(e.target.checked)} />
@@ -171,14 +171,14 @@ export default function EpisodeIssueReasonsPage() {
             onClick={() => loadList()}
             disabled={loadingList}
             className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
+            style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
           >
             {loadingList ? 'Memuat...' : 'Refresh'}
           </button>
         </div>
       </div>
 
-      <div className="p-3 border-4 rounded-lg space-y-3" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+      <div className="p-3 border-4 rounded-lg space-y-3" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
         <div className="text-sm font-extrabold">{mode === 'add' ? 'Tambah Reason' : `Edit Reason #${form.id}`}</div>
         <form onSubmit={onSubmit} className="grid gap-3">
           <div className="grid sm:grid-cols-2 gap-3">
@@ -188,14 +188,14 @@ export default function EpisodeIssueReasonsPage() {
               disabled={mode !== 'add'}
               placeholder="CODE (unik, contoh: NO_AUDIO)"
               className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             />
             <input
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               placeholder="Title"
               className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             />
           </div>
           <textarea
@@ -204,7 +204,7 @@ export default function EpisodeIssueReasonsPage() {
             placeholder="Description (opsional)"
             rows={2}
             className="px-3 py-2 border-4 rounded-lg font-semibold"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           />
           <div className="grid sm:grid-cols-[180px_1fr] gap-3 items-center">
             <input
@@ -213,7 +213,7 @@ export default function EpisodeIssueReasonsPage() {
               onChange={(e) => setForm((f) => ({ ...f, sort_order: e.target.value }))}
               placeholder="sort_order"
               className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             />
             <label className="flex items-center gap-2 text-sm font-semibold">
               <input type="checkbox" checked={!!form.is_active} onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))} />
@@ -221,12 +221,12 @@ export default function EpisodeIssueReasonsPage() {
             </label>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               type="submit"
               disabled={submitting}
               className="flex py-2 items-center w-32 justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-              style={{ boxShadow: '4px 4px 0 #000', background: mode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', color: mode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}
+              style={{ boxShadow: 'var(--shadow-md)', background: mode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', color: mode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}
             >
               {submitting ? (mode === 'add' ? 'Menambah...' : 'Menyimpan...') : (mode === 'add' ? (<><Plus className="size-4" /> Tambah</>) : (<><Pencil className="size-4" /> Simpan</>))}
             </button>
@@ -235,7 +235,7 @@ export default function EpisodeIssueReasonsPage() {
                 type="button"
                 onClick={resetForm}
                 className="px-3 py-2 border-4 rounded-lg font-extrabold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               >
                 Batal Edit
               </button>
@@ -245,7 +245,7 @@ export default function EpisodeIssueReasonsPage() {
       </div>
 
       <div className="overflow-auto">
-        <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+        <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
           <thead style={{ background: 'var(--panel-bg)' }}>
             <tr>
               <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>ID</th>
@@ -265,12 +265,12 @@ export default function EpisodeIssueReasonsPage() {
                 <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.is_active ? 'Ya' : 'Tidak'}</td>
                 <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.sort_order ?? '-'}</td>
                 <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
                       onClick={() => onEdit(it)}
                       className="px-2 py-1 border-4 rounded font-extrabold"
-                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}
+                      style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}
                     >
                       <Pencil className="size-4" />
                     </button>
@@ -278,7 +278,7 @@ export default function EpisodeIssueReasonsPage() {
                       type="button"
                       onClick={() => onRequestDelete(it)}
                       className="px-2 py-1 border-4 rounded font-extrabold"
-                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                      style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
                     >
                       <Trash2 className="size-4" />
                     </button>
@@ -300,16 +300,16 @@ export default function EpisodeIssueReasonsPage() {
       {confirmOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center">
           <div className="absolute inset-0 bg-black/40" onClick={onCancelDelete} />
-          <div className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <div className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6" style={{ boxShadow: 'var(--shadow-xl)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <div className="text-lg font-extrabold mb-1">Hapus Reason?</div>
             <div className="text-sm opacity-80 mb-4 break-words">{confirmTarget?.title} ({confirmTarget?.code})</div>
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-2 flex-wrap">
               <button
                 type="button"
                 disabled={deleting}
                 onClick={onCancelDelete}
                 className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               >
                 Batal
               </button>
@@ -318,7 +318,7 @@ export default function EpisodeIssueReasonsPage() {
                 disabled={deleting}
                 onClick={onConfirmDelete}
                 className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold disabled:opacity-60"
-                style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}
+                style={{ boxShadow: 'var(--shadow-md)', borderColor: 'var(--panel-border)' }}
               >
                 {deleting ? 'Menghapus...' : 'Ya, Hapus'}
               </button>

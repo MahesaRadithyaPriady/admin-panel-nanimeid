@@ -9,14 +9,9 @@ import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { getAnimeDetail, deleteAnime, listEpisodes, createEpisode, deleteEpisode, updateEpisode, checkEpisodeQuality } from '@/lib/api';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0 },
+const pageVariants = {
+  hidden:  { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.15, ease: 'easeOut' } },
 };
 
 // API imported from @/lib/api
@@ -293,14 +288,14 @@ export default function AnimeDetailPage() {
   const statusMeta = STATUS_COLORS[anime.status_anime] || STATUS_COLORS.ONGOING;
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6 min-w-0">
+    <motion.div variants={pageVariants} initial="hidden" animate="visible" className="space-y-6 min-w-0">
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-4">
           <button
             onClick={() => router.push('/dashboard/daftar-konten/anime')}
             className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2 font-bold transition-all hover:translate-y-[-2px]"
-            style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -319,33 +314,33 @@ export default function AnimeDetailPage() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => router.push(`/dashboard/daftar-konten/anime/${id}/batch-upload`)}
             className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 font-bold transition-all hover:translate-y-[-2px]"
-            style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'var(--accent-primary)', color: 'var(--accent-primary-foreground)', borderColor: 'var(--panel-border)' }}
+            style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--accent-primary)', color: 'var(--accent-primary-foreground)', borderColor: 'var(--panel-border)' }}
           >
             <Upload className="w-4 h-4" /> Batch Upload
           </button>
           <button
             onClick={() => router.push(`/dashboard/daftar-konten/anime/${id}/edit`)}
             className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 font-bold transition-all hover:translate-y-[-2px]"
-            style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}
+            style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}
           >
             <Edit className="w-4 h-4" /> Edit
           </button>
           <button
             onClick={onDelete}
             className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 font-bold text-red-500 transition-all hover:translate-y-[-2px]"
-            style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'rgba(239,68,68,0.1)', borderColor: 'var(--panel-border)' }}
+            style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'rgba(239,68,68,0.1)', borderColor: 'var(--panel-border)' }}
           >
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Tabs */}
-      <motion.div variants={itemVariants} className="flex gap-1 rounded-xl border-2 p-1" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
+      <div className="tab-bar">
         {[
           { key: 'overview', label: 'Overview', icon: Info },
           { key: 'episodes', label: 'Episodes', icon: List },
@@ -356,14 +351,13 @@ export default function AnimeDetailPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${isActive ? 'ring-2 ring-[var(--accent-primary)]' : ''}`}
-              style={{ background: isActive ? 'var(--accent-primary)' : 'transparent', color: isActive ? 'var(--accent-primary-foreground)' : 'var(--foreground)' }}
+              className={`tab ${isActive ? 'tab--active' : ''}`}
             >
               <Icon className="w-4 h-4" /> {tab.label}
             </button>
           );
         })}
-      </motion.div>
+      </div>
 
       {/* Tab Content */}
       <AnimatePresence mode="wait">
@@ -376,13 +370,13 @@ export default function AnimeDetailPage() {
             className="grid lg:grid-cols-[300px_1fr] gap-6"
           >
             {/* Cover */}
-            <div className="rounded-2xl border-2 overflow-hidden" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', borderColor: 'var(--panel-border)' }}>
-              <img src={anime.cover_anime || anime.gambar_anime || ''} alt={typeof anime.nama_anime === 'string' ? anime.nama_anime : 'Anime'} className="w-full aspect-[3/4] object-cover" />
+            <div className="rounded-2xl border-2 overflow-hidden" style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', borderColor: 'var(--panel-border)' }}>
+              <img src={anime.cover_anime || anime.gambar_anime || ''} alt={typeof anime.nama_anime === 'string' ? anime.nama_anime : 'Anime'} className="w-full aspect-[3/4] object-cover" loading="lazy" decoding="async" />
             </div>
 
             {/* Info */}
             <div className="space-y-4">
-              <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+              <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
                 <h2 className="text-lg font-bold text-[var(--foreground)] mb-3 flex items-center gap-2">
                   <Info className="w-5 h-5" /> Informasi
                 </h2>
@@ -420,7 +414,7 @@ export default function AnimeDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+              <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
                 <h2 className="text-lg font-bold text-[var(--foreground)] mb-3">Sinopsis</h2>
                 <p className="text-sm text-[var(--foreground)]/80 leading-relaxed">{(anime.sinopsis_anime && typeof anime.sinopsis_anime === 'string' && anime.sinopsis_anime !== '[object Object]') ? anime.sinopsis_anime : 'Tidak ada sinopsis.'}</p>
               </div>
@@ -435,12 +429,12 @@ export default function AnimeDetailPage() {
             className="space-y-4"
           >
             {/* Add Episode Button */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <h2 className="text-xl font-bold text-[var(--foreground)]">Daftar Episode ({episodes.length})</h2>
               <button
                 onClick={() => setShowAddEpisode(true)}
                 className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 font-bold transition-all hover:translate-y-[-2px]"
-                style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}
+                style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}
               >
                 <Plus className="w-4 h-4" /> Tambah Episode
               </button>
@@ -455,7 +449,7 @@ export default function AnimeDetailPage() {
                   exit={{ opacity: 0, height: 0 }}
                   onSubmit={onAddEpisode}
                   className="rounded-2xl border-2 p-5 overflow-hidden"
-                  style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}
+                  style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-[var(--foreground)]">Tambah Episode Baru</h3>
@@ -518,7 +512,7 @@ export default function AnimeDetailPage() {
                 <div
                   key={typeof ep.id === 'number' ? ep.id : typeof ep.id === 'string' ? ep.id : `ep-${idx}`}
                   className="rounded-2xl border-2 overflow-hidden"
-                  style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
+                  style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
                 >
                   <div className="flex items-center gap-4 p-4">
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center font-black text-lg" style={{ background: 'var(--accent-primary)', color: 'var(--accent-primary-foreground)' }}>
@@ -526,7 +520,7 @@ export default function AnimeDetailPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-[var(--foreground)] truncate">{typeof ep.judul_episode === 'string' ? ep.judul_episode : JSON.stringify(ep.judul_episode)}</h3>
-                      <div className="flex items-center gap-3 text-xs text-[var(--foreground)]/60">
+                      <div className="flex items-center gap-3 text-xs text-[var(--foreground)]/60 flex-wrap">
                         <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {typeof ep.durasi_episode === 'number' ? ep.durasi_episode : typeof ep.durasi_episode === 'string' ? ep.durasi_episode : '-'}m</span>
                         <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {typeof ep.views === 'number' ? ep.views.toLocaleString() : typeof ep.views === 'string' ? ep.views : '0'}</span>
                         {Array.isArray(ep.qualities) && ep.qualities.length > 0 && (
@@ -629,12 +623,10 @@ export default function AnimeDetailPage() {
                                 <label className="block text-xs font-bold text-[var(--foreground)]/60 mb-2">Thumbnail Episode</label>
                                 <div className="flex items-center gap-3">
                                   {(editingEpisode.thumbnail_episode || editingEpisode.thumbnailPreview) && (
-                                    <img 
-                                      src={editingEpisode.thumbnailPreview || editingEpisode.thumbnail_episode} 
+                                    <img src={editingEpisode.thumbnailPreview || editingEpisode.thumbnail_episode} 
                                       alt="Thumbnail"
                                       className="w-20 h-14 object-cover rounded-lg border-2"
-                                      style={{ borderColor: 'var(--panel-border)' }}
-                                    />
+                                      style={{ borderColor: 'var(--panel-border)' }} loading="lazy" decoding="async" />
                                   )}
                                   <div className="flex-1 space-y-2">
                                     <input
@@ -986,7 +978,7 @@ export default function AnimeDetailPage() {
                                       {qualityStatus[ep.id].qualities.map((q, qIdx) => (
                                         <div 
                                           key={qIdx} 
-                                          className="flex items-center justify-between p-2 rounded-lg text-xs"
+                                          className="flex items-center justify-between p-2 rounded-lg text-xs flex-wrap gap-2"
                                           style={{ 
                                             background: q.is_working ? 'rgba(34,197,94,0.1)' : q.has_source_url ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
                                             border: `1px solid ${q.is_working ? '#22c55e' : q.has_source_url ? '#f59e0b' : '#ef4444'}`
@@ -1045,7 +1037,7 @@ export default function AnimeDetailPage() {
                   </AnimatePresence>
                 </div>
               )) : (
-                <div className="rounded-2xl border-2 p-8 text-center" style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
+                <div className="rounded-2xl border-2 p-8 text-center" style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
                   <p className="text-[var(--foreground)]/60">Belum ada episode</p>
                   <button
                     onClick={() => setShowAddEpisode(true)}

@@ -53,23 +53,17 @@ const TABS = [
 ];
 
 const METHOD_COLORS = {
-  GET: 'bg-green-100 text-green-700 border-green-300',
-  POST: 'bg-blue-100 text-blue-700 border-blue-300',
-  PUT: 'bg-yellow-100 text-yellow-700 border-yellow-300',
-  DELETE: 'bg-red-100 text-red-700 border-red-300',
-  PATCH: 'bg-purple-100 text-purple-700 border-purple-300',
-};
-
-const STATUS_COLORS = {
-  success: 'text-green-600',
-  warning: 'text-yellow-600',
-  error: 'text-red-600',
+  GET: 'border-[var(--border)] bg-white text-black',
+  POST: 'border-[var(--border)] bg-[#FFD803] text-black',
+  PUT: 'border-[var(--border)] bg-black text-white',
+  DELETE: 'border-[var(--border)] bg-black text-white',
+  PATCH: 'border-[var(--border)] bg-[#ccc] text-black',
 };
 
 function getStatusColor(status) {
-  if (status >= 200 && status < 300) return STATUS_COLORS.success;
-  if (status >= 300 && status < 400) return STATUS_COLORS.warning;
-  if (status >= 400) return STATUS_COLORS.error;
+  if (status >= 200 && status < 300) return 'font-black';
+  if (status >= 300 && status < 400) return 'font-black opacity-70';
+  if (status >= 400) return 'font-black text-[#991B1B]';
   return '';
 }
 
@@ -395,12 +389,7 @@ export default function AnalyticsLogsPage() {
         {cards.map((card) => (
           <div 
             key={card.label}
-            className="border-4 rounded-xl p-4"
-            style={{ 
-              boxShadow: '4px 4px 0 #000', 
-              background: 'var(--panel-bg)', 
-              borderColor: 'var(--panel-border)' 
-            }}
+            className="card p-4"
           >
             <div className="flex items-start justify-between">
               <div>
@@ -409,8 +398,8 @@ export default function AnalyticsLogsPage() {
                 <div className="text-xs font-semibold opacity-50 mt-1">{card.sub}</div>
               </div>
               <div 
-                className="p-2 rounded-lg border-2"
-                style={{ background: card.color + '20', borderColor: card.color }}
+                className="p-2 border-4 border-[var(--border)]"
+                style={{ boxShadow: 'var(--shadow-sm)' }}
               >
                 <card.icon className="size-5" style={{ color: card.color }} />
               </div>
@@ -445,7 +434,7 @@ export default function AnalyticsLogsPage() {
             >
               <td className="py-3 px-2 font-mono text-xs">{formatDate(log.ts)}</td>
               <td className="py-3 px-2">
-                <span className={`px-2 py-1 rounded-md text-xs font-black border-2 ${METHOD_COLORS[log.method] || 'bg-gray-100 text-gray-700 border-gray-300'}`}>
+                <span className={`px-2 py-1 border-2 text-xs font-black ${METHOD_COLORS[log.method] || 'border-[var(--border)] bg-white text-black'}`}>
                   {log.method}
                 </span>
               </td>
@@ -459,7 +448,7 @@ export default function AnalyticsLogsPage() {
               <td className="py-3 px-2 font-mono">{formatDuration(log.durationMs)}</td>
               <td className="py-3 px-2">
                 {log.userId ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-100 text-blue-700 text-xs font-bold border-2 border-blue-300">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 border-2 border-[var(--border)] text-xs font-bold">
                     <User className="size-3" />
                     {log.userId}
                   </span>
@@ -505,14 +494,14 @@ export default function AnalyticsLogsPage() {
               style={{ borderColor: 'var(--panel-border)' }}
             >
               <td className="py-3 px-2">
-                <span className={`px-2 py-1 rounded-md text-xs font-black border-2 ${METHOD_COLORS[route.method] || 'bg-gray-100 text-gray-700 border-gray-300'}`}>
+                <span className={`px-2 py-1 border-2 text-xs font-black ${METHOD_COLORS[route.method] || 'border-[var(--border)] bg-white text-black'}`}>
                   {route.method}
                 </span>
               </td>
               <td className="py-3 px-2 font-semibold max-w-sm truncate" title={route.route}>{route.route}</td>
               <td className="py-3 px-2 text-right font-mono font-bold">{route.count?.toLocaleString()}</td>
               <td className="py-3 px-2 text-right font-mono">
-                <span className={route.avgCpuPct > 70 ? 'text-red-600 font-black' : route.avgCpuPct > 30 ? 'text-yellow-600 font-black' : 'text-green-600 font-bold'}>
+                <span className={route.avgCpuPct > 70 ? 'font-black text-[#991B1B]' : route.avgCpuPct > 30 ? 'font-black opacity-70' : 'font-bold'}>
                   {route.avgCpuPct?.toFixed(1)}%
                 </span>
               </td>
@@ -556,14 +545,14 @@ export default function AnalyticsLogsPage() {
               style={{ borderColor: 'var(--panel-border)' }}
             >
               <td className="py-3 px-2">
-                <span className={`px-2 py-1 rounded-md text-xs font-black border-2 ${METHOD_COLORS[ep.method] || 'bg-gray-100 text-gray-700 border-gray-300'}`}>
+                <span className={`px-2 py-1 border-2 text-xs font-black ${METHOD_COLORS[ep.method] || 'border-[var(--border)] bg-white text-black'}`}>
                   {ep.method}
                 </span>
               </td>
               <td className="py-3 px-2 font-semibold max-w-sm truncate" title={ep.route}>{ep.route}</td>
               <td className="py-3 px-2 text-right font-mono font-bold">{ep.count?.toLocaleString()}</td>
               <td className="py-3 px-2 text-right font-mono">
-                <span className={ep.avg_ms > 500 ? 'text-red-600 font-black' : ep.avg_ms > 200 ? 'text-yellow-600 font-bold' : ''}>
+                <span className={ep.avg_ms > 500 ? 'font-black text-[#991B1B]' : ep.avg_ms > 200 ? 'font-black opacity-70' : ''}>
                   {ep.avg_ms}
                 </span>
               </td>
@@ -571,7 +560,7 @@ export default function AnalyticsLogsPage() {
               <td className="py-3 px-2 text-right font-mono">{ep.min_ms}</td>
               <td className="py-3 px-2 text-center">
                 {ep.err4xx > 0 ? (
-                  <span className="px-2 py-1 rounded-md bg-yellow-100 text-yellow-700 text-xs font-black border-2 border-yellow-300">
+                  <span className="px-2 py-1 border-2 border-[var(--border)] text-xs font-black">
                     {ep.err4xx}
                   </span>
                 ) : (
@@ -580,7 +569,7 @@ export default function AnalyticsLogsPage() {
               </td>
               <td className="py-3 px-2 text-center">
                 {ep.err5xx > 0 ? (
-                  <span className="px-2 py-1 rounded-md bg-red-100 text-red-700 text-xs font-black border-2 border-red-300">
+                  <span className="px-2 py-1 border-2 border-[var(--border)] bg-black text-white text-xs font-black">
                     {ep.err5xx}
                   </span>
                 ) : (
@@ -623,7 +612,7 @@ export default function AnalyticsLogsPage() {
             >
               <td className="py-3 px-2 font-mono text-xs">{formatDate(err.ts)}</td>
               <td className="py-3 px-2">
-                <span className={`px-2 py-1 rounded-md text-xs font-black border-2 ${METHOD_COLORS[err.method] || 'bg-gray-100 text-gray-700 border-gray-300'}`}>
+                <span className={`px-2 py-1 border-2 text-xs font-black ${METHOD_COLORS[err.method] || 'border-[var(--border)] bg-white text-black'}`}>
                   {err.method}
                 </span>
               </td>
@@ -631,14 +620,14 @@ export default function AnalyticsLogsPage() {
                 <div className="font-semibold max-w-xs truncate" title={err.route}>{err.route}</div>
               </td>
               <td className="py-3 px-2">
-                <span className={`px-2 py-1 rounded-md text-xs font-black border-2 ${err.status >= 500 ? 'bg-red-100 text-red-700 border-red-300' : 'bg-yellow-100 text-yellow-700 border-yellow-300'}`}>
+                <span className={`px-2 py-1 border-2 text-xs font-black ${err.status >= 500 ? 'border-[var(--border)] bg-black text-white' : 'border-[var(--border)] bg-[#FFD803] text-black'}`}>
                   {err.status}
                 </span>
               </td>
               <td className="py-3 px-2 font-mono">{formatDuration(err.durationMs)}</td>
               <td className="py-3 px-2">
                 {err.userId ? (
-                  <span className="px-2 py-1 rounded-md bg-blue-100 text-blue-700 text-xs font-bold border-2 border-blue-300">
+                  <span className="px-2 py-1 border-2 border-[var(--border)] text-xs font-bold">
                     {err.userId}
                   </span>
                 ) : (
@@ -682,7 +671,7 @@ export default function AnalyticsLogsPage() {
               style={{ borderColor: 'var(--panel-border)' }}
             >
               <td className="py-3 px-2">
-                <span className={`px-2 py-1 rounded-md text-xs font-black border-2 ${METHOD_COLORS[s.method] || 'bg-gray-100 text-gray-700 border-gray-300'}`}>
+                <span className={`px-2 py-1 border-2 text-xs font-black ${METHOD_COLORS[s.method] || 'border-[var(--border)] bg-white text-black'}`}>
                   {s.method}
                 </span>
               </td>
@@ -715,16 +704,11 @@ export default function AnalyticsLogsPage() {
               <button
                 key={f.file}
                 onClick={() => setSelectedFile(f.file)}
-                className="text-left border-4 rounded-xl p-4 hover:brightness-95 transition-all"
-                style={{ 
-                  boxShadow: '4px 4px 0 #000', 
-                  background: 'var(--panel-bg)', 
-                  borderColor: 'var(--panel-border)' 
-                }}
+                className="card p-4 text-left hover:brightness-95 transition-all"
               >
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-blue-100 border-2 border-blue-300">
-                    <FileCode className="size-5 text-blue-700" />
+                  <div className="p-2 border-4 border-[var(--border)]" style={{ boxShadow: 'var(--shadow-sm)' }}>
+                    <FileCode className="size-5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-sm truncate" title={f.file}>{f.file}</div>
@@ -750,12 +734,7 @@ export default function AnalyticsLogsPage() {
                 setSelectedFile(null);
                 setFileLogs([]);
               }}
-              className="flex items-center gap-2 px-3 py-2 border-4 rounded-lg font-bold text-sm hover:brightness-95"
-              style={{ 
-                boxShadow: '3px 3px 0 #000', 
-                background: 'var(--panel-bg)', 
-                borderColor: 'var(--panel-border)' 
-              }}
+              className="btn btn--secondary text-sm"
             >
               <ChevronUp className="size-4" />
               Kembali
@@ -782,7 +761,7 @@ export default function AnalyticsLogsPage() {
                   >
                     <td className="py-3 px-2 font-mono text-xs">{formatDate(log.ts)}</td>
                     <td className="py-3 px-2">
-                      <span className={`px-2 py-1 rounded-md text-xs font-black border-2 ${METHOD_COLORS[log.method] || 'bg-gray-100 text-gray-700 border-gray-300'}`}>
+                      <span className={`px-2 py-1 border-2 text-xs font-black ${METHOD_COLORS[log.method] || 'border-[var(--border)] bg-white text-black'}`}>
                         {log.method}
                       </span>
                     </td>
@@ -813,12 +792,7 @@ export default function AnalyticsLogsPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div 
-          className="border-4 rounded-xl p-4"
-          style={{ 
-            boxShadow: '4px 4px 0 #000', 
-            background: 'var(--panel-bg)', 
-            borderColor: 'var(--panel-border)' 
-          }}
+          className="card p-4"
         >
           <div className="flex items-center gap-2 mb-4">
             <Server className="size-5" />
@@ -839,7 +813,7 @@ export default function AnalyticsLogsPage() {
             </div>
             <div className="flex justify-between">
               <span className="opacity-60">Profiler Enabled</span>
-              <span className={`font-bold ${stats?.enabled ? 'text-green-600' : 'text-red-600'}`}>
+              <span className="font-bold">
                 {stats?.enabled ? 'Yes' : 'No'}
               </span>
             </div>
@@ -855,12 +829,7 @@ export default function AnalyticsLogsPage() {
         </div>
 
         <div 
-          className="border-4 rounded-xl p-4"
-          style={{ 
-            boxShadow: '4px 4px 0 #000', 
-            background: 'var(--panel-bg)', 
-            borderColor: 'var(--panel-border)' 
-          }}
+          className="card p-4"
         >
           <div className="flex items-center gap-2 mb-4">
             <Layers className="size-5" />
@@ -869,12 +838,7 @@ export default function AnalyticsLogsPage() {
           <div className="grid grid-cols-2 gap-4">
             <button
               onClick={() => setActiveTab('live')}
-              className="border-4 rounded-lg p-3 text-left hover:brightness-95 transition-all"
-              style={{ 
-                boxShadow: '3px 3px 0 #000', 
-                background: 'var(--panel-bg)', 
-                borderColor: 'var(--panel-border)' 
-              }}
+              className="card p-3 text-left hover:brightness-95 transition-all"
             >
               <div className="text-xs opacity-60 mb-1">Live Buffer</div>
               <div className="text-xl font-black">{stats?.buffered?.toLocaleString() || 0}</div>
@@ -882,12 +846,7 @@ export default function AnalyticsLogsPage() {
             </button>
             <button
               onClick={() => setActiveTab('heavy')}
-              className="border-4 rounded-lg p-3 text-left hover:brightness-95 transition-all"
-              style={{ 
-                boxShadow: '3px 3px 0 #000', 
-                background: 'var(--panel-bg)', 
-                borderColor: 'var(--panel-border)' 
-              }}
+              className="card p-3 text-left hover:brightness-95 transition-all"
             >
               <div className="text-xs opacity-60 mb-1">Heavy Endpoints</div>
               <div className="text-xl font-black">Check</div>
@@ -895,12 +854,7 @@ export default function AnalyticsLogsPage() {
             </button>
             <button
               onClick={() => setActiveTab('errors')}
-              className="border-4 rounded-lg p-3 text-left hover:brightness-95 transition-all"
-              style={{ 
-                boxShadow: '3px 3px 0 #000', 
-                background: 'var(--panel-bg)', 
-                borderColor: 'var(--panel-border)' 
-              }}
+              className="card p-3 text-left hover:brightness-95 transition-all"
             >
               <div className="text-xs opacity-60 mb-1">Errors</div>
               <div className="text-xl font-black">Check</div>
@@ -908,12 +862,7 @@ export default function AnalyticsLogsPage() {
             </button>
             <button
               onClick={() => setActiveTab('files')}
-              className="border-4 rounded-lg p-3 text-left hover:brightness-95 transition-all"
-              style={{ 
-                boxShadow: '3px 3px 0 #000', 
-                background: 'var(--panel-bg)', 
-                borderColor: 'var(--panel-border)' 
-              }}
+              className="card p-3 text-left hover:brightness-95 transition-all"
             >
               <div className="text-xs opacity-60 mb-1">File Logs</div>
               <div className="text-xl font-black">{files.length}</div>
@@ -930,12 +879,7 @@ export default function AnalyticsLogsPage() {
     
     return (
       <div 
-        className="border-4 rounded-xl p-4 mb-4"
-        style={{ 
-          boxShadow: '4px 4px 0 #000', 
-          background: 'var(--panel-bg)', 
-          borderColor: 'var(--panel-border)' 
-        }}
+        className="card p-4 mb-4"
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -956,8 +900,7 @@ export default function AnalyticsLogsPage() {
               type="number"
               value={filters.limit}
               onChange={(e) => setFilters({ ...filters, limit: Number(e.target.value) })}
-              className="w-full px-3 py-2 border-2 rounded-lg text-sm font-semibold"
-              style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}
+              className="input w-full text-sm"
             />
           </div>
           <div>
@@ -967,8 +910,7 @@ export default function AnalyticsLogsPage() {
               value={filters.route}
               onChange={(e) => setFilters({ ...filters, route: e.target.value })}
               placeholder="e.g. /v1/anime"
-              className="w-full px-3 py-2 border-2 rounded-lg text-sm font-semibold"
-              style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}
+              className="input w-full text-sm"
             />
           </div>
           <div>
@@ -976,8 +918,7 @@ export default function AnalyticsLogsPage() {
             <select
               value={filters.method}
               onChange={(e) => setFilters({ ...filters, method: e.target.value })}
-              className="w-full px-3 py-2 border-2 rounded-lg text-sm font-semibold"
-              style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}
+              className="select w-full text-sm"
             >
               <option value="">All</option>
               <option value="GET">GET</option>
@@ -994,8 +935,7 @@ export default function AnalyticsLogsPage() {
               value={filters.userId}
               onChange={(e) => setFilters({ ...filters, userId: e.target.value })}
               placeholder="e.g. 88"
-              className="w-full px-3 py-2 border-2 rounded-lg text-sm font-semibold"
-              style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}
+              className="input w-full text-sm"
             />
           </div>
           <div>
@@ -1005,8 +945,7 @@ export default function AnalyticsLogsPage() {
               value={filters.minDurationMs}
               onChange={(e) => setFilters({ ...filters, minDurationMs: e.target.value })}
               placeholder="e.g. 500"
-              className="w-full px-3 py-2 border-2 rounded-lg text-sm font-semibold"
-              style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}
+              className="input w-full text-sm"
             />
           </div>
           <div>
@@ -1016,8 +955,7 @@ export default function AnalyticsLogsPage() {
               value={filters.status}
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
               placeholder="e.g. 500"
-              className="w-full px-3 py-2 border-2 rounded-lg text-sm font-semibold"
-              style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}
+              className="input w-full text-sm"
             />
           </div>
           <div>
@@ -1026,8 +964,7 @@ export default function AnalyticsLogsPage() {
               type="datetime-local"
               value={filters.from}
               onChange={(e) => setFilters({ ...filters, from: e.target.value })}
-              className="w-full px-3 py-2 border-2 rounded-lg text-sm font-semibold"
-              style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}
+              className="input w-full text-sm"
             />
           </div>
           <div>
@@ -1036,31 +973,21 @@ export default function AnalyticsLogsPage() {
               type="datetime-local"
               value={filters.to}
               onChange={(e) => setFilters({ ...filters, to: e.target.value })}
-              className="w-full px-3 py-2 border-2 rounded-lg text-sm font-semibold"
-              style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}
+              className="input w-full text-sm"
             />
           </div>
         </div>
         <div className="flex gap-2 mt-4">
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-2 px-4 py-2 border-4 rounded-lg font-bold text-sm hover:brightness-95 bg-[#FFD803]"
-            style={{ 
-              boxShadow: '3px 3px 0 #000', 
-              borderColor: 'var(--panel-border)' 
-            }}
+            className="btn btn--primary text-sm flex items-center gap-2"
           >
             <Search className="size-4" />
             Apply Filters
           </button>
           <button
             onClick={() => setFilters({ limit: 100, route: '', method: '', userId: '', minDurationMs: '', status: '', from: '', to: '' })}
-            className="flex items-center gap-2 px-4 py-2 border-4 rounded-lg font-bold text-sm hover:brightness-95"
-            style={{ 
-              boxShadow: '3px 3px 0 #000', 
-              background: 'var(--panel-bg)', 
-              borderColor: 'var(--panel-border)' 
-            }}
+            className="btn btn--secondary text-sm flex items-center gap-2"
           >
             <X className="size-4" />
             Clear
@@ -1092,11 +1019,7 @@ export default function AnalyticsLogsPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-3 py-2 border-4 rounded-lg font-bold text-sm hover:brightness-95 transition-all ${showFilters ? 'bg-[#FFD803]' : ''}`}
-            style={{ 
-              boxShadow: '3px 3px 0 #000', 
-              borderColor: 'var(--panel-border)' 
-            }}
+            className={`btn ${showFilters ? 'btn--primary' : 'btn--secondary'} text-sm flex items-center gap-2`}
           >
             <Filter className="size-4" />
             Filters
@@ -1104,20 +1027,14 @@ export default function AnalyticsLogsPage() {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 border-4 rounded-lg font-bold text-sm hover:brightness-95 disabled:opacity-50"
-            style={{ 
-              boxShadow: '3px 3px 0 #000', 
-              background: 'var(--panel-bg)', 
-              borderColor: 'var(--panel-border)' 
-            }}
+            className="btn btn--secondary text-sm disabled:opacity-50 flex items-center gap-2"
           >
             <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 px-3 py-2 border-4 rounded-lg font-bold text-sm hover:brightness-95 bg-green-100 text-green-700 border-green-300"
-            style={{ boxShadow: '3px 3px 0 #000' }}
+            className="btn btn--secondary text-sm flex items-center gap-2"
           >
             <Download className="size-4" />
             Export
@@ -1137,11 +1054,7 @@ export default function AnalyticsLogsPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2 border-4 rounded-lg font-bold text-sm hover:brightness-95 transition-all ${active ? 'bg-[#FFD803]' : ''}`}
-              style={{ 
-                boxShadow: active ? '3px 3px 0 #000' : '2px 2px 0 #000', 
-                borderColor: 'var(--panel-border)' 
-              }}
+              className={`btn ${active ? 'btn--primary' : 'btn--secondary'} text-sm flex items-center gap-2`}
             >
               <Icon className="size-4" />
               {tab.label}
@@ -1152,12 +1065,7 @@ export default function AnalyticsLogsPage() {
 
       {/* Content */}
       <div 
-        className="border-4 rounded-xl p-4"
-        style={{ 
-          boxShadow: '4px 4px 0 #000', 
-          background: 'var(--panel-bg)', 
-          borderColor: 'var(--panel-border)' 
-        }}
+        className="card p-4"
       >
         {loading && (
           <div className="flex items-center justify-center py-12">

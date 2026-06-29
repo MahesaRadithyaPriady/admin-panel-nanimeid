@@ -417,12 +417,10 @@ export default function LivechatTicketPage() {
         <div className={`max-w-[92%] sm:max-w-[80%] flex items-end gap-2 ${isAdmin ? 'flex-row-reverse' : 'flex-row'}`}>
           {!isAdmin ? <Avatar /> : null}
           <div
-            className="min-w-0 p-3 border-4 rounded-xl space-y-1"
+            className="min-w-0 p-3 card space-y-1"
             style={{
-              boxShadow: '4px 4px 0 #000',
-              background: isAdmin ? 'var(--accent-primary)' : 'var(--panel-bg)',
-              borderColor: 'var(--panel-border)',
-              color: 'var(--foreground)',
+              background: isAdmin ? 'var(--foreground)' : 'var(--surface)',
+              color: isAdmin ? 'var(--background)' : 'var(--foreground)',
             }}
           >
             <div className="text-[11px] font-extrabold opacity-80 break-words">
@@ -472,8 +470,7 @@ export default function LivechatTicketPage() {
           <button
             type="button"
             onClick={() => router.push('/dashboard/livechat')}
-            className="px-3 py-2 border-4 rounded-lg font-extrabold"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            className="btn btn--secondary"
             title="Kembali"
           >
             <span className="inline-flex items-center gap-2">
@@ -501,20 +498,20 @@ export default function LivechatTicketPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] gap-4 items-start min-w-0">
         <div className="space-y-4 min-w-0">
           {(ticketMeta?.ticket || ticketMeta?.user_display || ticketMeta?.assigned_admin) && (
-            <div className="p-4 border-4 rounded-[24px] min-w-0" style={{ boxShadow: '8px 8px 0 #000', background: 'linear-gradient(135deg, var(--panel-bg) 0%, #dbeafe 100%)', borderColor: 'var(--panel-border)' }}>
+            <div className="card p-4 min-w-0">
               <div className="text-sm font-extrabold opacity-80 mb-3">Info Ticket</div>
               <div className="grid gap-2 text-sm min-w-0">
                 {headerSub ? <div className="font-semibold opacity-80 break-words">{headerSub}</div> : null}
                 {ticketMeta?.ticket?.issue_text ? (
-                  <div className="rounded-2xl border-4 p-3 text-xs font-semibold opacity-90 whitespace-pre-wrap break-words" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
+                  <div className="card p-3 text-xs font-semibold opacity-90 whitespace-pre-wrap break-words" style={{ background: 'var(--surface)' }}>
                     {ticketMeta.ticket.issue_text}
                   </div>
                 ) : null}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="rounded-2xl border-4 px-3 py-2 text-xs font-extrabold" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
+                  <div className="card px-3 py-2 text-xs font-extrabold" style={{ background: 'var(--surface)' }}>
                     Status: {ticketStatus || '-'}
                   </div>
-                  <div className="rounded-2xl border-4 px-3 py-2 text-xs font-extrabold" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
+                  <div className="card px-3 py-2 text-xs font-extrabold" style={{ background: 'var(--surface)' }}>
                     {ticketMeta?.ticket?.created_at || ticketMeta?.ticket?.createdAt ? `Dibuat: ${formatDate(ticketMeta.ticket.created_at ?? ticketMeta.ticket.createdAt)}` : 'Dibuat: -'}
                   </div>
                 </div>
@@ -522,15 +519,14 @@ export default function LivechatTicketPage() {
             </div>
           )}
 
-          <div className="p-4 border-4 rounded-[24px] min-w-0" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+          <div className="card p-4 min-w-0">
             <div className="text-sm font-extrabold opacity-80 mb-3">Aksi Ticket</div>
             <div className="grid gap-3 min-w-0">
               <button
                 type="button"
                 onClick={onRemindUser}
                 disabled={joinLoading || remindLoading || !canRemindUser}
-                className="px-3 py-3 border-4 rounded-2xl font-extrabold disabled:opacity-60 w-full"
-                style={{ boxShadow: '4px 4px 0 #000', background: '#dbeafe', borderColor: 'var(--panel-border)', color: '#1d4ed8' }}
+                className="btn btn--secondary disabled:opacity-60 w-full"
                 title="Ingatkan user lewat push notification"
               >
                 <span className="inline-flex items-center justify-center gap-2 w-full">
@@ -544,8 +540,7 @@ export default function LivechatTicketPage() {
                   <select
                     value={transferAdminId}
                     onChange={(e) => setTransferAdminId(e.target.value)}
-                    className="px-3 py-2 border-4 rounded-lg font-semibold w-full"
-                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    className="select w-full"
                     disabled={loadingTransferAdmins}
                   >
                     <option value="">{loadingTransferAdmins ? 'Memuat admin...' : 'Pilih admin tujuan'}</option>
@@ -564,8 +559,7 @@ export default function LivechatTicketPage() {
                   <input
                     value={transferReason}
                     onChange={(e) => setTransferReason(e.target.value)}
-                    className="px-3 py-2 border-4 rounded-lg font-semibold w-full"
-                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    className="input w-full"
                     placeholder="handover"
                   />
                 </label>
@@ -575,8 +569,7 @@ export default function LivechatTicketPage() {
                 type="button"
                 onClick={onTransfer}
                 disabled={joinLoading || !accessToken}
-                className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60 w-full"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}
+                className="btn btn--primary disabled:opacity-60 w-full"
                 title="Transfer ticket"
               >
                 <span className="inline-flex items-center justify-center gap-2 w-full">
@@ -590,8 +583,7 @@ export default function LivechatTicketPage() {
                   <input
                     value={closeNote}
                     onChange={(e) => setCloseNote(e.target.value)}
-                    className="px-3 py-2 border-4 rounded-lg font-semibold w-full"
-                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    className="input w-full"
                     placeholder="resolved"
                   />
                 </label>
@@ -599,8 +591,7 @@ export default function LivechatTicketPage() {
                   type="button"
                   onClick={onClose}
                   disabled={joinLoading || !accessToken}
-                  className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60 w-full"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-delete)', borderColor: 'var(--panel-border)', color: 'var(--accent-delete-foreground)' }}
+                  className="btn btn--danger disabled:opacity-60 w-full"
                   title="Close ticket"
                 >
                   <span className="inline-flex items-center justify-center gap-2 w-full">
@@ -617,7 +608,7 @@ export default function LivechatTicketPage() {
         </div>
 
         <div className="space-y-4 min-w-0">
-          <div className="border-4 rounded-lg p-3 min-w-0" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+          <div className="card p-3 min-w-0">
             <div className="max-h-[55vh] overflow-y-auto overflow-x-hidden space-y-3 pr-1 min-w-0">
               {nextCursor ? (
                 <div className="pb-2">
@@ -625,8 +616,7 @@ export default function LivechatTicketPage() {
                     type="button"
                     onClick={loadOlderMessages}
                     disabled={loadingOlder || loadingMessages}
-                    className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60 w-full"
-                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    className="btn btn--secondary disabled:opacity-60 w-full"
                   >
                     {loadingOlder ? 'Memuat...' : 'Muat pesan lama'}
                   </button>
@@ -654,14 +644,12 @@ export default function LivechatTicketPage() {
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder={accessToken ? 'Tulis balasan admin...' : 'Join dulu untuk mengirim pesan'}
                 disabled={!accessToken || joinLoading}
-                className="w-full min-h-[110px] px-3 py-2 border-4 rounded-lg font-semibold disabled:opacity-60 min-w-0"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                className="input w-full min-h-[110px] resize-none disabled:opacity-60"
               />
               <button
                 type="submit"
                 disabled={!accessToken || joinLoading || sendLoading || !draft.trim()}
-                className="px-4 py-3 border-4 rounded-lg font-extrabold disabled:opacity-60 w-full sm:w-auto"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
+                className="btn btn--primary disabled:opacity-60 w-full sm:w-auto"
               >
                 <span className="inline-flex items-center justify-center gap-2 w-full">
                   <Send className="size-4" /> {sendLoading ? 'Mengirim...' : 'Kirim'}

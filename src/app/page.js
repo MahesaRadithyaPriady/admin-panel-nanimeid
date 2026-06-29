@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { LogIn, User, Lock, Sparkles, ArrowRight } from "lucide-react";
+import { LogIn, Lock, Loader2 } from "lucide-react";
 import { loginAdmin } from "@/lib/auth";
 
 // Prioritas redirect dashboard berdasarkan permission
@@ -49,7 +49,6 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [focusedInput, setFocusedInput] = useState(null);
 
   const getOrCreateDeviceId = () => {
     if (typeof window === 'undefined') return 'admin-web-1';
@@ -96,184 +95,95 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen w-full relative overflow-hidden">
-      {/* Animated Gradient Background */}
-      <div className="absolute inset-0 gradient-bg" />
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-12"
+      style={{ background: 'var(--background)' }}
+    >
+      <div className="w-full max-w-md">
+        <div className="login-card">
+          {/* Logo Mark */}
+          <div className="login-logo-mark">N/A</div>
 
-      {/* Floating Decorative Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-      </div>
-
-      {/* Grid Pattern Overlay */}
-      <div className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)`,
-          backgroundSize: '40px 40px'
-        }}
-      />
-
-      {/* Content Container */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
-        <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg">
-
-          {/* Glass Card */}
-          <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10">
-
-            {/* Logo & Header */}
-            <div className="text-center mb-6 sm:mb-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] mb-4 sm:mb-6 shadow-lg animate-float p-1">
-                <img
-                  src="/icon.png"
-                  alt="NanimeID Logo"
-                  className="w-full h-full object-contain rounded-xl"
-                />
-              </div>
-
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--foreground)] tracking-tight">
-                  NanimeID
-                </h1>
-                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--accent-secondary)]" />
-              </div>
-
-              <p className="text-sm sm:text-base text-[var(--foreground)]/60 font-medium">
-                Panel Admin
-              </p>
-            </div>
-
-            {/* Welcome Text */}
-            <div className="text-center mb-6 sm:mb-8">
-              <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)] mb-2">
-                Selamat Datang Kembali
-              </h2>
-              <p className="text-xs sm:text-sm text-[var(--foreground)]/50">
-                Masukkan kredensial Anda untuk mengakses panel admin
-              </p>
-            </div>
-
-            {/* Login Form */}
-            <form onSubmit={onSubmit} className="space-y-4 sm:space-y-5">
-
-              {/* Username Input */}
-              <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-[var(--foreground)]/80 ml-1">
-                  Username
-                </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-                    <User className={`h-5 w-5 transition-colors duration-300 ${focusedInput === 'username' ? 'text-[var(--accent-primary)]' : 'text-[var(--foreground)]/40'}`} />
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    onFocus={() => setFocusedInput('username')}
-                    onBlur={() => setFocusedInput(null)}
-                    className="modern-input w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-base text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 outline-none"
-                    placeholder="Masukkan username Anda"
-                  />
-                </div>
-              </div>
-
-              {/* Password Input */}
-              <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-[var(--foreground)]/80 ml-1">
-                  Password
-                </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-                    <Lock className={`h-5 w-5 transition-colors duration-300 ${focusedInput === 'password' ? 'text-[var(--accent-primary)]' : 'text-[var(--foreground)]/40'}`} />
-                  </div>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onFocus={() => setFocusedInput('password')}
-                    onBlur={() => setFocusedInput(null)}
-                    className="modern-input w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-base text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 outline-none"
-                    placeholder="Masukkan password Anda"
-                  />
-                </div>
-              </div>
-
-              {/* Options Row */}
-              <div className="flex items-center justify-between text-xs sm:text-sm">
-                <label className="inline-flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 rounded-lg border-2 border-[var(--input-border)] bg-[var(--input-bg)] checked:bg-[var(--accent-primary)] checked:border-[var(--accent-primary)] transition-all cursor-pointer"
-                  />
-                  <span className="text-[var(--foreground)]/60 group-hover:text-[var(--foreground)]/80 transition-colors">
-                    Ingat saya
-                  </span>
-                </label>
-                <button
-                  type="button"
-                  className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] font-medium transition-colors hover:underline"
-                >
-                  Lupa password?
-                </button>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="relative w-full group overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] p-[2px] transition-all duration-300 hover:shadow-lg hover:shadow-[var(--accent-primary)]/25 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                <div className="relative bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] rounded-xl sm:rounded-2xl px-4 py-3 sm:py-4 transition-all duration-300 group-hover:opacity-90">
-                  <div className="flex items-center justify-center gap-2 text-white font-semibold text-sm sm:text-base">
-                    {loading ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Memproses...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Masuk ke Panel</span>
-                        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
-                      </>
-                    )}
-                  </div>
-                </div>
-              </button>
-            </form>
-
-            {/* Divider */}
-            <div className="relative my-6 sm:my-8">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[var(--panel-border)]" />
-              </div>
-              <div className="relative flex justify-center text-xs sm:text-sm">
-                <span className="px-3 sm:px-4 bg-[var(--glass-bg)] text-[var(--foreground)]/40 font-medium">
-                  Akses Terbatas
-                </span>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="text-center space-y-1">
-              <p className="text-xs sm:text-sm text-[var(--foreground)]/50">
-                Registrasi pengguna tidak tersedia
-              </p>
-              <p className="text-[10px] sm:text-xs text-[var(--foreground)]/30">
-                NanimeID Admin Panel v{process.env.NEXT_PUBLIC_VERSION_PANEL || '2.0'}
-              </p>
-            </div>
-          </div>
-
-          {/* Bottom decorative text */}
-          <p className="text-center text-white/40 text-xs mt-6 sm:mt-8 font-light">
-            Secure Admin Access Portal
+          {/* Title */}
+          <h1 className="page-title mb-1">Admin Panel</h1>
+          <p
+            className="text-sm mb-8"
+            style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}
+          >
+            NanimeID — Masuk untuk mengelola platform
           </p>
+
+          {/* Login Form */}
+          <form onSubmit={onSubmit} className="space-y-5">
+            <div className="form-group">
+              <label className="label">Username</label>
+              <input
+                type="text"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Masukkan username Anda"
+                disabled={loading}
+                className="modern-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="label flex items-center gap-2">
+                <Lock className="w-3 h-3" />
+                Password
+              </label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Masukkan password Anda"
+                disabled={loading}
+                className="modern-input"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn--primary btn--lg w-full"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  Masuk ke Panel
+                </>
+              )}
+            </button>
+          </form>
+
+          <div
+            className="mt-6 pt-6"
+            style={{ borderTop: '1px solid var(--border-muted)' }}
+          >
+            <p
+              className="text-center"
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.7rem',
+                color: 'var(--muted)',
+                lineHeight: 1.6,
+              }}
+            >
+              Panel ini hanya untuk admin &amp; superadmin NanimeID.
+              <br />
+              Registrasi tidak tersedia.
+            </p>
+          </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 

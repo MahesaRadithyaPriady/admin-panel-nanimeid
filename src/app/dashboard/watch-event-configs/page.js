@@ -313,17 +313,15 @@ export function WatchEventConfigsContent({ embedded = false } = {}) {
   const totalPages = Math.max(1, Math.ceil((total || 0) / (limit || 20)));
 
   return (
-    <motion.div variants={ANIMATIONS.container} initial="hidden" animate="visible" className="space-y-5">
+    <motion.div variants={ANIMATIONS.page} initial="hidden" animate="visible" className="space-y-5">
       {/* Header & Stats */}
-      <motion.div variants={ANIMATIONS.item} className="space-y-4">
+      <div className="space-y-4">
         <div className={`${STYLES.card} p-5 sm:p-6`} style={STYLES.cardShadow}>
           <div className="flex flex-col sm:flex-row sm:items-start gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
-                  <Clapperboard className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-xs font-medium text-[var(--foreground)]/50 uppercase tracking-wide">Watch Event</span>
+                <Clapperboard className="w-5 h-5" />
+                <span className="label uppercase">Watch Event</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-[var(--foreground)] flex items-center gap-2">
                 <Film className="w-6 h-6" /> Konfigurasi Event Tonton
@@ -332,9 +330,7 @@ export function WatchEventConfigsContent({ embedded = false } = {}) {
                 Atur reward berdasarkan menit/episode nonton. User dapat klaim reward saat mencapai threshold.
               </p>
             </div>
-            <button onClick={loadList} disabled={loadingList}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] font-bold text-sm hover:bg-[var(--accent-primary)]/10 transition-colors disabled:opacity-50"
-              style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)' }}>
+            <button onClick={loadList} disabled={loadingList} className="btn btn--secondary btn--sm">
               <RefreshCw className={`w-4 h-4 ${loadingList ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">{loadingList ? 'Memuat...' : 'Refresh'}</span>
             </button>
@@ -347,39 +343,32 @@ export function WatchEventConfigsContent({ embedded = false } = {}) {
           <StatCard label="Mode" value={mode === 'add' ? 'Tambah' : `Edit #${form.id}`} />
           <StatCard label="Threshold" value={totalThresholds} />
         </div>
-      </motion.div>
+      </div>
 
       {/* Filter */}
-      <motion.div variants={ANIMATIONS.item} className={`${STYLES.card} p-4`} style={STYLES.cardShadow}>
+      <div className={`${STYLES.card} p-4`} style={STYLES.cardShadow}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="text-sm font-bold text-[var(--foreground)]/70">Filter Config</div>
           <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-3">
-            <select value={filterActive} onChange={(e) => { setPage(1); setFilterActive(e.target.value); }}
-              className="px-3 py-2 rounded-xl border-2 bg-[var(--panel-bg)] text-[var(--foreground)] text-sm font-bold"
-              style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', borderColor: 'var(--panel-border)' }}>
+            <select value={filterActive} onChange={(e) => { setPage(1); setFilterActive(e.target.value); }} className="select">
               <option value="">Semua</option>
               <option value="true">Aktif saja</option>
               <option value="false">Nonaktif saja</option>
             </select>
-            <div className="text-sm font-bold text-[var(--foreground)]/60">
-              Total: <span className="text-[var(--accent-primary)]">{total}</span> config
-            </div>
+            <div className="label">Total: <span className="font-bold">{total}</span> config</div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Form */}
-      <motion.div variants={ANIMATIONS.item} className={`${STYLES.card} p-4 sm:p-5`} style={STYLES.cardShadow}>
+      <div className={`${STYLES.card} p-4 sm:p-5`} style={STYLES.cardShadow}>
         <div className="flex items-center justify-between gap-3 mb-4 pb-4 border-b border-[var(--panel-border)]">
           <div>
             <h3 className="text-lg font-bold text-[var(--foreground)]">{form.id ? `Edit Config #${form.id}` : 'Tambah Config Baru'}</h3>
             <p className="text-xs text-[var(--foreground)]/60 mt-0.5">{LABELS.thresholdCount(normalizedThresholds.length)}</p>
           </div>
           {form.id && (
-            <button type="button" onClick={resetForm}
-              className="px-3 py-1.5 rounded-lg text-sm font-bold text-[var(--foreground)]/70 hover:bg-[var(--panel-bg)] transition-colors border border-[var(--panel-border)]">
-              Reset Form
-            </button>
+            <button type="button" onClick={resetForm} className="btn btn--secondary btn--sm">Reset Form</button>
           )}
         </div>
 
@@ -409,8 +398,7 @@ export function WatchEventConfigsContent({ embedded = false } = {}) {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-bold text-[var(--foreground)]">Threshold Reward</h4>
-              <button type="button" onClick={() => setForm(f => ({ ...f, thresholds: [...(Array.isArray(f.thresholds) ? f.thresholds : []), { id: randomThresholdId(), minutes: "", episodes: "", coin_reward: 0, reward_type: "NONE", reward_id: 0 }] }))}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--accent-primary)] text-white text-xs font-bold hover:opacity-90 transition-opacity" style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.2)' }}>
+              <button type="button" onClick={() => setForm(f => ({ ...f, thresholds: [...(Array.isArray(f.thresholds) ? f.thresholds : []), { id: randomThresholdId(), minutes: "", episodes: "", coin_reward: 0, reward_type: "NONE", reward_id: 0 }] }))} className="btn btn--secondary btn--sm">
                 <Plus className="w-3.5 h-3.5" /> {LABELS.addThreshold}
               </button>
             </div>
@@ -431,18 +419,16 @@ export function WatchEventConfigsContent({ embedded = false } = {}) {
           </div>
 
           {/* Submit */}
-          <div className="pt-3 border-t border-[var(--panel-border)]">
-            <button type="submit" disabled={saving}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[var(--accent-primary)] text-white font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
-              style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
+          <div className="pt-3" style={{ borderTop: '2px solid var(--border)' }}>
+            <button type="submit" disabled={saving} className="btn btn--primary">
               {saving ? 'Menyimpan...' : (form.id ? 'Simpan Perubahan' : 'Tambah Config')}
             </button>
           </div>
         </form>
-      </motion.div>
+      </div>
 
       {/* Config List */}
-      <motion.div variants={ANIMATIONS.item} className="space-y-3">
+      <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-sm font-bold text-[var(--foreground)]/70">Daftar Config ({items.length} item)</h3>
         </div>
@@ -454,31 +440,23 @@ export function WatchEventConfigsContent({ embedded = false } = {}) {
 
         {items.length === 0 && !loadingList && (
           <div className={`${STYLES.card} p-8 text-center`} style={STYLES.cardShadow}>
-            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-[var(--panel-bg)] flex items-center justify-center">
-              <Gift className="w-8 h-8 text-[var(--foreground)]/30" />
-            </div>
+            <Gift className="w-8 h-8 mx-auto mb-3" style={{ color: 'var(--muted)' }} />
             <div className="text-lg font-bold text-[var(--foreground)]">Belum ada config</div>
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <motion.div variants={ANIMATIONS.item} className="flex items-center justify-between gap-3">
-          <div className="text-sm font-bold text-[var(--foreground)]/70">Halaman {page} / {totalPages}</div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
-              className="px-4 py-2 rounded-xl bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] font-bold text-sm disabled:opacity-50"
-              style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)' }}>
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
-              className="px-4 py-2 rounded-xl bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] font-bold text-sm disabled:opacity-50"
-              style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)' }}>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </motion.div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="btn btn--secondary btn--sm">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="mono text-sm font-bold">Halaman {page} / {totalPages}</span>
+          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="btn btn--secondary btn--sm">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       )}
     </motion.div>
   );
@@ -493,7 +471,7 @@ function DateInput({ label, value, onChange }) {
       <span className="text-xs font-bold text-[var(--foreground)]/70">{label}</span>
       <input type="datetime-local" value={value} onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-2 rounded-xl border-2 bg-[var(--panel-bg)] text-[var(--foreground)] text-sm font-bold"
-        style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', borderColor: 'var(--panel-border)' }} />
+        style={{ boxShadow: 'var(--shadow-sm)', borderColor: 'var(--panel-border)' }} />
     </label>
   );
 }
@@ -503,7 +481,7 @@ function ThresholdRow({ data, index, onChange, onDelete, rewardOptions }) {
   const needsRewardId = rt !== 'NONE';
 
   return (
-    <div className="p-3 rounded-xl border-2 bg-[var(--panel-bg)]" style={{ borderColor: 'var(--panel-border)', boxShadow: '2px 2px 0 rgba(0,0,0,0.1)' }}>
+    <div className="p-3 rounded-xl border-2 bg-[var(--panel-bg)]" style={{ borderColor: 'var(--panel-border)', boxShadow: 'var(--shadow-sm)' }}>
       <div className="flex flex-col lg:flex-row lg:items-center gap-3">
         <div className="flex items-center gap-2 lg:w-24">
           <span className="px-2 py-0.5 rounded bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] text-xs font-black">#{index + 1}</span>
@@ -545,7 +523,7 @@ function ConfigCard({ data, onEdit, onToggle, onDelete, loadingList, togglingId,
   const isActive = !!data.is_active;
 
   return (
-    <div className="p-4 rounded-2xl border-2 bg-[var(--panel-bg)]" style={{ borderColor: 'var(--panel-border)', boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', opacity: loadingList ? 0.7 : 1 }}>
+    <div className="p-4 rounded-2xl border-2 bg-[var(--panel-bg)]" style={{ borderColor: 'var(--panel-border)', boxShadow: 'var(--shadow-md)', opacity: loadingList ? 0.7 : 1 }}>
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="px-2 py-0.5 rounded-md bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] text-xs font-black">Config #{data.id}</span>

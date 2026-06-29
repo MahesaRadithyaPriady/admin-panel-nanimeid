@@ -166,149 +166,76 @@ export default function RedeemCodesPage() {
           </div>
 
           {/* Create Form */}
-          <form onSubmit={onCreate} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <form onSubmit={onCreate} className="card p-4 space-y-3">
             <div className="grid sm:grid-cols-2 gap-3">
-              <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                <label className="text-sm font-extrabold">Kode</label>
-                <input value={form.code} onChange={(e) => updateForm('code', e.target.value)} required className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                <label className="text-sm font-extrabold">Tipe</label>
-                <select value={form.type} onChange={(e) => updateForm('type', e.target.value)} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <L label="Kode"><input value={form.code} onChange={(e) => updateForm('code', e.target.value)} required className="input w-full" /></L>
+              <L label="Tipe">
+                <select value={form.type} onChange={(e) => updateForm('type', e.target.value)} className="select w-full">
                   <option value="COIN">COIN</option>
                   <option value="VIP">VIP</option>
                   <option value="BADGE">BADGE</option>
                   <option value="VOUCHER">VOUCHER</option>
                   <option value="BORDER">BORDER</option>
                 </select>
-              </div>
+              </L>
 
               {form.type === 'COIN' && (
-                <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                  <label className="text-sm font-extrabold">Jumlah Koin</label>
-                  <input type="number" value={form.coins_amount} onChange={(e) => updateForm('coins_amount', e.target.value)} placeholder="mis. 100" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                </div>
+                <L label="Jumlah Koin"><input type="number" value={form.coins_amount} onChange={(e) => updateForm('coins_amount', e.target.value)} placeholder="mis. 100" className="input w-full" /></L>
               )}
 
               {form.type === 'VIP' && (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                    <label className="text-sm font-extrabold">Hari VIP</label>
-                    <input type="number" value={form.vip_days} onChange={(e) => updateForm('vip_days', e.target.value)} placeholder="mis. 7" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                    <label className="text-sm font-extrabold">Level VIP</label>
-                    <input value={form.vip_level} onChange={(e) => updateForm('vip_level', e.target.value)} placeholder="Opsional, mis. Gold" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                  </div>
+                  <L label="Hari VIP"><input type="number" value={form.vip_days} onChange={(e) => updateForm('vip_days', e.target.value)} placeholder="mis. 7" className="input w-full" /></L>
+                  <L label="Level VIP"><input value={form.vip_level} onChange={(e) => updateForm('vip_level', e.target.value)} placeholder="Opsional, mis. Gold" className="input w-full" /></L>
                 </>
               )}
 
               {form.type === 'BADGE' && (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                    <label className="text-sm font-extrabold">Nama Badge</label>
-                    <input value={form.badge_name} onChange={(e) => updateForm('badge_name', e.target.value)} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                    <label className="text-sm font-extrabold">Icon URL</label>
-                    <input value={form.badge_icon} onChange={(e) => updateForm('badge_icon', e.target.value)} placeholder="https://..." className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                    <label className="text-sm font-extrabold">Title Color</label>
-                    <input value={form.title_color} onChange={(e) => updateForm('title_color', e.target.value)} placeholder="#FF8800" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-                  </div>
+                  <L label="Nama Badge"><input value={form.badge_name} onChange={(e) => updateForm('badge_name', e.target.value)} className="input w-full" /></L>
+                  <L label="Icon URL"><input value={form.badge_icon} onChange={(e) => updateForm('badge_icon', e.target.value)} placeholder="https://..." className="input w-full" /></L>
+                  <L label="Title Color"><input value={form.title_color} onChange={(e) => updateForm('title_color', e.target.value)} placeholder="#FF8800" className="input w-full" /></L>
                 </>
               )}
 
               {form.type === 'VOUCHER' && (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                    <label className="text-sm font-extrabold">Diskon (%)</label>
-                    <input
-                      type="number"
-                      value={form.voucher_discount_percent}
-                      onChange={(e) => updateForm('voucher_discount_percent', e.target.value)}
-                      placeholder="Opsional, mis. 10"
-                      className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
-                      style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                    <label className="text-sm font-extrabold">Diskon Nominal</label>
-                    <input
-                      type="number"
-                      value={form.voucher_discount_amount}
-                      onChange={(e) => updateForm('voucher_discount_amount', e.target.value)}
-                      placeholder="Opsional, mis. 10000"
-                      className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
-                      style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                    <label className="text-sm font-extrabold">Masa Berlaku (hari)</label>
-                    <input
-                      type="number"
-                      value={form.voucher_valid_days}
-                      onChange={(e) => updateForm('voucher_valid_days', e.target.value)}
-                      placeholder="mis. 7"
-                      className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
-                      style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                    />
-                  </div>
+                  <L label="Diskon (%)"><input type="number" value={form.voucher_discount_percent} onChange={(e) => updateForm('voucher_discount_percent', e.target.value)} placeholder="Opsional, mis. 10" className="input w-full" /></L>
+                  <L label="Diskon Nominal"><input type="number" value={form.voucher_discount_amount} onChange={(e) => updateForm('voucher_discount_amount', e.target.value)} placeholder="Opsional, mis. 10000" className="input w-full" /></L>
+                  <L label="Masa Berlaku (hari)"><input type="number" value={form.voucher_valid_days} onChange={(e) => updateForm('voucher_valid_days', e.target.value)} placeholder="mis. 7" className="input w-full" /></L>
                 </>
               )}
 
               {form.type === 'BORDER' && (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                    <label className="text-sm font-extrabold">Avatar Border</label>
-                    <select
-                      value={form.border_id}
-                      onChange={(e) => updateForm('border_id', e.target.value)}
-                      className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-extrabold"
-                      style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                    >
+                  <L label="Avatar Border">
+                    <select value={form.border_id} onChange={(e) => updateForm('border_id', e.target.value)} className="select w-full">
                       <option value="">Pilih border...</option>
                       {borders.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.title || b.code} (#{b.id})
-                        </option>
+                        <option key={b.id} value={b.id}>{b.title || b.code} (#{b.id})</option>
                       ))}
                     </select>
-                  </div>
+                  </L>
                   {loadingBorders && (
                     <div className="text-xs font-semibold opacity-70 col-span-1 sm:col-span-2 sm:ml-[120px]">Memuat avatar borders...</div>
                   )}
                 </>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                <label className="text-sm font-extrabold">Aktif?</label>
-                <select value={String(form.is_active)} onChange={(e) => updateForm('is_active', e.target.value === 'true')} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <L label="Aktif?">
+                <select value={String(form.is_active)} onChange={(e) => updateForm('is_active', e.target.value === 'true')} className="select w-full">
                   <option value="true">Ya</option>
                   <option value="false">Tidak</option>
                 </select>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                <label className="text-sm font-extrabold">Kuota Global</label>
-                <input type="number" value={form.max_uses} onChange={(e) => updateForm('max_uses', e.target.value)} placeholder="Opsional" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                <label className="text-sm font-extrabold">Limit / User</label>
-                <input type="number" value={form.per_user_limit} onChange={(e) => updateForm('per_user_limit', e.target.value)} placeholder="Opsional" className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                <label className="text-sm font-extrabold">Mulai</label>
-                <input type="datetime-local" value={form.starts_at} onChange={(e) => updateForm('starts_at', e.target.value)} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-                <label className="text-sm font-extrabold">Berakhir</label>
-                <input type="datetime-local" value={form.expires_at} onChange={(e) => updateForm('expires_at', e.target.value)} className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
-              </div>
+              </L>
+              <L label="Kuota Global"><input type="number" value={form.max_uses} onChange={(e) => updateForm('max_uses', e.target.value)} placeholder="Opsional" className="input w-full" /></L>
+              <L label="Limit / User"><input type="number" value={form.per_user_limit} onChange={(e) => updateForm('per_user_limit', e.target.value)} placeholder="Opsional" className="input w-full" /></L>
+              <L label="Mulai"><input type="datetime-local" value={form.starts_at} onChange={(e) => updateForm('starts_at', e.target.value)} className="input w-full" /></L>
+              <L label="Berakhir"><input type="datetime-local" value={form.expires_at} onChange={(e) => updateForm('expires_at', e.target.value)} className="input w-full" /></L>
             </div>
             <div>
-              <button disabled={creating} type="submit" className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60 flex items-center gap-2" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>
-                <Plus className="size-4" /> Buat Kode
+              <button disabled={creating} type="submit" className="btn btn--primary disabled:opacity-60 inline-flex items-center gap-2">
+                <Plus className="size-4" /> {creating ? 'Membuat...' : 'Buat Kode'}
               </button>
             </div>
           </form>
@@ -316,58 +243,45 @@ export default function RedeemCodesPage() {
           {/* Filters */}
           <form onSubmit={onSearch} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,120px)] gap-3">
             <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-              <label className="text-sm font-extrabold flex items-center gap-2">
-                <ListFilter className="size-4" /> Pencarian
-              </label>
-              <input
-                type="text"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Cari kode..."
-                className="w-full min-w-0 px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              />
+              <label className="text-sm font-extrabold flex items-center gap-2"><ListFilter className="size-4" /> Pencarian</label>
+              <input type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari kode..." className="input w-full" />
             </div>
-            <button type="submit" className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
-              Terapkan
-            </button>
+            <button type="submit" className="btn btn--primary">Terapkan</button>
           </form>
 
           {/* Table */}
           <div className="overflow-auto">
-            <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-              <thead style={{ background: 'var(--panel-bg)' }}>
+            <table className="min-w-full border-4 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
+              <thead className="bg-[var(--panel-bg)]">
                 <tr>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>ID</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Kode</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Tipe</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aktif</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Dipakai</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Kuota</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Per User</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Rentang</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">ID</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Kode</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Tipe</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aktif</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Dipakai</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Kuota</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Per User</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Rentang</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((it) => (
                   <tr key={it.id}>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.id}</td>
-                    <td className="px-3 py-2 border-b-4 font-extrabold" style={{ borderColor: 'var(--panel-border)' }}>{it.code}</td>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.type}</td>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{String(it.is_active)}</td>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.used_count ?? '-'}</td>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.max_uses ?? '-'}</td>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.per_user_limit ?? '-'}</td>
-                    <td className="px-3 py-2 border-b-4 font-semibold max-w-[260px] break-words" style={{ borderColor: 'var(--panel-border)' }}>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.id}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-extrabold">{it.code}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.type}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{String(it.is_active)}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.used_count ?? '-'}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.max_uses ?? '-'}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.per_user_limit ?? '-'}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold max-w-[260px] break-words">
                       {(it.starts_at ? new Date(it.starts_at).toLocaleString() : '-') + ' → ' + (it.expires_at ? new Date(it.expires_at).toLocaleString() : '-')}
                     </td>
-                    <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => onDelete(it.id)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }} title="Hapus">
-                          <Trash2 className="size-4" />
-                        </button>
-                      </div>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)]">
+                      <button onClick={() => onDelete(it.id)} className="btn btn--danger btn--sm" title="Hapus">
+                        <Trash2 className="size-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -382,26 +296,21 @@ export default function RedeemCodesPage() {
 
           {/* Pagination */}
           <div className="flex items-center gap-2">
-            <button
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-2 border-4 border-black rounded-lg bg-white disabled:opacity-60 font-extrabold"
-              style={{ boxShadow: '4px 4px 0 #000' }}
-            >
-              Sebelumnya
-            </button>
+            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="btn btn--secondary disabled:opacity-60">Sebelumnya</button>
             <div className="text-sm font-extrabold">Halaman {page} / {Math.max(1, Math.ceil(total / limit))}</div>
-            <button
-              disabled={page >= Math.ceil(total / limit)}
-              onClick={() => setPage((p) => p + 1)}
-              className="px-3 py-2 border-4 border-black rounded-lg bg-white disabled:opacity-60 font-extrabold"
-              style={{ boxShadow: '4px 4px 0 #000' }}
-            >
-              Berikutnya
-            </button>
+            <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} className="btn btn--secondary disabled:opacity-60">Berikutnya</button>
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function L({ label, children }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
+      <label className="text-sm font-extrabold">{label}</label>
+      {children}
     </div>
   );
 }

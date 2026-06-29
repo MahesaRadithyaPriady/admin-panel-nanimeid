@@ -23,13 +23,7 @@ function Chip({ active, onClick, children }) {
     <button
       type="button"
       onClick={onClick}
-      className="px-3 py-1 border-4 rounded-full font-extrabold text-xs hover:brightness-95"
-      style={{
-        boxShadow: "3px 3px 0 #000",
-        background: active ? "#FFD803" : "var(--panel-bg)",
-        borderColor: "var(--panel-border)",
-        color: "var(--foreground)",
-      }}
+      className={`btn btn--sm ${active ? 'btn--primary' : 'btn--secondary'}`}
     >
       {children}
     </button>
@@ -288,30 +282,14 @@ export default function VipFeaturesPage() {
       </div>
 
       {availableSections.length === 0 ? (
-        <div
-          className="p-4 border-4 rounded-lg text-sm font-semibold"
-          style={{
-            boxShadow: "4px 4px 0 #000",
-            background: "var(--panel-bg)",
-            borderColor: "var(--panel-border)",
-            color: "var(--foreground)",
-          }}
-        >
+        <div className="card p-4 text-sm font-semibold">
           Kamu tidak punya permission untuk mengakses menu ini.
         </div>
       ) : null}
 
       {activeSection === "tier" && canTier ? (
         <section className="space-y-4">
-          <div
-            className="p-3 border-4 rounded-lg"
-            style={{
-              boxShadow: "4px 4px 0 #000",
-              background: "var(--panel-bg)",
-              borderColor: "var(--panel-border)",
-              color: "var(--foreground)",
-            }}
-          >
+          <div className="card p-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="text-sm font-extrabold">VIP Tiers</div>
               <div className="flex items-center gap-3">
@@ -325,21 +303,10 @@ export default function VipFeaturesPage() {
                 </label>
                 <button
                   type="button"
-                  onClick={async () => {
-                    await loadPlans();
-                    await loadTiers();
-                  }}
-                  className="px-3 py-2 border-4 rounded-lg font-extrabold"
-                  style={{
-                    boxShadow: "4px 4px 0 #000",
-                    background: "var(--panel-bg)",
-                    borderColor: "var(--panel-border)",
-                    color: "var(--foreground)",
-                  }}
+                  onClick={async () => { await loadPlans(); await loadTiers(); }}
+                  className="btn btn--secondary inline-flex items-center gap-2"
                 >
-                  <span className="inline-flex items-center gap-2">
-                    <RefreshCw className="size-4" /> Refresh
-                  </span>
+                  <RefreshCw className="size-4" /> Refresh
                 </button>
               </div>
             </div>
@@ -348,27 +315,13 @@ export default function VipFeaturesPage() {
             </div>
           </div>
 
-          <div
-            className="p-3 border-4 rounded-lg space-y-3"
-            style={{
-              boxShadow: "4px 4px 0 #000",
-              background: "var(--panel-bg)",
-              borderColor: "var(--panel-border)",
-              color: "var(--foreground)",
-            }}
-          >
+          <div className="card p-3 space-y-3">
             <div className="text-sm font-extrabold">{tierMode === "add" ? "Tambah VIP Tier" : "Edit VIP Tier"}</div>
             <form onSubmit={onSubmitTier} className="grid sm:grid-cols-[1fr_140px_140px_200px] gap-3 items-center">
               <select
                 value={tierForm.name}
                 onChange={(e) => setTierForm((f) => ({ ...f, name: e.target.value }))}
-                className="px-3 py-2 border-4 rounded-lg font-extrabold"
-                style={{
-                  boxShadow: "4px 4px 0 #000",
-                  background: "var(--panel-bg)",
-                  borderColor: "var(--panel-border)",
-                  color: "var(--foreground)",
-                }}
+                className="select w-full"
               >
                 <option value="">Pilih nama tier (dari VIP Plan aktif)</option>
                 {activePlanNames.map((name) => (
@@ -383,13 +336,7 @@ export default function VipFeaturesPage() {
                 value={tierForm.rank}
                 onChange={(e) => setTierForm((f) => ({ ...f, rank: e.target.value }))}
                 placeholder="Rank"
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{
-                  boxShadow: "4px 4px 0 #000",
-                  background: "var(--panel-bg)",
-                  borderColor: "var(--panel-border)",
-                  color: "var(--foreground)",
-                }}
+                className="input w-full"
               />
 
               <label className="flex items-center gap-2 text-sm font-semibold">
@@ -405,37 +352,13 @@ export default function VipFeaturesPage() {
                 <button
                   type="submit"
                   disabled={submittingTier}
-                  className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-                  style={{
-                    boxShadow: "4px 4px 0 #000",
-                    background: tierMode === "add" ? "var(--accent-add)" : "var(--accent-edit)",
-                    color:
-                      tierMode === "add"
-                        ? "var(--accent-add-foreground)"
-                        : "var(--accent-edit-foreground)",
-                    borderColor: "var(--panel-border)",
-                  }}
+                  className={`btn disabled:opacity-60 inline-flex items-center gap-2 ${tierMode === 'add' ? 'btn--primary' : 'btn--secondary'}`}
                 >
-                  <span className="inline-flex items-center gap-2">
-                    {tierMode === "add" ? <Plus className="size-4" /> : <Pencil className="size-4" />}
-                    {submittingTier ? (tierMode === "add" ? "Menambah..." : "Menyimpan...") : tierMode === "add" ? "Tambah" : "Simpan"}
-                  </span>
+                  {tierMode === "add" ? <Plus className="size-4" /> : <Pencil className="size-4" />}
+                  {submittingTier ? (tierMode === "add" ? "Menambah..." : "Menyimpan...") : tierMode === "add" ? "Tambah" : "Simpan"}
                 </button>
-
                 {tierMode === "edit" ? (
-                  <button
-                    type="button"
-                    onClick={resetTierForm}
-                    className="px-3 py-2 border-4 rounded-lg font-extrabold"
-                    style={{
-                      boxShadow: "4px 4px 0 #000",
-                      background: "var(--panel-bg)",
-                      borderColor: "var(--panel-border)",
-                      color: "var(--foreground)",
-                    }}
-                  >
-                    Batal
-                  </button>
+                  <button type="button" onClick={resetTierForm} className="btn btn--secondary">Batal</button>
                 ) : null}
               </div>
             </form>
@@ -443,69 +366,38 @@ export default function VipFeaturesPage() {
 
           <div className="overflow-auto">
             <table
-              className="min-w-full border-4 rounded-lg overflow-hidden"
-              style={{
-                boxShadow: "6px 6px 0 #000",
-                borderColor: "var(--panel-border)",
-                color: "var(--foreground)",
-              }}
+              className="min-w-full border-4 border-[var(--border)] text-sm"
+              style={{ boxShadow: 'var(--shadow-lg)' }}
             >
-              <thead style={{ background: "var(--panel-bg)" }}>
+              <thead className="bg-[var(--panel-bg)]">
                 <tr>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Name</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Rank</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Active</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Aksi</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Name</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Rank</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Active</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {tiers.map((t) => (
                   <tr key={t.id}>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>{t.name}</td>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>{t.rank}</td>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{t.name}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{t.rank}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">
                       <button
                         type="button"
                         disabled={togglingTierId === t.id}
                         onClick={() => onToggleTier(t)}
-                        className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-                        style={{
-                          boxShadow: "4px 4px 0 #000",
-                          background: t.is_active ? "#B2F5EA" : "var(--panel-bg)",
-                          borderColor: "var(--panel-border)",
-                          color: "var(--foreground)",
-                        }}
+                        className="btn btn--secondary btn--sm disabled:opacity-60"
                       >
                         {togglingTierId === t.id ? "..." : t.is_active ? "On" : "Off"}
                       </button>
                     </td>
-                    <td className="px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)]">
                       <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onEditTier(t)}
-                          className="px-2 py-1 border-4 rounded font-extrabold"
-                          style={{
-                            boxShadow: "3px 3px 0 #000",
-                            background: "var(--accent-edit)",
-                            color: "var(--accent-edit-foreground)",
-                            borderColor: "var(--panel-border)",
-                          }}
-                        >
+                        <button type="button" onClick={() => onEditTier(t)} className="btn btn--secondary btn--sm">
                           <Pencil className="size-4" />
                         </button>
-                        <button
-                          type="button"
-                          disabled={deletingTierId === t.id}
-                          onClick={() => onDeleteTier(t)}
-                          className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60"
-                          style={{
-                            boxShadow: "3px 3px 0 #000",
-                            background: "var(--panel-bg)",
-                            color: "var(--foreground)",
-                            borderColor: "var(--panel-border)",
-                          }}
-                        >
+                        <button type="button" disabled={deletingTierId === t.id} onClick={() => onDeleteTier(t)} className="btn btn--danger btn--sm disabled:opacity-60">
                           <Trash2 className="size-4" />
                         </button>
                       </div>
@@ -527,31 +419,11 @@ export default function VipFeaturesPage() {
 
       {activeSection === "requirement" && canRequirement ? (
         <section className="space-y-4">
-          <div
-            className="p-3 border-4 rounded-lg"
-            style={{
-              boxShadow: "4px 4px 0 #000",
-              background: "var(--panel-bg)",
-              borderColor: "var(--panel-border)",
-              color: "var(--foreground)",
-            }}
-          >
+          <div className="card p-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="text-sm font-extrabold">VIP Feature Requirements</div>
-              <button
-                type="button"
-                onClick={() => loadRequirements()}
-                className="px-3 py-2 border-4 rounded-lg font-extrabold"
-                style={{
-                  boxShadow: "4px 4px 0 #000",
-                  background: "var(--panel-bg)",
-                  borderColor: "var(--panel-border)",
-                  color: "var(--foreground)",
-                }}
-              >
-                <span className="inline-flex items-center gap-2">
-                  <RefreshCw className="size-4" /> Refresh
-                </span>
+              <button type="button" onClick={() => loadRequirements()} className="btn btn--secondary inline-flex items-center gap-2">
+                <RefreshCw className="size-4" /> Refresh
               </button>
             </div>
             <div className="mt-2 text-xs font-semibold opacity-80">
@@ -561,28 +433,22 @@ export default function VipFeaturesPage() {
 
           <div className="overflow-auto">
             <table
-              className="min-w-full border-4 rounded-lg overflow-hidden"
-              style={{
-                boxShadow: "6px 6px 0 #000",
-                borderColor: "var(--panel-border)",
-                color: "var(--foreground)",
-              }}
+              className="min-w-full border-4 border-[var(--border)] text-sm"
+              style={{ boxShadow: 'var(--shadow-lg)' }}
             >
-              <thead style={{ background: "var(--panel-bg)" }}>
+              <thead className="bg-[var(--panel-bg)]">
                 <tr>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Feature</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Min Tier</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Enabled</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>Aksi</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Feature</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Min Tier</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Enabled</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {requirements.map((r) => (
                   <tr key={r.id}>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>
-                      {r.feature}
-                    </td>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{r.feature}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">
                       <select
                         value={r._draft_min_tier_name}
                         onChange={(e) =>
@@ -590,54 +456,32 @@ export default function VipFeaturesPage() {
                             prev.map((x) => (x.id === r.id ? { ...x, _draft_min_tier_name: e.target.value } : x))
                           )
                         }
-                        className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm"
-                        style={{
-                          boxShadow: "4px 4px 0 #000",
-                          background: "var(--panel-bg)",
-                          borderColor: "var(--panel-border)",
-                          color: "var(--foreground)",
-                        }}
+                        className="select w-full"
                       >
                         <option value="">Pilih tier</option>
                         {activeTierNames.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
+                          <option key={name} value={name}>{name}</option>
                         ))}
                       </select>
                     </td>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">
                       <button
                         type="button"
                         disabled={togglingId === r.id}
                         onClick={() => onToggleRequirement(r)}
-                        className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-                        style={{
-                          boxShadow: "4px 4px 0 #000",
-                          background: r.is_enabled ? "#B2F5EA" : "var(--panel-bg)",
-                          borderColor: "var(--panel-border)",
-                          color: "var(--foreground)",
-                        }}
+                        className="btn btn--secondary btn--sm disabled:opacity-60"
                       >
                         {togglingId === r.id ? "..." : r.is_enabled ? "On" : "Off"}
                       </button>
                     </td>
-                    <td className="px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)]">
                       <button
                         type="button"
                         disabled={savingId === r.id}
                         onClick={() => onSaveRequirement(r)}
-                        className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-                        style={{
-                          boxShadow: "4px 4px 0 #000",
-                          background: "var(--accent-edit)",
-                          color: "var(--accent-edit-foreground)",
-                          borderColor: "var(--panel-border)",
-                        }}
+                        className="btn btn--primary btn--sm disabled:opacity-60 inline-flex items-center gap-2"
                       >
-                        <span className="inline-flex items-center gap-2">
-                          <Save className="size-4" /> {savingId === r.id ? "Menyimpan..." : "Simpan"}
-                        </span>
+                        <Save className="size-4" /> {savingId === r.id ? "Menyimpan..." : "Simpan"}
                       </button>
                     </td>
                   </tr>
@@ -654,15 +498,7 @@ export default function VipFeaturesPage() {
           </div>
 
           {!canTier ? (
-            <div
-              className="p-4 border-4 rounded-lg text-xs font-semibold"
-              style={{
-                boxShadow: "4px 4px 0 #000",
-                background: "var(--panel-bg)",
-                borderColor: "var(--panel-border)",
-                color: "var(--foreground)",
-              }}
-            >
+            <div className="card p-4 text-xs font-semibold">
               Catatan: kamu tidak punya permission untuk melihat section Tier. Dropdown min tier tetap mencoba pakai VIP Plan aktif yang sempat dimuat.
             </div>
           ) : null}

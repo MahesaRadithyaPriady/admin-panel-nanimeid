@@ -9,65 +9,36 @@ import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { listAdmins, createAdmin, updateAdmin, deleteAdmin } from '@/lib/api';
 
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08 }
-  }
+const pageVariants = {
+  hidden:  { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.15, ease: 'easeOut' } },
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: 'easeOut' }
-  }
-};
-
-const ROLE_TONES = {
-  SUPERADMIN: { bg: 'from-amber-500 to-orange-500', text: 'text-white', icon: Crown },
-  KEUANGAN: { bg: 'from-blue-500 to-cyan-500', text: 'text-white', icon: Wallet },
-  UPLOADER: { bg: 'from-emerald-500 to-teal-500', text: 'text-white', icon: Upload },
-};
+const ROLE_ICONS = { SUPERADMIN: Crown, KEUANGAN: Wallet, UPLOADER: Upload };
 
 function Field({ label, children }) {
   return (
-    <label className="block space-y-2">
-      <span className="text-sm font-black opacity-80">{label}</span>
+    <label className="block space-y-1">
+      <span className="label uppercase">{label}</span>
       {children}
     </label>
   );
 }
 
-function SummaryCard({ label, value, tone = 'neutral' }) {
-  const gradients = {
-    neutral: 'from-gray-500 to-gray-600',
-    superadmin: 'from-amber-500 to-orange-500',
-    keuangan: 'from-blue-500 to-cyan-500',
-    uploader: 'from-emerald-500 to-teal-500',
-  };
-
+function SummaryCard({ label, value }) {
   return (
-    <div className="glass-card rounded-2xl p-4 relative overflow-hidden group hover:shadow-lg transition-all duration-300 border-2" style={{ borderColor: 'var(--panel-border)', boxShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
-      <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${gradients[tone]} opacity-20 rounded-full blur-2xl -mr-6 -mt-6 group-hover:scale-150 transition-transform duration-500`} />
-      <div className="relative z-10">
-        <div className="text-xs font-bold text-[var(--foreground)]/60 uppercase tracking-wide">{label}</div>
-        <div className="mt-1 text-2xl font-black text-[var(--foreground)]">{value}</div>
-      </div>
+    <div className="stat-card">
+      <div className="stat-card__label">{label}</div>
+      <div className="stat-card__value" style={{ fontSize: '1.5rem' }}>{value}</div>
     </div>
   );
 }
 
 function RoleBadge({ role }) {
   const key = String(role || 'UPLOADER').toUpperCase();
-  const tone = ROLE_TONES[key] || { bg: 'from-gray-400 to-gray-500', text: 'text-white' };
-  const Icon = tone.icon || Shield;
-
+  const Icon = ROLE_ICONS[key] || Shield;
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${tone.bg} ${tone.text} border-2`} style={{ borderColor: 'rgba(0,0,0,0.2)', boxShadow: '2px 2px 0 rgba(0,0,0,0.2)' }}>
+    <span className="badge">
       <Icon className="w-3 h-3" />
       {key}
     </span>
@@ -319,129 +290,93 @@ export default function KelolaAdminPage() {
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return (
-    <div className="space-y-6 min-w-0">
+    <motion.div
+      variants={pageVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6 min-w-0"
+    >
       {loading || !user ? null : (
         <>
-          {/* Header & Stats - Glassbrutalism Style */}
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-            {/* Header Card - Glassbrutalism */}
-            <div className="glass-card rounded-2xl sm:rounded-3xl border-2 p-5 sm:p-6 relative overflow-hidden" style={{ boxShadow: '8px 8px 0 rgba(0,0,0,0.3)' }}>
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 rounded-full border-2 px-3 py-1.5 text-xs font-bold backdrop-blur-sm" style={{ borderColor: 'var(--panel-border)', background: 'rgba(139, 92, 246, 0.2)', color: '#8b5cf6' }}>
-                    <Shield className="w-4 h-4" /> Manajemen Admin
-                  </div>
-                  <div>
-                    <h2 className="text-2xl sm:text-3xl font-black flex items-center gap-3 text-[var(--foreground)]"><Users className="w-7 h-7" /> Kelola Admin</h2>
-                    <p className="mt-2 max-w-2xl text-sm sm:text-base font-medium opacity-70">
-                      Kelola akun admin, atur role dan permission akses, lalu pantau daftar tim.
-                    </p>
-                  </div>
-                </div>
-                <button type="button" onClick={() => loadAdmins()} disabled={loadingList} className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-3 font-bold disabled:opacity-60 transition-all hover:translate-y-[-2px]" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.3)', background: 'var(--accent-primary)', color: 'var(--accent-primary-foreground)', borderColor: 'var(--panel-border)' }}>
-                  <RefreshCcw className={`w-4 h-4 ${loadingList ? 'animate-spin' : ''}`} />
-                  <span className="hidden sm:inline">{loadingList ? 'Memuat...' : 'Refresh'}</span>
-                </button>
+          {/* Page Header */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Shield className="w-5 h-5" />
+                <span className="label uppercase">Manajemen Admin</span>
               </div>
+              <h1 className="page-title">Kelola Admin</h1>
+              <p className="label mt-1">Kelola akun admin, atur role dan permission akses, pantau daftar tim.</p>
             </div>
-
-            {/* Stats Cards - Glassbrutalism */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3">
-              <SummaryCard label="Total" value={summary.total} tone="neutral" />
-              <SummaryCard label="Superadmin" value={summary.SUPERADMIN} tone="superadmin" />
-              <SummaryCard label="Keuangan" value={summary.KEUANGAN} tone="keuangan" />
-              <SummaryCard label="Uploader" value={summary.UPLOADER} tone="uploader" />
-              <SummaryCard label="Halaman" value={`${page}/${totalPages}`} tone="neutral" />
-              <SummaryCard label="Per Page" value={limit} tone="neutral" />
-            </div>
+            <button type="button" onClick={() => loadAdmins()} disabled={loadingList} className="btn btn--secondary btn--sm flex-shrink-0">
+              <RefreshCcw className={`w-4 h-4 ${loadingList ? 'animate-spin' : ''}`} />
+              {loadingList ? 'Memuat...' : 'Refresh'}
+            </button>
           </div>
 
-          {/* Main Content - Glassbrutalism */}
+          {/* Stats Grid */}
+          <div className="stat-grid">
+            <SummaryCard label="Total" value={summary.total} />
+            <SummaryCard label="Superadmin" value={summary.SUPERADMIN} />
+            <SummaryCard label="Keuangan" value={summary.KEUANGAN} />
+            <SummaryCard label="Uploader" value={summary.UPLOADER} />
+            <SummaryCard label="Halaman" value={`${page}/${totalPages}`} />
+            <SummaryCard label="Per Page" value={limit} />
+          </div>
+
+          {/* Main Content */}
           <div className="grid gap-4 xl:grid-cols-[minmax(0,400px)_minmax(0,1fr)]">
             {/* Left Panel */}
             <div className="space-y-4">
               {/* Search */}
-              <form onSubmit={onSearch} className="glass-card rounded-2xl border-2 p-4" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.3)', borderColor: 'var(--panel-border)' }}>
-                <div className="flex items-center gap-2 text-sm font-bold text-[var(--foreground)]/70 mb-3"><Search className="w-4 h-4" /> Pencarian Admin</div>
+              <form onSubmit={onSearch} className="filter-bar">
+                <div className="flex items-center gap-2 label mb-3"><Search className="w-4 h-4" /> Pencarian Admin</div>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="text"
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder="Cari username atau email"
-                    className="flex-1 px-3 py-2.5 border-2 rounded-xl font-semibold text-sm bg-[var(--background)] border-[var(--panel-border)] text-[var(--foreground)] outline-none focus:border-[var(--accent-primary)] transition-colors"
-                    style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.2)' }}
-                  />
-                  <button type="submit" disabled={loadingList} className="px-4 py-2.5 border-2 rounded-xl font-bold disabled:opacity-60 transition-all hover:translate-y-[-2px] text-sm" style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.3)', borderColor: 'var(--panel-border)', background: 'var(--accent-primary)', color: 'var(--accent-primary-foreground)' }}>
+                  <div className="input-icon flex-1">
+                    <Search className="input-icon__icon" />
+                    <input type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari username atau email" className="input" />
+                  </div>
+                  <button type="submit" disabled={loadingList} className="btn btn--primary btn--sm">
                     {loadingList ? '...' : 'Cari'}
                   </button>
                 </div>
               </form>
 
-              <form onSubmit={onSubmit} className="glass-card rounded-2xl border-2 p-4 space-y-4" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.3)', borderColor: 'var(--panel-border)' }}>
+              <form onSubmit={onSubmit} className="card p-4 space-y-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="text-sm font-black opacity-70">Profil Admin</div>
                     <div className="text-lg font-black">{mode === 'add' ? 'Tambah Admin Baru' : `Edit Admin #${form.id}`}</div>
                   </div>
-                  {mode === 'edit' ? (
-                    <button type="button" onClick={() => { setMode('add'); resetForm(); }} className="px-3 py-2 border-4 rounded-xl font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                      Reset
-                    </button>
-                  ) : null}
+                  {mode === 'edit' && (
+                    <button type="button" onClick={() => { setMode('add'); resetForm(); }} className="btn btn--secondary btn--sm">Reset</button>
+                  )}
                 </div>
 
                 <div className="grid gap-3">
                   <Field label="Email Admin">
                     <div className="relative">
-                      <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 opacity-60" />
-                      <input
-                        type="email"
-                        value={form.email}
-                        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                        placeholder="Email admin"
-                        className="w-full min-w-0 border-4 rounded-2xl py-3 pl-10 pr-3 font-semibold"
-                        style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                      />
+                      {/* <Mail className="pointer-events-none absolute left-3 top-1/2 w-4 h-4 -translate-y-1/2" style={{ color: 'var(--muted)' }} /> */}
+                      <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email admin" className="input w-full pl-[3.25rem]" />
                     </div>
                   </Field>
 
                   <Field label="Username">
                     <div className="relative">
-                      <UserCog className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 opacity-60" />
-                      <input
-                        type="text"
-                        value={form.username}
-                        onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
-                        placeholder="Username admin"
-                        className="w-full min-w-0 border-4 rounded-2xl py-3 pl-10 pr-3 font-semibold"
-                        style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                      />
+                      {/* <UserCog className="pointer-events-none absolute left-3 top-1/2 w-4 h-4 -translate-y-1/2" style={{ color: 'var(--muted)' }} /> */}
+                      <input type="text" value={form.username} onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))} placeholder="Username admin" className="input w-full pl-[3.25rem]" />
                     </div>
                   </Field>
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field label="Password">
                       <div className="relative">
-                        <KeyRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 opacity-60" />
-                        <input
-                          type="password"
-                          value={form.password}
-                          onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                          placeholder={mode === 'add' ? 'Password admin' : 'Password baru (opsional)'}
-                          className="w-full min-w-0 border-4 rounded-2xl py-3 pl-10 pr-3 font-semibold"
-                          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                        />
+                        {/* <KeyRound className="pointer-events-none absolute left-3 top-1/2 w-4 h-4 -translate-y-1/2" style={{ color: 'var(--muted)' }} /> */}
+                        <input type="password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} placeholder={mode === 'add' ? 'Password admin' : 'Password baru (opsional)'} className="input w-full pl-[3.25rem]" />
                       </div>
                     </Field>
-
                     <Field label="Role">
-                      <select
-                        value={form.role}
-                        onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-                        className="w-full min-w-0 px-3 py-3 border-4 rounded-2xl font-extrabold"
-                        style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                      >
+                      <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} className="select w-full">
                         <option value="UPLOADER">UPLOADER</option>
                         <option value="KEUANGAN">KEUANGAN</option>
                         <option value="SUPERADMIN">SUPERADMIN</option>
@@ -450,27 +385,22 @@ export default function KelolaAdminPage() {
                   </div>
                 </div>
 
-                <div className="rounded-[22px] border-4 p-4 space-y-3" style={{ boxShadow: '4px 4px 0 #000', background: 'linear-gradient(180deg, var(--panel-bg) 0%, #eef2ff 100%)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                <div className="p-4 space-y-3" style={{ border: '2px solid var(--border)' }}>
                   <div>
-                    <div className="text-sm font-black opacity-70">Permission Akses</div>
-                    <div className="text-base font-black">Pilih menu yang bisa diakses admin ini</div>
+                    <div className="label uppercase">Permission Akses</div>
+                    <div className="section-title">Pilih menu yang bisa diakses admin ini</div>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
                     {PERMISSION_GROUPS.map((group) => (
-                      <div key={group.title} className="rounded-[20px] border-4 p-3" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
-                        <div className="mb-2 text-xs font-black uppercase tracking-wide opacity-70">{group.title}</div>
+                      <div key={group.title} className="p-3" style={{ border: '1px solid var(--border-muted)' }}>
+                        <div className="label uppercase mb-2">{group.title}</div>
                         <div className="flex flex-wrap gap-2">
                           {group.items.map((item) => {
                             const active = hasPermission(item.key);
                             return (
-                              <label key={item.key} className="inline-flex cursor-pointer items-center gap-2 rounded-full border-4 px-3 py-2 text-xs font-black" style={{ borderColor: 'var(--panel-border)', background: active ? '#dbeafe' : 'var(--background)', color: active ? '#1d4ed8' : 'var(--foreground)' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={active}
-                                  onChange={() => togglePermission(item.key)}
-                                  className="size-4"
-                                />
-                                <span>{item.label}</span>
+                              <label key={item.key} className="inline-flex cursor-pointer items-center gap-2 px-2 py-1 text-xs font-bold" style={{ border: '2px solid var(--border)', background: active ? 'var(--foreground)' : 'var(--background)', color: active ? 'var(--background)' : 'var(--foreground)' }}>
+                                <input type="checkbox" checked={active} onChange={() => togglePermission(item.key)} className="w-3 h-3" />
+                                {item.label}
                               </label>
                             );
                           })}
@@ -480,13 +410,8 @@ export default function KelolaAdminPage() {
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full flex items-center justify-center gap-2 border-4 rounded-2xl py-3 font-extrabold disabled:opacity-60"
-                  style={{ boxShadow: '5px 5px 0 #000', borderColor: 'var(--panel-border)', background: mode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', color: mode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)' }}
-                >
-                  {submitting ? (mode === 'add' ? 'Menambah...' : 'Menyimpan...') : (mode === 'add' ? (<><Plus className="size-4" /> Tambah Admin</>) : (<><Pencil className="size-4" /> Simpan Perubahan</>))}
+                <button type="submit" disabled={submitting} className="btn btn--primary w-full">
+                  {submitting ? (mode === 'add' ? 'Menambah...' : 'Menyimpan...') : (mode === 'add' ? (<><Plus className="w-4 h-4" /> Tambah Admin</>) : (<><Pencil className="w-4 h-4" /> Simpan Perubahan</>))}
                 </button>
               </form>
             </div>
@@ -494,12 +419,12 @@ export default function KelolaAdminPage() {
             {/* Right Panel - Admin List */}
             <div className="space-y-4">
               {admins.map((u) => (
-                <div key={u.id} className="glass-card rounded-2xl border-2 p-4 sm:p-5" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.3)', borderColor: 'var(--panel-border)' }}>
+                <div key={u.id} className="card p-4 sm:p-5">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0 space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
-                        <div className="grid place-items-center size-14 rounded-2xl border-4" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
-                          <Shield className="size-6" />
+                        <div className="w-12 h-12 grid place-items-center" style={{ border: '2px solid var(--border)', background: 'var(--muted-bg)' }}>
+                          <Shield className="w-6 h-6" />
                         </div>
                         <div className="min-w-0">
                           <div className="text-lg font-black break-words">{u.username || '-'}</div>
@@ -509,8 +434,8 @@ export default function KelolaAdminPage() {
 
                       <div className="flex flex-wrap items-center gap-2">
                         <RoleBadge role={u.role} />
-                        <span className="inline-flex items-center rounded-full border-4 px-3 py-1 text-xs font-black" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
-                          {Array.isArray(u.permissions) ? `${u.permissions.length} permission` : '0 permission'}
+                        <span className="badge">
+                          {Array.isArray(u.permissions) ? `${u.permissions.length} perm` : '0 perm'}
                         </span>
                       </div>
 
@@ -525,7 +450,7 @@ export default function KelolaAdminPage() {
 
                       <div className="flex flex-wrap gap-2">
                         {Array.isArray(u.permissions) && u.permissions.length > 0 ? u.permissions.map((permission) => (
-                          <span key={`${u.id}-${permission}`} className="inline-flex items-center rounded-full border-4 px-3 py-1 text-[11px] font-black" style={{ borderColor: 'var(--panel-border)', background: '#f3f4f6', color: '#111827' }}>
+                          <span key={`${u.id}-${permission}`} className="badge">
                             {permission}
                           </span>
                         )) : (
@@ -535,21 +460,11 @@ export default function KelolaAdminPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onEdit(u)}
-                        className="inline-flex items-center gap-2 rounded-2xl border-4 px-3 py-2 font-extrabold"
-                        style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}
-                      >
-                        <Pencil className="size-4" /> Edit
+                      <button type="button" onClick={() => onEdit(u)} className="btn btn--secondary btn--sm">
+                        <Pencil className="w-4 h-4" /> Edit
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => onRequestDelete(u)}
-                        className="inline-flex items-center gap-2 rounded-2xl border-4 px-3 py-2 font-extrabold"
-                        style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                      >
-                        <Trash2 className="size-4" /> Hapus
+                      <button type="button" onClick={() => onRequestDelete(u)} className="btn btn--danger btn--sm">
+                        <Trash2 className="w-4 h-4" /> Hapus
                       </button>
                     </div>
                   </div>
@@ -557,7 +472,7 @@ export default function KelolaAdminPage() {
               ))}
 
               {admins.length === 0 ? (
-                <div className="glass-card rounded-2xl border-2 p-8 text-center" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.3)', borderColor: 'var(--panel-border)' }}>
+                <div className="card p-8 text-center">
                   <div className="text-lg font-bold text-[var(--foreground)]">{loadingList ? 'Memuat admin...' : 'Belum ada admin.'}</div>
                   <div className="mt-2 text-sm text-[var(--foreground)]/60">Coba ubah kata kunci pencarian atau tambahkan admin baru.</div>
                 </div>
@@ -565,31 +480,15 @@ export default function KelolaAdminPage() {
             </div>
           </div>
 
-          {/* Pagination - Glassbrutalism */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="text-sm font-bold text-[var(--foreground)]/60">
-              Halaman {page} / {totalPages}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="flex items-center gap-1 px-4 py-2.5 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] transition-all hover:translate-y-[-2px]"
-                style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.3)' }}
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Sebelumnya</span>
-              </button>
-              <button
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
-                className="flex items-center gap-1 px-4 py-2.5 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] transition-all hover:translate-y-[-2px]"
-                style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.3)' }}
-              >
-                <span className="hidden sm:inline">Berikutnya</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+          {/* Pagination */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="btn btn--secondary btn--sm">
+              <ChevronLeft className="w-4 h-4" /> Sebelumnya
+            </button>
+            <span className="mono text-sm font-bold">Halaman {page} / {totalPages}</span>
+            <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="btn btn--secondary btn--sm">
+              Berikutnya <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
 
       {/* Confirm Delete Modal */}
@@ -597,23 +496,20 @@ export default function KelolaAdminPage() {
         <div className="fixed inset-0 z-50 grid place-items-center">
           <div className="absolute inset-0 bg-black/40" onClick={onCancelDelete} />
           <div
-            className="relative z-10 w-[92%] max-w-md glass-card border-2 rounded-2xl p-4 sm:p-6"
-            style={{ boxShadow: '8px 8px 0 rgba(0,0,0,0.3)', borderColor: 'var(--panel-border)' }}
+            className="modal relative z-10 w-[92%] max-w-md p-4 sm:p-6"
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="grid place-items-center w-10 h-10 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 border-2" style={{ borderColor: 'rgba(0,0,0,0.2)', boxShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
-                <Trash2 className="w-5 h-5 text-white" />
-              </div>
+              <Trash2 className="w-5 h-5 flex-shrink-0" />
               <div>
-                <h3 className="text-lg font-bold text-[var(--foreground)]">Hapus Admin?</h3>
-                <p className="text-sm text-[var(--foreground)]/60 break-words">{confirmTarget?.email}</p>
+                <h3 className="section-title">Hapus Admin?</h3>
+                <p className="label break-words">{confirmTarget?.email}</p>
               </div>
             </div>
             <div className="flex items-center justify-end gap-2">
-              <button onClick={onCancelDelete} className="px-4 py-2 rounded-xl bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] text-sm font-bold hover:bg-[var(--accent-primary)]/10 transition-colors" style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
+              <button onClick={onCancelDelete} className="btn btn--secondary btn--sm">
                 Batal
               </button>
-              <button onClick={onConfirmDelete} className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white text-sm font-bold hover:brightness-110 transition-all" style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.3)' }}>
+              <button onClick={onConfirmDelete} className="btn btn--danger btn--sm">
                 Ya, Hapus
               </button>
             </div>
@@ -622,6 +518,6 @@ export default function KelolaAdminPage() {
       )}
         </>
       )}
-    </div>
+    </motion.div>
   );
 }

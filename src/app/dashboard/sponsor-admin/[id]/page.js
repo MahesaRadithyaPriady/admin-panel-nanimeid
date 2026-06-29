@@ -82,30 +82,30 @@ export default function SponsorDetailPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-extrabold flex items-center gap-2"><Megaphone className="size-5" /> Detail Sponsor</h2>
             <div className="flex items-center gap-2">
-              <button onClick={() => router.push('/dashboard/sponsor-admin')} className="btn-pg flex items-center gap-2"><ArrowLeft className="size-4" /> Kembali</button>
+              <button onClick={() => router.push('/dashboard/sponsor-admin')} className="btn btn--secondary flex items-center gap-2"><ArrowLeft className="size-4" /> Kembali</button>
             </div>
           </div>
 
           {loadingItem ? (
             <div className="text-sm">Memuat...</div>
           ) : (
-            <form onSubmit={onSave} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            <form onSubmit={onSave} className="card p-4 space-y-3">
               <div className="grid sm:grid-cols-2 gap-3">
-                <L label="Nama"><input value={form.name} onChange={(e)=>updateField('name', e.target.value)} required className="inp" /></L>
-                <L label="Tipe"><input value={form.type} onChange={(e)=>updateField('type', e.target.value)} className="inp" placeholder="youtube|tiktok|instagram|website|custom" /></L>
-                <L label="Link URL"><input value={form.link_url} onChange={(e)=>updateField('link_url', e.target.value)} className="inp" placeholder="https://..." /></L>
-                <L label="Icon URL"><input value={form.icon_url} onChange={(e)=>updateField('icon_url', e.target.value)} className="inp" placeholder="https://..." /></L>
+                <L label="Nama"><input value={form.name} onChange={(e)=>updateField('name', e.target.value)} required className="input w-full" /></L>
+                <L label="Tipe"><input value={form.type} onChange={(e)=>updateField('type', e.target.value)} className="input w-full" placeholder="youtube|tiktok|instagram|website|custom" /></L>
+                <L label="Link URL"><input value={form.link_url} onChange={(e)=>updateField('link_url', e.target.value)} className="input w-full" placeholder="https://..." /></L>
+                <L label="Icon URL"><input value={form.icon_url} onChange={(e)=>updateField('icon_url', e.target.value)} className="input w-full" placeholder="https://..." /></L>
                 <L label="Aktif?">
-                  <select value={String(form.is_active)} onChange={(e)=>updateField('is_active', e.target.value === 'true')} className="sel">
+                  <select value={String(form.is_active)} onChange={(e)=>updateField('is_active', e.target.value === 'true')} className="select w-full">
                     <option value="true">Ya</option>
                     <option value="false">Tidak</option>
                   </select>
                 </L>
-                <L label="Urutan"><input type="number" value={form.sort_order} onChange={(e)=>updateField('sort_order', e.target.value)} className="inp" /></L>
+                <L label="Urutan"><input type="number" value={form.sort_order} onChange={(e)=>updateField('sort_order', e.target.value)} className="input w-full" /></L>
               </div>
               <div className="flex items-center gap-2">
-                <button disabled={saving} type="submit" className="btn-add flex items-center gap-2"><Save className="size-4" /> Simpan</button>
-                <button type="button" onClick={onDelete} className="btn-act flex items-center gap-2"><Trash2 className="size-4" /> Hapus</button>
+                <button disabled={saving} type="submit" className="btn btn--primary disabled:opacity-60 flex items-center gap-2"><Save className="size-4" /> {saving ? 'Menyimpan...' : 'Simpan'}</button>
+                <button type="button" onClick={onDelete} className="btn btn--danger flex items-center gap-2"><Trash2 className="size-4" /> Hapus</button>
               </div>
             </form>
           )}
@@ -118,7 +118,7 @@ export default function SponsorDetailPage() {
 function L({ label, children }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-      <label className="lbl">{label}</label>
+      <label className="text-sm font-extrabold">{label}</label>
       {children}
     </div>
   );
@@ -150,17 +150,3 @@ function buildSponsorUpdate(form) {
   return out;
 }
 
-const styles = `
-.inp { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
-.sel { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
-.lbl { font-size: 0.875rem; font-weight: 800; }
-.btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
-.btn-act { padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }
-.btn-pg { padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; background:#fff; font-weight:800; box-shadow:4px 4px 0 #000; }
-`;
-if (typeof document !== 'undefined' && !document.getElementById('sponsor-admin-detail-styles')) {
-  const style = document.createElement('style');
-  style.id = 'sponsor-admin-detail-styles';
-  style.innerHTML = styles;
-  document.head.appendChild(style);
-}

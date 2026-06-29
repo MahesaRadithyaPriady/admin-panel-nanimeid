@@ -16,7 +16,7 @@ function Badge({ tone = 'neutral', children }) {
     <span
       className="inline-flex items-center px-2 py-1 border-4 rounded-full text-[10px] font-extrabold"
       style={{
-        boxShadow: '2px 2px 0 #000',
+        boxShadow: 'var(--shadow-sm)',
         background: bg,
         borderColor: 'var(--panel-border)',
         color: fg,
@@ -32,7 +32,7 @@ function TextInput({ value, onChange, placeholder, icon: Icon }) {
     <div
       className="flex items-center gap-2 border-4 rounded-lg px-3 py-2"
       style={{
-        boxShadow: '4px 4px 0 #000',
+        boxShadow: 'var(--shadow-md)',
         background: 'var(--panel-bg)',
         borderColor: 'var(--panel-border)',
         color: 'var(--foreground)',
@@ -56,7 +56,7 @@ function Select({ value, onChange, children }) {
       onChange={(e) => onChange(e.target.value)}
       className="w-full border-4 rounded-lg px-3 py-2 text-sm font-extrabold"
       style={{
-        boxShadow: '4px 4px 0 #000',
+        boxShadow: 'var(--shadow-md)',
         background: 'var(--panel-bg)',
         borderColor: 'var(--panel-border)',
         color: 'var(--foreground)',
@@ -74,12 +74,12 @@ function StickerPreview({ sticker }) {
     <div
       className="mt-3 border-4 rounded-xl p-2 inline-block"
       style={{
-        boxShadow: '4px 4px 0 #000',
+        boxShadow: 'var(--shadow-md)',
         background: 'var(--panel-bg)',
         borderColor: 'var(--panel-border)',
       }}
     >
-      <img src={url} alt="sticker" className="w-24 h-24 object-contain" />
+      <img src={url} alt="sticker" className="w-24 h-24 object-contain" loading="lazy" decoding="async" />
     </div>
   );
 }
@@ -92,7 +92,7 @@ function ActionButton({ disabled, onClick, children }) {
       onClick={onClick}
       className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
       style={{
-        boxShadow: '4px 4px 0 #000',
+        boxShadow: 'var(--shadow-md)',
         background: '#FF4D4D',
         borderColor: 'var(--panel-border)',
         color: '#111',
@@ -109,7 +109,7 @@ function Panel({ title, icon: Icon, description, children }) {
     <div
       className="border-4 rounded-xl p-4"
       style={{
-        boxShadow: '8px 8px 0 #000',
+        boxShadow: 'var(--shadow-xl)',
         background: 'var(--panel-bg)',
         borderColor: 'var(--panel-border)',
       }}
@@ -119,7 +119,7 @@ function Panel({ title, icon: Icon, description, children }) {
           <div
             className="border-4 rounded-xl p-2"
             style={{
-              boxShadow: '4px 4px 0 #000',
+              boxShadow: 'var(--shadow-md)',
               background: '#FFD803',
               borderColor: 'var(--panel-border)',
               color: '#111',
@@ -249,7 +249,7 @@ export default function ModerationCommentRepliesPage() {
             href="/dashboard/moderation"
             className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
             style={{
-              boxShadow: '4px 4px 0 #000',
+              boxShadow: 'var(--shadow-md)',
               background: 'var(--panel-bg)',
               borderColor: 'var(--panel-border)',
               color: 'var(--foreground)',
@@ -297,7 +297,7 @@ export default function ModerationCommentRepliesPage() {
             type="submit"
             className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
             style={{
-              boxShadow: '4px 4px 0 #000',
+              boxShadow: 'var(--shadow-md)',
               background: '#FFD803',
               borderColor: 'var(--panel-border)',
               color: '#111',
@@ -310,7 +310,7 @@ export default function ModerationCommentRepliesPage() {
             onClick={() => loadReplies()}
             className="px-4 py-2 border-4 rounded-lg font-extrabold text-sm hover:brightness-95 inline-flex items-center gap-2"
             style={{
-              boxShadow: '4px 4px 0 #000',
+              boxShadow: 'var(--shadow-md)',
               background: 'var(--panel-bg)',
               borderColor: 'var(--panel-border)',
               color: 'var(--foreground)',
@@ -346,7 +346,7 @@ export default function ModerationCommentRepliesPage() {
                     key={String(it?.id)}
                     className="border-4 rounded-xl p-4"
                     style={{
-                      boxShadow: '6px 6px 0 #000',
+                      boxShadow: 'var(--shadow-lg)',
                       background: 'var(--panel-bg)',
                       borderColor: 'var(--panel-border)',
                       color: 'var(--foreground)',
@@ -384,7 +384,7 @@ export default function ModerationCommentRepliesPage() {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60"
               style={{
-                boxShadow: '4px 4px 0 #000',
+                boxShadow: 'var(--shadow-md)',
                 background: 'var(--panel-bg)',
                 borderColor: 'var(--panel-border)',
                 color: 'var(--foreground)',
@@ -404,7 +404,7 @@ export default function ModerationCommentRepliesPage() {
               onClick={() => setPage((p) => p + 1)}
               className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm disabled:opacity-60"
               style={{
-                boxShadow: '4px 4px 0 #000',
+                boxShadow: 'var(--shadow-md)',
                 background: 'var(--panel-bg)',
                 borderColor: 'var(--panel-border)',
                 color: 'var(--foreground)',

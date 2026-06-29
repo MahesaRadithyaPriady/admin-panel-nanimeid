@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { Edit3, Trash2, Power, Clock, Gift, ChevronRight } from 'lucide-react';
 import { ANIMATIONS, STYLES, REWARD_TYPES } from '../constants';
 
@@ -14,24 +13,18 @@ export function ConfigList({
 }) {
   if (items.length === 0 && !loading) {
     return (
-      <motion.div 
-        variants={ANIMATIONS.item} 
-        className={`${STYLES.card} p-8 text-center`} 
-        style={STYLES.cardShadow}
-      >
-        <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-[var(--panel-bg)] flex items-center justify-center">
-          <Gift className="w-8 h-8 text-[var(--foreground)]/30" />
-        </div>
+      <div className={`${STYLES.card} p-8 text-center`} style={STYLES.cardShadow}>
+        <Gift className="w-8 h-8 mx-auto mb-3" style={{ color: 'var(--muted)' }} />
         <div className="text-lg font-bold text-[var(--foreground)]">Belum ada config</div>
         <div className="text-sm text-[var(--foreground)]/50 mt-1">
           Tambahkan config baru menggunakan form di atas
         </div>
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.div variants={ANIMATIONS.item} className="space-y-3">
+    <div className="space-y-3">
       <div className="flex items-center justify-between px-1">
         <h3 className="text-sm font-bold text-[var(--foreground)]/70">
           Daftar Config ({items.length} item)
@@ -52,7 +45,7 @@ export function ConfigList({
           formatDate={formatDate}
         />
       ))}
-    </motion.div>
+    </div>
   );
 }
 

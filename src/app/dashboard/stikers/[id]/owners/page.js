@@ -145,31 +145,29 @@ export default function StickerOwnersPage() {
           type="button"
           onClick={() => router.back()}
           className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm"
-          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+          style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
         >
           Kembali
         </button>
       </div>
 
       {sticker && (
-        <div className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+        <div className="p-3 border-4 rounded-lg" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
           <div className="font-extrabold mb-1">Stiker</div>
           <div className="text-sm font-semibold">{sticker.name} ({sticker.code})</div>
           {sticker.image_url && (
             <div className="mt-2">
-              <img
-                src={sticker.image_url}
+              <img src={sticker.image_url}
                 alt={sticker.name || sticker.code}
                 className="w-12 h-12 object-contain border-2 rounded"
-                style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
-              />
+                style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} loading="lazy" decoding="async" />
             </div>
           )}
         </div>
       )}
 
       {/* Filter User */}
-      <div className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+      <div className="p-3 border-4 rounded-lg" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
         <form onSubmit={onFilter} className="grid sm:grid-cols-[1fr_140px] gap-3">
           <input
             type="number"
@@ -177,13 +175,13 @@ export default function StickerOwnersPage() {
             onChange={(e) => setUserIdFilter(e.target.value)}
             placeholder="Filter by user_id (opsional)"
             className="px-3 py-2 border-4 rounded-lg font-semibold"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           />
           <button
             type="submit"
             disabled={loadingList}
             className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
+            style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
           >
             {loadingList ? 'Memuat...' : 'Terapkan'}
           </button>
@@ -191,7 +189,7 @@ export default function StickerOwnersPage() {
       </div>
 
       {/* Tambah Ownership */}
-      <div className="p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+      <div className="p-3 border-4 rounded-lg" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
         <form onSubmit={onAdd} className="grid sm:grid-cols-[1fr_150px] gap-3 items-center">
           <input
             type="number"
@@ -199,13 +197,13 @@ export default function StickerOwnersPage() {
             onChange={(e) => setNewUserId(e.target.value)}
             placeholder="user_id (wajib)"
             className="px-3 py-2 border-4 rounded-lg font-semibold"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           />
           <button
             type="submit"
             disabled={submitting}
             className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}
+            style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}
           >
             {submitting ? (
               'Menambah...'
@@ -221,7 +219,7 @@ export default function StickerOwnersPage() {
 
       {/* Tabel Ownership */}
       <div className="overflow-auto">
-        <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+        <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
           <thead style={{ background: 'var(--panel-bg)' }}>
             <tr>
               <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>ID</th>
@@ -243,7 +241,7 @@ export default function StickerOwnersPage() {
                     type="button"
                     onClick={() => onRequestDelete(it)}
                     className="px-2 py-1 border-4 rounded font-extrabold"
-                    style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                    style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
                   >
                     <Trash2 className="size-4" />
                   </button>
@@ -265,7 +263,7 @@ export default function StickerOwnersPage() {
           disabled={page <= 1}
           onClick={() => setPage((p) => Math.max(1, p - 1))}
           className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold"
-          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+          style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
         >
           Prev
         </button>
@@ -274,7 +272,7 @@ export default function StickerOwnersPage() {
           disabled={page >= totalPages}
           onClick={() => setPage((p) => p + 1)}
           className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold"
-          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+          style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
         >
           Next
         </button>
@@ -285,12 +283,12 @@ export default function StickerOwnersPage() {
           <div className="absolute inset-0 bg-black/40" onClick={onCancelDelete} />
           <div
             className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6"
-            style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            style={{ boxShadow: 'var(--shadow-xl)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           >
             <div className="flex items-center gap-3 mb-3">
               <div
                 className="grid place-items-center size-10 bg-[#FEB2B2] border-4 rounded-md"
-                style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}
+                style={{ boxShadow: 'var(--shadow-md)', borderColor: 'var(--panel-border)' }}
               >
                 <Trash2 className="size-5" />
               </div>
@@ -305,7 +303,7 @@ export default function StickerOwnersPage() {
                 disabled={deleting}
                 onClick={onCancelDelete}
                 className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               >
                 Batal
               </button>
@@ -314,7 +312,7 @@ export default function StickerOwnersPage() {
                 disabled={deleting}
                 onClick={onConfirmDelete}
                 className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold disabled:opacity-60"
-                style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}
+                style={{ boxShadow: 'var(--shadow-md)', borderColor: 'var(--panel-border)' }}
               >
                 {deleting ? 'Menghapus...' : 'Ya, Hapus'}
               </button>

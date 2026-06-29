@@ -605,7 +605,7 @@ export default function GachaAdminPage() {
         <button
           type="button"
           onClick={loadConfigs}
-          className="btn-pg flex items-center gap-2"
+          className="btn btn--secondary"
         >
           <RefreshCw className="size-4" />
           Refresh
@@ -619,7 +619,7 @@ export default function GachaAdminPage() {
             <Settings2 className="size-4" />
             Event Gacha
           </div>
-          <div className="border-4 rounded-lg p-3" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+          <div className="card p-3">
             {loadingConfigs ? (
               <div className="text-sm">Memuat...</div>
             ) : (
@@ -631,12 +631,8 @@ export default function GachaAdminPage() {
                       key={c.event_code}
                       type="button"
                       onClick={() => handleSelectEvent(c.event_code)}
-                      className="w-full text-left px-3 py-2 border-4 rounded-lg text-sm font-extrabold"
-                      style={{
-                        boxShadow: '3px 3px 0 #000',
-                        background: active ? '#FFD803' : 'var(--panel-bg)',
-                        borderColor: 'var(--panel-border)',
-                      }}
+                      className={`w-full text-left px-3 py-2 border-4 border-[var(--border)] text-sm font-extrabold ${active ? 'bg-[#FFD803]' : ''}`}
+                      style={{ boxShadow: 'var(--shadow-sm)' }}
                     >
                       <div>{c.event_code}</div>
                       <div className="text-[11px] font-semibold opacity-80">{c.title || '-'}</div>
@@ -649,8 +645,7 @@ export default function GachaAdminPage() {
                 <button
                   type="button"
                   onClick={() => handleSelectEvent('')}
-                  className="w-full mt-2 flex items-center justify-center gap-2 border-4 rounded-lg px-3 py-2 text-xs font-extrabold"
-                  style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}
+                  className="btn btn--primary w-full mt-2 text-xs"
                 >
                   <Plus className="size-3" /> Event Baru
                 </button>
@@ -664,8 +659,7 @@ export default function GachaAdminPage() {
           {/* Config Form */}
           <form
             onSubmit={onSubmitConfig}
-            className="space-y-3 p-4 border-4 rounded-lg"
-            style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            className="card p-4 space-y-3"
           >
             <div className="text-lg font-extrabold mb-1">Konfigurasi Event</div>
             <div className="space-y-3">
@@ -808,7 +802,7 @@ export default function GachaAdminPage() {
               </button>
             </div>
             {specialEvent && (
-              <div className="mt-3 p-3 border-4 rounded-lg text-xs font-semibold" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
+              <div className="card p-3 mt-3 text-xs font-semibold">
                 <div className="font-extrabold mb-1">Special Event Terhubung</div>
                 <div className="space-y-1">
                   <div>
@@ -844,8 +838,7 @@ export default function GachaAdminPage() {
 
             <form
               onSubmit={onSubmitPrize}
-              className="space-y-3 p-4 border-4 rounded-lg"
-              style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              className="card p-4 space-y-3"
             >
               <div className="space-y-3">
                 <F label="Event Code">
@@ -1103,8 +1096,7 @@ export default function GachaAdminPage() {
 
             <form
               onSubmit={onSubmitShopItem}
-              className="space-y-3 p-4 border-4 rounded-lg"
-              style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              className="card p-4 space-y-3"
             >
               <div className="space-y-3">
                 <F label="Type">
@@ -1357,17 +1349,16 @@ function Td({ children, className = '' }) {
 }
 
 const styles = `
-.inp { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
-.sel { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
+.inp { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0; font-weight: 600; }
+.sel { padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0; font-weight: 800; }
 .lbl { font-size: 0.875rem; font-weight: 800; }
-.btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
-.btn-act { padding:0.25rem 0.5rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }
-.tbl { min-width: 100%; border-width:4px; border-radius:0.5rem; overflow:hidden; box-shadow:6px 6px 0 #000; border-color: var(--panel-border); color: var(--foreground); }
-.tbl thead { background: var(--panel-bg); }
-.th { text-align:left; padding:0.5rem 0.75rem; border-bottom-width:4px; border-color: var(--panel-border); }
-.td { padding:0.5rem 0.75rem; border-bottom-width:4px; border-color: var(--panel-border); font-weight:600; }
+.btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:4px; border-radius:0; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--foreground); }
+.btn-act { padding:0.25rem 0.5rem; border-width:4px; border-radius:0; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--background); color: var(--foreground); border-color: var(--foreground); }
+.tbl { min-width: 100%; border-width:4px; border-radius:0; overflow:hidden; box-shadow:6px 6px 0 #000; border-color: var(--foreground); color: var(--foreground); }
+.tbl thead { background: var(--surface); }
+.th { text-align:left; padding:0.5rem 0.75rem; border-bottom-width:4px; border-color: var(--foreground); }
+.td { padding:0.5rem 0.75rem; border-bottom-width:4px; border-color: var(--foreground); font-weight:600; }
 .td-empty { padding:1.5rem; text-align:center; font-size:0.875rem; opacity:0.7; }
-.btn-pg { padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; background:#fff; font-weight:800; box-shadow:4px 4px 0 #000; }
 `;
 
 if (typeof document !== 'undefined' && !document.getElementById('gacha-admin-styles')) {

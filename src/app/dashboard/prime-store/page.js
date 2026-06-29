@@ -346,8 +346,7 @@ export default function PrimeStoreAdminPage() {
       {/* Create Prime Store Item */}
       <form
         onSubmit={onCreate}
-        className="space-y-3 p-4 border-4 rounded-lg"
-        style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+        className="card p-4 space-y-3"
       >
         <div className="grid sm:grid-cols-2 gap-3">
           <L label="SKU">
@@ -356,7 +355,7 @@ export default function PrimeStoreAdminPage() {
               onChange={(e) => updateForm('sku', e.target.value)}
               required
               placeholder="Contoh: PRIME_VIP_GOLD_30D (wajib, unik)"
-              className="inp"
+              className="input w-full"
             />
           </L>
           <L label="Judul">
@@ -365,7 +364,7 @@ export default function PrimeStoreAdminPage() {
               onChange={(e) => updateForm('title', e.target.value)}
               required
               placeholder="Nama item yang tampil ke user (wajib)"
-              className="inp"
+              className="input w-full"
             />
           </L>
           <L label="Deskripsi">
@@ -373,14 +372,14 @@ export default function PrimeStoreAdminPage() {
               value={form.description}
               onChange={(e) => updateForm('description', e.target.value)}
               placeholder="Deskripsi singkat (opsional)"
-              className="inp"
+              className="input w-full"
             />
           </L>
           <L label="Tipe">
             <select
               value={form.item_type}
               onChange={(e) => updateForm('item_type', e.target.value)}
-              className="sel"
+              className="select w-full"
             >
               <option value="VIP">VIP (durasi atau paket VIP)</option>
               <option value="BADGE">BADGE (nama, icon, warna)</option>
@@ -398,7 +397,7 @@ export default function PrimeStoreAdminPage() {
               onChange={(e) => updateForm('base_coin_price', e.target.value)}
               required
               placeholder="Contoh: 2500 (wajib, harga sebelum diskon)"
-              className="inp"
+              className="input w-full"
             />
           </L>
 
@@ -408,7 +407,7 @@ export default function PrimeStoreAdminPage() {
                 <select
                   value={form.vip_plan_id}
                   onChange={(e) => updateForm('vip_plan_id', e.target.value)}
-                  className="sel"
+                  className="select w-full"
                 >
                   <option value="">Tanpa VIP Plan (custom hari)</option>
                   {vipPlans.map((p) => (
@@ -427,7 +426,7 @@ export default function PrimeStoreAdminPage() {
                   value={form.vip_days}
                   onChange={(e) => updateForm('vip_days', e.target.value)}
                   placeholder="Contoh: 30 (opsional jika pakai VIP Plan)"
-                  className="inp"
+                  className="input w-full"
                 />
               </L>
             </>
@@ -440,7 +439,7 @@ export default function PrimeStoreAdminPage() {
                   value={form.badge_name}
                   onChange={(e) => updateForm('badge_name', e.target.value)}
                   placeholder="Nama badge yang ditampilkan (opsional)"
-                  className="inp"
+                  className="input w-full"
                 />
               </L>
               <L label="Icon URL">
@@ -448,7 +447,7 @@ export default function PrimeStoreAdminPage() {
                   value={form.badge_icon}
                   onChange={(e) => updateForm('badge_icon', e.target.value)}
                   placeholder="URL icon badge (opsional)"
-                  className="inp"
+                  className="input w-full"
                 />
               </L>
               <L label="Title Color">
@@ -456,7 +455,7 @@ export default function PrimeStoreAdminPage() {
                   value={form.title_color}
                   onChange={(e) => updateForm('title_color', e.target.value)}
                   placeholder="Contoh: #FFD700 (opsional)"
-                  className="inp"
+                  className="input w-full"
                 />
               </L>
             </>
@@ -468,7 +467,7 @@ export default function PrimeStoreAdminPage() {
                 <select
                   value={form.super_badge_id}
                   onChange={(e) => updateForm('super_badge_id', e.target.value)}
-                  className="sel"
+                  className="select w-full"
                 >
                   <option value="">Pilih Super Badge... (wajib untuk SUPERBADGE)</option>
                   {badges.map((b) => (
@@ -490,7 +489,7 @@ export default function PrimeStoreAdminPage() {
                 <select
                   value={form.border_id}
                   onChange={(e) => updateForm('border_id', e.target.value)}
-                  className="sel"
+                  className="select w-full"
                 >
                   <option value="">Pilih Border... (wajib untuk BORDER)</option>
                   {borders.map((b) => (
@@ -512,7 +511,7 @@ export default function PrimeStoreAdminPage() {
                 <select
                   value={form.sticker_id}
                   onChange={(e) => updateForm('sticker_id', e.target.value)}
-                  className="sel"
+                  className="select w-full"
                 >
                   <option value="">Pilih Sticker... (wajib untuk STICKER)</option>
                   {stickers.map((s) => (
@@ -534,7 +533,7 @@ export default function PrimeStoreAdminPage() {
                 value={form.voucher_template_code}
                 onChange={(e) => updateForm('voucher_template_code', e.target.value)}
                 placeholder="Kode template voucher (wajib untuk VOUCHER)"
-                className="inp"
+                className="input w-full"
               />
             </L>
           )}
@@ -543,7 +542,7 @@ export default function PrimeStoreAdminPage() {
             <select
               value={String(form.is_active)}
               onChange={(e) => updateForm('is_active', e.target.value === 'true')}
-              className="sel"
+              className="select w-full"
             >
               <option value="true">Ya</option>
               <option value="false">Tidak</option>
@@ -555,12 +554,12 @@ export default function PrimeStoreAdminPage() {
               value={form.sort_order}
               onChange={(e) => updateForm('sort_order', e.target.value)}
               placeholder="Urutan tampil (opsional, default 0)"
-              className="inp"
+              className="input w-full"
             />
           </L>
         </div>
         <div>
-          <button disabled={creating} type="submit" className="btn-add">
+          <button disabled={creating} type="submit" className="btn btn--primary disabled:opacity-60 inline-flex items-center gap-2">
             {creating ? 'Membuat...' : (
               <>
                 <Plus className="size-4" /> Buat Item
@@ -573,7 +572,7 @@ export default function PrimeStoreAdminPage() {
       {/* Filters */}
       <form onSubmit={onSearch} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,180px)_minmax(0,120px)] gap-3">
         <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-          <label className="lbl flex items-center gap-2">
+          <label className="text-sm font-extrabold flex items-center gap-2">
             <ListFilter className="size-4" /> Pencarian
           </label>
           <input
@@ -581,23 +580,23 @@ export default function PrimeStoreAdminPage() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Cari judul/sku/tipe..."
-            className="inp bg-panel"
+            className="input w-full"
           />
         </div>
-        <select value={active} onChange={(e) => setActive(e.target.value)} className="sel">
+        <select value={active} onChange={(e) => setActive(e.target.value)} className="select w-full">
           <option value="">Aktif: Semua</option>
           <option value="true">Aktif: Ya</option>
           <option value="false">Aktif: Tidak</option>
         </select>
-        <button type="submit" disabled={loadingList} className="btn-pri">
+        <button type="submit" disabled={loadingList} className="btn btn--primary disabled:opacity-60">
           {loadingList ? 'Memuat...' : 'Terapkan'}
         </button>
       </form>
 
       {/* Items Table */}
       <div className="overflow-auto">
-        <table className="tbl">
-          <thead>
+        <table className="w-full border-4 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
+          <thead className="bg-[var(--panel-bg)]">
             <tr>
               <Th>ID</Th>
               <Th>SKU</Th>
@@ -621,7 +620,7 @@ export default function PrimeStoreAdminPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onDelete(it.id)}
-                      className="btn-act"
+                      className="btn btn--danger"
                       title="Hapus"
                     >
                       <Trash2 className="size-4" />
@@ -632,7 +631,7 @@ export default function PrimeStoreAdminPage() {
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={7} className="td-empty">
+                <td colSpan={7} className="px-4 py-6 text-center text-sm opacity-70">
                   {loadingList ? 'Memuat...' : 'Tidak ada data.'}
                 </td>
               </tr>
@@ -646,7 +645,7 @@ export default function PrimeStoreAdminPage() {
         <button
           disabled={page <= 1}
           onClick={() => setPage((p) => Math.max(1, p - 1))}
-          className="btn-pg"
+          className="btn btn--secondary disabled:opacity-60"
         >
           Sebelumnya
         </button>
@@ -656,7 +655,7 @@ export default function PrimeStoreAdminPage() {
         <button
           disabled={page >= totalPages}
           onClick={() => setPage((p) => p + 1)}
-          className="btn-pg"
+          className="btn btn--secondary disabled:opacity-60"
         >
           Berikutnya
         </button>
@@ -664,8 +663,7 @@ export default function PrimeStoreAdminPage() {
 
       {/* Daily Discounts Section */}
       <div
-        className="space-y-3 p-4 border-4 rounded-lg"
-        style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+        className="card p-4 space-y-3"
       >
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h3 className="text-lg font-extrabold flex items-center gap-2">
@@ -687,10 +685,10 @@ export default function PrimeStoreAdminPage() {
               type="date"
               value={discDate}
               onChange={(e) => setDiscDate(e.target.value)}
-              className="inp bg-panel w-full"
+              className="input w-full"
             />
           </div>
-          <button type="submit" disabled={loadingDiscounts} className="btn-pri">
+          <button type="submit" disabled={loadingDiscounts} className="btn btn--primary disabled:opacity-60">
             {loadingDiscounts ? 'Memuat...' : 'Filter'}
           </button>
         </form>
@@ -702,7 +700,7 @@ export default function PrimeStoreAdminPage() {
             <select
               value={discForm.item_id}
               onChange={(e) => updateDiscForm('item_id', e.target.value)}
-              className="sel w-full"
+              className="select w-full"
             >
               <option value="">Pilih item...</option>
               {items.map((it) => (
@@ -720,7 +718,7 @@ export default function PrimeStoreAdminPage() {
               value={discForm.discount_percent}
               onChange={(e) => updateDiscForm('discount_percent', e.target.value)}
               placeholder="Diskon %"
-              className="inp w-full"
+              className="input w-full"
             />
           </div>
 
@@ -730,7 +728,7 @@ export default function PrimeStoreAdminPage() {
               type="date"
               value={discForm.valid_date}
               onChange={(e) => updateDiscForm('valid_date', e.target.value)}
-              className="inp w-full"
+              className="input w-full"
             />
           </div>
           <div className="md:col-span-3 flex items-center gap-2">
@@ -739,14 +737,14 @@ export default function PrimeStoreAdminPage() {
               type="checkbox"
               checked={!!discForm.is_active}
               onChange={(e) => updateDiscForm('is_active', e.target.checked)}
-              className="size-4 border-4 rounded"
+              className="size-4 border-4 border-[var(--border)]"
             />
-            <label htmlFor="disc-active" className="lbl">
+            <label htmlFor="disc-active" className="text-sm font-extrabold">
               Aktif untuk tanggal tersebut
             </label>
           </div>
           <div className="md:col-span-3">
-            <button disabled={savingDisc} type="submit" className="btn-add">
+            <button disabled={savingDisc} type="submit" className="btn btn--primary disabled:opacity-60">
               {savingDisc ? 'Menyimpan...' : 'Simpan Diskon Harian'}
             </button>
           </div>
@@ -754,8 +752,8 @@ export default function PrimeStoreAdminPage() {
 
         {/* Tabel diskon harian */}
         <div className="overflow-auto">
-          <table className="tbl">
-            <thead>
+          <table className="w-full border-4 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
+            <thead className="bg-[var(--panel-bg)]">
               <tr>
                 <Th>ID</Th>
                 <Th>Item</Th>
@@ -778,7 +776,7 @@ export default function PrimeStoreAdminPage() {
                       <button
                         type="button"
                         onClick={() => onEditDiscount(d)}
-                        className="btn-act"
+                        className="btn btn--secondary"
                         title="Edit diskon"
                       >
                         <Edit3 className="size-4" />
@@ -786,7 +784,7 @@ export default function PrimeStoreAdminPage() {
                       <button
                         type="button"
                         onClick={() => onDeleteDiscount(d.id)}
-                        className="btn-act"
+                        className="btn btn--danger"
                         title="Hapus diskon"
                       >
                         <Trash2 className="size-4" />
@@ -797,7 +795,7 @@ export default function PrimeStoreAdminPage() {
               ))}
               {discounts.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="td-empty">
+                  <td colSpan={6} className="px-4 py-6 text-center text-sm opacity-70">
                     {loadingDiscounts ? 'Memuat...' : 'Tidak ada data.'}
                   </td>
                 </tr>
@@ -811,7 +809,7 @@ export default function PrimeStoreAdminPage() {
           <button
             disabled={discPage <= 1}
             onClick={() => setDiscPage((p) => Math.max(1, p - 1))}
-            className="btn-pg"
+            className="btn btn--secondary disabled:opacity-60"
           >
             Sebelumnya
           </button>
@@ -821,7 +819,7 @@ export default function PrimeStoreAdminPage() {
           <button
             disabled={discPage >= discTotalPages}
             onClick={() => setDiscPage((p) => p + 1)}
-            className="btn-pg"
+            className="btn btn--secondary disabled:opacity-60"
           >
             Berikutnya
           </button>
@@ -834,18 +832,18 @@ export default function PrimeStoreAdminPage() {
 function L({ label, children }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-      <label className="lbl">{label}</label>
+      <label className="text-sm font-extrabold">{label}</label>
       {children}
     </div>
   );
 }
 
 function Th({ children }) {
-  return <th className="th">{children}</th>;
+  return <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">{children}</th>;
 }
 
 function Td({ children, className = '' }) {
-  return <td className={`td ${className}`}>{children}</td>;
+  return <td className={`px-3 py-2 font-semibold border-b-4 border-[var(--border)] ${className}`}>{children}</td>;
 }
 
 function buildPrimeItemPayload(form) {
@@ -876,25 +874,3 @@ function buildPrimeItemPayload(form) {
   return p;
 }
 
-const styles = `
-.inp { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
-.sel { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
-.lbl { font-size: 0.875rem; font-weight: 800; }
-.btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
-.btn-pri { padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-primary); color: var(--accent-primary-foreground); border-color: var(--panel-border); }
-.btn-act { padding:0.25rem 0.5rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }
-.tbl { min-width: 100%; border-width:4px; border-radius:0.5rem; overflow:hidden; box-shadow:6px 6px 0 #000; border-color: var(--panel-border); color: var(--foreground); }
-.tbl thead { background: var(--panel-bg); }
-.th { text-align:left; padding:0.5rem 0.75rem; border-bottom-width:4px; border-color: var(--panel-border); }
-.td { padding:0.5rem 0.75rem; border-bottom-width:4px; border-color: var(--panel-border); font-weight:600; }
-.td-empty { padding:1.5rem; text-align:center; font-size:0.875rem; opacity:0.7; }
-.btn-pg { padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; background:#fff; font-weight:800; box-shadow:4px 4px 0 #000; }
-.bg-panel { background: var(--panel-bg); }
-`;
-
-if (typeof document !== 'undefined' && !document.getElementById('prime-store-admin-styles')) {
-  const style = document.createElement('style');
-  style.id = 'prime-store-admin-styles';
-  style.innerHTML = styles;
-  document.head.appendChild(style);
-}

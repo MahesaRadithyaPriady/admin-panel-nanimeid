@@ -194,13 +194,13 @@ export default function StoreAdminPage() {
           </div>
 
           {/* Create Form */}
-          <form onSubmit={onCreate} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <form onSubmit={onCreate} className="card p-4 space-y-3">
             <div className="grid sm:grid-cols-2 gap-3">
-              <L label="SKU"><input value={form.sku} onChange={(e)=>updateForm('sku', e.target.value)} required className="inp" /></L>
-              <L label="Judul"><input value={form.title} onChange={(e)=>updateForm('title', e.target.value)} required className="inp" /></L>
-              <L label="Deskripsi"><input value={form.description} onChange={(e)=>updateForm('description', e.target.value)} className="inp" /></L>
+              <L label="SKU"><input value={form.sku} onChange={(e)=>updateForm('sku', e.target.value)} required className="input w-full" /></L>
+              <L label="Judul"><input value={form.title} onChange={(e)=>updateForm('title', e.target.value)} required className="input w-full" /></L>
+              <L label="Deskripsi"><input value={form.description} onChange={(e)=>updateForm('description', e.target.value)} className="input w-full" /></L>
               <L label="Tipe">
-                <select value={form.item_type} onChange={(e)=>updateForm('item_type', e.target.value)} className="sel">
+                <select value={form.item_type} onChange={(e)=>updateForm('item_type', e.target.value)} className="select w-full">
                   <option value="COIN">COIN</option>
                   <option value="VIP">VIP</option>
                   <option value="BADGE">BADGE</option>
@@ -213,19 +213,19 @@ export default function StoreAdminPage() {
 
               {form.item_type === 'COIN' && (
                 <>
-                  <L label="Coin Amount"><input type="number" value={form.coin_amount} onChange={(e)=>updateForm('coin_amount', e.target.value)} className="inp" /></L>
+                  <L label="Coin Amount"><input type="number" value={form.coin_amount} onChange={(e)=>updateForm('coin_amount', e.target.value)} className="input w-full" /></L>
                 </>
               )}
               {form.item_type === 'VIP' && (
                 <>
-                  <L label="Hari VIP"><input type="number" value={form.vip_days} onChange={(e)=>updateForm('vip_days', e.target.value)} className="inp" /></L>
+                  <L label="Hari VIP"><input type="number" value={form.vip_days} onChange={(e)=>updateForm('vip_days', e.target.value)} className="input w-full" /></L>
                 </>
               )}
               {form.item_type === 'BADGE' && (
                 <>
-                  <L label="Nama Badge"><input value={form.badge_name} onChange={(e)=>updateForm('badge_name', e.target.value)} className="inp" /></L>
-                  <L label="Icon URL"><input value={form.badge_icon} onChange={(e)=>updateForm('badge_icon', e.target.value)} className="inp" /></L>
-                  <L label="Title Color"><input value={form.title_color} onChange={(e)=>updateForm('title_color', e.target.value)} className="inp" /></L>
+                  <L label="Nama Badge"><input value={form.badge_name} onChange={(e)=>updateForm('badge_name', e.target.value)} className="input w-full" /></L>
+                  <L label="Icon URL"><input value={form.badge_icon} onChange={(e)=>updateForm('badge_icon', e.target.value)} className="input w-full" /></L>
+                  <L label="Title Color"><input value={form.title_color} onChange={(e)=>updateForm('title_color', e.target.value)} className="input w-full" /></L>
                 </>
               )}
 
@@ -235,7 +235,7 @@ export default function StoreAdminPage() {
                     <select
                       value={form.badge_id}
                       onChange={(e)=>updateForm('badge_id', e.target.value)}
-                      className="sel"
+                      className="select w-full"
                     >
                       <option value="">Pilih Super Badge...</option>
                       {badges.map((b) => (
@@ -257,7 +257,7 @@ export default function StoreAdminPage() {
                     <select
                       value={form.sticker_id}
                       onChange={(e)=>updateForm('sticker_id', e.target.value)}
-                      className="sel"
+                      className="select w-full"
                     >
                       <option value="">Pilih Sticker...</option>
                       {stickers.map((s) => (
@@ -279,7 +279,7 @@ export default function StoreAdminPage() {
                     <select
                       value={form.avatar_border_id}
                       onChange={(e)=>updateForm('avatar_border_id', e.target.value)}
-                      className="sel"
+                      className="select w-full"
                     >
                       <option value="">Pilih Avatar Border...</option>
                       {avatarBorders.map((ab) => (
@@ -295,17 +295,17 @@ export default function StoreAdminPage() {
                 </>
               )}
 
-              <L label="Harga Koin"><input type="number" value={form.coin_price} onChange={(e)=>updateForm('coin_price', e.target.value)} className="inp" /></L>
+              <L label="Harga Koin"><input type="number" value={form.coin_price} onChange={(e)=>updateForm('coin_price', e.target.value)} className="input w-full" /></L>
               <L label="Aktif?">
-                <select value={String(form.is_active)} onChange={(e)=>updateForm('is_active', e.target.value === 'true')} className="sel">
+                <select value={String(form.is_active)} onChange={(e)=>updateForm('is_active', e.target.value === 'true')} className="select w-full">
                   <option value="true">Ya</option>
                   <option value="false">Tidak</option>
                 </select>
               </L>
-              <L label="Urutan"><input type="number" value={form.sort_order} onChange={(e)=>updateForm('sort_order', e.target.value)} className="inp" /></L>
+              <L label="Urutan"><input type="number" value={form.sort_order} onChange={(e)=>updateForm('sort_order', e.target.value)} className="input w-full" /></L>
             </div>
             <div>
-              <button disabled={creating} type="submit" className="btn-add">
+              <button disabled={creating} type="submit" className="btn btn--primary disabled:opacity-60 inline-flex items-center gap-2">
                 {creating ? 'Membuat...' : (<><Plus className="size-4" /> Buat Item</>)}
               </button>
             </div>
@@ -314,21 +314,21 @@ export default function StoreAdminPage() {
           {/* Filters */}
           <form onSubmit={onSearch} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,180px)_minmax(0,120px)] gap-3">
             <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-              <label className="lbl flex items-center gap-2"><ListFilter className="size-4" /> Pencarian</label>
-              <input type="text" value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Cari judul/sku/tipe..." className="inp bg-panel" />
+              <label className="text-sm font-extrabold flex items-center gap-2"><ListFilter className="size-4" /> Pencarian</label>
+              <input type="text" value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Cari judul/sku/tipe..." className="input w-full" />
             </div>
-            <select value={active} onChange={(e)=>setActive(e.target.value)} className="sel">
+            <select value={active} onChange={(e)=>setActive(e.target.value)} className="select w-full">
               <option value="">Aktif: Semua</option>
               <option value="true">Aktif: Ya</option>
               <option value="false">Aktif: Tidak</option>
             </select>
-            <button type="submit" disabled={loadingList} className="btn-pri">{loadingList ? 'Memuat...' : 'Terapkan'}</button>
+            <button type="submit" disabled={loadingList} className="btn btn--primary disabled:opacity-60">{loadingList ? 'Memuat...' : 'Terapkan'}</button>
           </form>
 
           {/* Table */}
           <div className="overflow-auto">
-            <table className="tbl">
-              <thead>
+            <table className="w-full border-4 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
+              <thead className="bg-[var(--panel-bg)]">
                 <tr>
                   <Th>ID</Th>
                   <Th>SKU</Th>
@@ -350,15 +350,15 @@ export default function StoreAdminPage() {
                     <Td>{String(it.is_active)}</Td>
                     <Td>
                       <div className="flex items-center gap-2">
-                        <a href={`/dashboard/store-admin/${it.id}`} className="btn-link" title="Detail/Edit"><ExternalLink className="size-4" /></a>
-                        <button onClick={() => onDelete(it.id)} className="btn-act" title="Hapus"><Trash2 className="size-4" /></button>
+                        <a href={`/dashboard/store-admin/${it.id}`} className="btn btn--secondary" title="Detail/Edit"><ExternalLink className="size-4" /></a>
+                        <button onClick={() => onDelete(it.id)} className="btn btn--danger" title="Hapus"><Trash2 className="size-4" /></button>
                       </div>
                     </Td>
                   </tr>
                 ))}
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="td-empty">{loadingList ? 'Memuat...' : 'Tidak ada data.'}</td>
+                    <td colSpan={7} className="px-4 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Tidak ada data.'}</td>
                   </tr>
                 )}
               </tbody>
@@ -367,9 +367,9 @@ export default function StoreAdminPage() {
 
           {/* Pagination */}
           <div className="flex items-center gap-2">
-            <button disabled={page <= 1} onClick={()=>setPage((p)=>Math.max(1,p-1))} className="btn-pg">Sebelumnya</button>
+            <button disabled={page <= 1} onClick={()=>setPage((p)=>Math.max(1,p-1))} className="btn btn--secondary disabled:opacity-60">Sebelumnya</button>
             <div className="text-sm font-extrabold">Halaman {page} / {Math.max(1, Math.ceil(total / limit))}</div>
-            <button disabled={page >= Math.ceil(total/limit)} onClick={()=>setPage((p)=>p+1)} className="btn-pg">Berikutnya</button>
+            <button disabled={page >= Math.ceil(total/limit)} onClick={()=>setPage((p)=>p+1)} className="btn btn--secondary disabled:opacity-60">Berikutnya</button>
           </div>
         </>
       )}
@@ -380,13 +380,13 @@ export default function StoreAdminPage() {
 function L({ label, children }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-[120px_minmax(0,1fr)] gap-2 items-center">
-      <label className="lbl">{label}</label>
+      <label className="text-sm font-extrabold">{label}</label>
       {children}
     </div>
   );
 }
-function Th({ children }) { return <th className="th">{children}</th>; }
-function Td({ children, className='' }) { return <td className={`td ${className}`}>{children}</td>; }
+function Th({ children }) { return <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">{children}</th>; }
+function Td({ children, className='' }) { return <td className={`px-3 py-2 font-semibold border-b-4 border-[var(--border)] ${className}`}>{children}</td>; }
 
 function buildItemPayload(form) {
   const p = {
@@ -416,26 +416,3 @@ function buildItemPayload(form) {
   return p;
 }
 
-const styles = `
-.inp { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 600; }
-.sel { width: 100%; min-width: 0; padding: 0.5rem 0.75rem; border-width: 4px; border-radius: 0.5rem; font-weight: 800; }
-.lbl { font-size: 0.875rem; font-weight: 800; }
-.btn-add { display:inline-flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-add); color: var(--accent-add-foreground); border-color: var(--panel-border); }
-.btn-pri { padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:4px 4px 0 #000; background: var(--accent-primary); color: var(--accent-primary-foreground); border-color: var(--panel-border); }
-.btn-act { padding:0.25rem 0.5rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--panel-bg); color: var(--foreground); border-color: var(--panel-border); }
-.btn-link { padding:0.25rem 0.5rem; border-width:4px; border-radius:0.5rem; font-weight:800; box-shadow:3px 3px 0 #000; background: var(--accent-edit); color: var(--accent-edit-foreground); border-color: var(--panel-border); }
-.tbl { min-width: 100%; border-width:4px; border-radius:0.5rem; overflow:hidden; box-shadow:6px 6px 0 #000; border-color: var(--panel-border); color: var(--foreground); }
-.tbl thead { background: var(--panel-bg); }
-.th { text-align:left; padding:0.5rem 0.75rem; border-bottom-width:4px; border-color: var(--panel-border); }
-.td { padding:0.5rem 0.75rem; border-bottom-width:4px; border-color: var(--panel-border); font-weight:600; }
-.td-empty { padding:1.5rem; text-align:center; font-size:0.875rem; opacity:0.7; }
-.btn-pg { padding:0.5rem 0.75rem; border-width:4px; border-radius:0.5rem; background:#fff; font-weight:800; box-shadow:4px 4px 0 #000; }
-.bg-panel { background: var(--panel-bg); }
-`;
-
-if (typeof document !== 'undefined' && !document.getElementById('store-admin-styles')) {
-  const style = document.createElement('style');
-  style.id = 'store-admin-styles';
-  style.innerHTML = styles;
-  document.head.appendChild(style);
-}

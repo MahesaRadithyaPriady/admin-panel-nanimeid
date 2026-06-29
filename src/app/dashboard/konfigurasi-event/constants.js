@@ -1,19 +1,8 @@
 // Animation variants
 export const ANIMATIONS = {
-  container: {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  },
-  item: {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.4, ease: 'easeOut' }
-    }
+  page: {
+    hidden:  { opacity: 0, y: 16 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.15, ease: 'easeOut' } }
   }
 };
 
@@ -37,15 +26,15 @@ export const TABS = {
 
 // Style constants
 export const STYLES = {
-  card: 'glass-card rounded-2xl border-2',
-  cardShadow: { boxShadow: '6px 6px 0 rgba(0,0,0,0.2)', borderColor: 'var(--panel-border)' },
+  card: 'card',
+  cardShadow: { boxShadow: 'var(--shadow-md)', borderColor: 'var(--border)' },
   tab: {
-    active: 'bg-[var(--accent-primary)] text-white',
-    inactive: 'bg-[var(--panel-bg)] border border-[var(--panel-border)] text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10'
+    active: 'tab tab--active',
+    inactive: 'tab'
   },
   icon: {
-    wrapper: 'w-10 h-10 rounded-xl bg-[var(--accent-primary)] flex items-center justify-center',
-    svg: 'w-5 h-5 text-white'
+    wrapper: 'w-10 h-10 flex items-center justify-center border-2 border-current',
+    svg: 'w-5 h-5'
   }
 };
 

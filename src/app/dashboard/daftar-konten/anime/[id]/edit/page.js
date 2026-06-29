@@ -3,23 +3,18 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, Save, Upload, Image as ImageIcon, Film, Trash2, AlertTriangle, Tag as TagIcon, Clock, Calendar, Plus, X } from 'lucide-react';
+import { ArrowLeft, Save, Upload, Image as ImageIcon, Film, Trash2, AlertTriangle, Tag as TagIcon, Clock, Calendar, Plus, X, Link, Star, Layers, BookOpen, Hash, Building2, LayoutList } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { getAnimeDetail, updateAnime, deleteAnime } from '@/lib/api';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
+const pageVariants = {
+  hidden:  { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.15, ease: 'easeOut' } },
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const CONTENT_TYPES = ['ANIME', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'];
+const CONTENT_TYPES = ['ANIME', 'DONGHUA', 'MOVIE'];
 const STATUS_OPTIONS = ['ONGOING', 'COMPLETED', 'HIATUS', 'UPCOMING'];
 
 // API functions imported from @/lib/api
@@ -37,6 +32,7 @@ export default function EditAnimePage() {
   const [form, setForm] = useState({
     nama_anime: '',
     sinopsis_anime: '',
+    fakta_menarik: '',
     genre_anime: '',
     status_anime: 'ONGOING',
     content_type: 'ANIME',
@@ -69,6 +65,7 @@ export default function EditAnimePage() {
           setForm({
             nama_anime: anime.nama_anime || '',
             sinopsis_anime: anime.sinopsis_anime || '',
+            fakta_menarik: anime.fakta_menarik || '',
             genre_anime: anime.genre_anime || '',
             status_anime: anime.status_anime || 'ONGOING',
             content_type: anime.content_type || anime.type || 'ANIME',
@@ -123,6 +120,7 @@ export default function EditAnimePage() {
       const payload = {
         nama_anime: form.nama_anime,
         sinopsis_anime: form.sinopsis_anime,
+        fakta_menarik: form.fakta_menarik || undefined,
         genre_anime: form.genre_anime,
         status_anime: form.status_anime,
         content_type: form.content_type,
@@ -193,14 +191,14 @@ export default function EditAnimePage() {
   }
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6 min-w-0 max-w-4xl mx-auto">
+    <motion.div variants={pageVariants} initial="hidden" animate="visible" className="space-y-6 min-w-0 max-w-4xl mx-auto">
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push(`/dashboard/daftar-konten/anime/${id}`)}
             className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2 font-bold transition-all hover:translate-y-[-2px]"
-            style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           >
             <ArrowLeft className="w-4 h-4" /> Kembali
           </button>
@@ -213,17 +211,17 @@ export default function EditAnimePage() {
           onClick={onDelete}
           disabled={deleting}
           className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2 font-bold text-red-500 disabled:opacity-60 transition-all hover:translate-y-[-2px]"
-          style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'rgba(239,68,68,0.1)', borderColor: 'var(--panel-border)' }}
+          style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'rgba(239,68,68,0.1)', borderColor: 'var(--panel-border)' }}
         >
           <Trash2 className={`w-4 h-4 ${deleting ? 'animate-pulse' : ''}`} />
           {deleting ? 'Menghapus...' : 'Hapus'}
         </button>
-      </motion.div>
+      </div>
 
       {/* Form */}
-      <motion.form variants={itemVariants} onSubmit={onSubmit} className="space-y-6">
+      <form onSubmit={onSubmit} className="space-y-6">
         {/* Cover Section */}
-        <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+        <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
           <h2 className="text-lg font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
             <ImageIcon className="w-5 h-5" /> Cover Anime
           </h2>
@@ -232,7 +230,7 @@ export default function EditAnimePage() {
             <div className="w-full sm:w-48">
               <div className="aspect-[3/4] rounded-xl border-2 overflow-hidden flex items-center justify-center" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
                 {coverPreview ? (
-                  <img src={coverPreview} alt="Preview" className="w-full h-full object-cover" />
+                  <img src={coverPreview} alt="Preview" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 ) : (
                   <div className="text-center p-4">
                     <ImageIcon className="w-10 h-10 mx-auto text-[var(--foreground)]/30" />
@@ -271,30 +269,20 @@ export default function EditAnimePage() {
               </div>
 
               {form.cover_mode === 'upload' && (
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={onCoverChange}
-                  className="w-full rounded-lg border-2 px-3 py-2.5 text-sm"
-                  style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                />
+                <input type="file" accept="image/*" onChange={onCoverChange} className="input" />
               )}
               {form.cover_mode === 'url' && (
-                <input
-                  type="url"
-                  placeholder="https://example.com/cover.jpg"
-                  value={form.cover_url}
-                  onChange={(e) => updateField('cover_url', e.target.value)}
-                  className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                  style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                />
+                <div className="input-icon">
+                  <Link className="input-icon__icon" />
+                  <input type="url" placeholder="https://example.com/cover.jpg" value={form.cover_url} onChange={(e) => updateField('cover_url', e.target.value)} className="input" />
+                </div>
               )}
             </div>
           </div>
         </div>
 
         {/* Basic Info */}
-        <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+        <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
           <h2 className="text-lg font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
             <Film className="w-5 h-5" /> Informasi Dasar
           </h2>
@@ -302,118 +290,88 @@ export default function EditAnimePage() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
               <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Judul Anime *</label>
-              <input
-                required
-                type="text"
-                value={form.nama_anime}
-                onChange={(e) => updateField('nama_anime', e.target.value)}
-                className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-              />
+              <div className="input-icon">
+                <Film className="input-icon__icon" />
+                <input required type="text" value={form.nama_anime} onChange={(e) => updateField('nama_anime', e.target.value)} className="input" />
+              </div>
             </div>
 
             <div className="sm:col-span-2">
               <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Sinopsis</label>
-              <textarea
-                rows={4}
-                value={form.sinopsis_anime}
-                onChange={(e) => updateField('sinopsis_anime', e.target.value)}
-                className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold resize-none"
-                style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-              />
+              <div className="input-icon">
+                <BookOpen className="input-icon__icon input-icon__icon--top" />
+                <textarea rows={4} value={form.sinopsis_anime} onChange={(e) => updateField('sinopsis_anime', e.target.value)} className="input resize-none" />
+              </div>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Fakta Menarik</label>
+              <div className="input-icon">
+                <Star className="input-icon__icon input-icon__icon--top" />
+                <textarea rows={3} value={form.fakta_menarik} onChange={(e) => updateField('fakta_menarik', e.target.value)} placeholder="Tuliskan fakta unik atau menarik tentang anime ini..." className="input resize-none" />
+              </div>
             </div>
 
             <div>
               <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Genre</label>
-              <input
-                type="text"
-                value={form.genre_anime}
-                onChange={(e) => updateField('genre_anime', e.target.value)}
-                className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-              />
+              <div className="input-icon">
+                <Layers className="input-icon__icon" />
+                <input type="text" value={form.genre_anime} onChange={(e) => updateField('genre_anime', e.target.value)} className="input" />
+              </div>
             </div>
 
             <div>
               <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Studio</label>
-              <input
-                type="text"
-                value={form.studio_anime}
-                onChange={(e) => updateField('studio_anime', e.target.value)}
-                className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-              />
+              <div className="input-icon">
+                <Building2 className="input-icon__icon" />
+                <input type="text" value={form.studio_anime} onChange={(e) => updateField('studio_anime', e.target.value)} className="input" />
+              </div>
             </div>
 
             <div>
               <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Tipe Konten</label>
-              <select
-                value={form.content_type}
-                onChange={(e) => updateField('content_type', e.target.value)}
-                className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-              >
+              <select value={form.content_type} onChange={(e) => updateField('content_type', e.target.value)} className="select">
                 {CONTENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Status</label>
-              <select
-                value={form.status_anime}
-                onChange={(e) => updateField('status_anime', e.target.value)}
-                className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-              >
+              <select value={form.status_anime} onChange={(e) => updateField('status_anime', e.target.value)} className="select">
                 {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Rating</label>
-              <input
-                type="number"
-                min="0"
-                max="10"
-                step="0.1"
-                value={form.rating_anime}
-                onChange={(e) => updateField('rating_anime', e.target.value)}
-                className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-              />
+              <div className="input-icon">
+                <Star className="input-icon__icon" />
+                <input type="number" min="0" max="10" step="0.1" value={form.rating_anime} onChange={(e) => updateField('rating_anime', e.target.value)} className="input" />
+              </div>
             </div>
 
             <div>
               <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Tanggal Rilis</label>
-              <input
-                type="date"
-                value={form.tanggal_rilis_anime}
-                onChange={(e) => updateField('tanggal_rilis_anime', e.target.value)}
-                className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-              />
+              <div className="input-icon">
+                <Calendar className="input-icon__icon" />
+                <input type="date" value={form.tanggal_rilis_anime} onChange={(e) => updateField('tanggal_rilis_anime', e.target.value)} className="input" />
+              </div>
             </div>
 
             <div>
               <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Tags</label>
-              <input
-                type="text"
-                value={form.tags_anime}
-                onChange={(e) => updateField('tags_anime', e.target.value)}
-                className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-              />
+              <div className="input-icon">
+                <Hash className="input-icon__icon" />
+                <input type="text" value={form.tags_anime} onChange={(e) => updateField('tags_anime', e.target.value)} className="input" />
+              </div>
             </div>
 
             <div>
               <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Label</label>
-              <input
-                type="text"
-                value={form.label_anime}
-                onChange={(e) => updateField('label_anime', e.target.value)}
-                className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-              />
+              <div className="input-icon">
+                <LayoutList className="input-icon__icon" />
+                <input type="text" value={form.label_anime} onChange={(e) => updateField('label_anime', e.target.value)} className="input" />
+              </div>
             </div>
           </div>
 
@@ -431,9 +389,9 @@ export default function EditAnimePage() {
 
         {/* Schedule Section - Only for ONGOING status */}
         {form.status_anime === 'ONGOING' && (
-          <motion.div variants={itemVariants} className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+          <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-[var(--foreground)] flex items-center gap-2">
+              <h2 className="section-title flex items-center gap-2">
                 <Calendar className="w-5 h-5" /> Jadwal Rilis <span className="text-red-500">*</span>
               </h2>
               <span className="text-xs text-[var(--foreground)]/60 bg-yellow-500/20 px-2 py-1 rounded">
@@ -443,7 +401,7 @@ export default function EditAnimePage() {
 
             <div className="space-y-3">
               {schedules.map((schedule, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 rounded-xl border-2" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-xl border-2" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
                   <select
                     value={schedule.hari}
                     onChange={(e) => {
@@ -451,7 +409,7 @@ export default function EditAnimePage() {
                       newSchedules[index] = { ...schedule, hari: e.target.value };
                       setSchedules(newSchedules);
                     }}
-                    className="rounded-lg border-2 px-3 py-2 text-sm font-semibold"
+                    className="w-full sm:w-auto rounded-lg border-2 px-3 py-2 text-sm font-semibold"
                     style={{ background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
                   >
                     {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map(h => (
@@ -459,7 +417,7 @@ export default function EditAnimePage() {
                     ))}
                   </select>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
                     <Clock className="w-4 h-4 text-[var(--foreground)]/50" />
                     <input
                       type="time"
@@ -469,7 +427,7 @@ export default function EditAnimePage() {
                         newSchedules[index] = { ...schedule, jam: e.target.value };
                         setSchedules(newSchedules);
                       }}
-                      className="rounded-lg border-2 px-3 py-2 text-sm font-semibold"
+                      className="flex-1 sm:flex-none rounded-lg border-2 px-3 py-2 text-sm font-semibold"
                       style={{ background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
                     />
                   </div>
@@ -481,7 +439,7 @@ export default function EditAnimePage() {
                       newSchedules[index] = { ...schedule, is_active: !schedule.is_active };
                       setSchedules(newSchedules);
                     }}
-                    className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${schedule.is_active ? 'bg-green-500/20 text-green-600' : 'bg-gray-500/20 text-gray-600'}`}
+                    className={`w-full sm:w-auto px-3 py-2 rounded-lg text-sm font-bold transition-colors ${schedule.is_active ? 'bg-green-500/20 text-green-600' : 'bg-gray-500/20 text-gray-600'}`}
                   >
                     {schedule.is_active ? 'Aktif' : 'Nonaktif'}
                   </button>
@@ -503,15 +461,15 @@ export default function EditAnimePage() {
               type="button"
               onClick={() => setSchedules([...schedules, { hari: 'Senin', jam: '20:00', is_active: true }])}
               className="mt-3 inline-flex items-center gap-2 rounded-lg border-2 px-4 py-2 text-sm font-bold transition-all hover:translate-y-[-2px]"
-              style={{ boxShadow: '2px 2px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+              style={{ boxShadow: '2px 2px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
             >
               <Plus className="w-4 h-4" /> Tambah Jadwal
             </button>
-          </motion.div>
+          </div>
         )}
 
         {/* Aliases Field */}
-        <motion.div variants={itemVariants} className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+        <div className="card p-5">
           <h2 className="text-lg font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
             <TagIcon className="w-5 h-5" /> Alias / Judul Lain
           </h2>
@@ -526,7 +484,7 @@ export default function EditAnimePage() {
           <p className="text-xs text-[var(--foreground)]/60 mt-2">
             Alias membantu pencarian anime dengan nama lain
           </p>
-        </motion.div>
+        </div>
 
         {/* Submit */}
         <div className="flex items-center justify-end gap-3">
@@ -534,7 +492,7 @@ export default function EditAnimePage() {
             type="button"
             onClick={() => router.push(`/dashboard/daftar-konten/anime/${id}`)}
             className="rounded-xl border-2 px-6 py-3 font-bold transition-all hover:translate-y-[-2px]"
-            style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+            style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
           >
             Batal
           </button>
@@ -542,13 +500,13 @@ export default function EditAnimePage() {
             type="submit"
             disabled={saving}
             className="inline-flex items-center gap-2 rounded-xl border-2 px-6 py-3 font-bold disabled:opacity-60 transition-all hover:translate-y-[-2px]"
-            style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}
+            style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}
           >
             <Save className={`w-4 h-4 ${saving ? 'animate-pulse' : ''}`} />
             {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
           </button>
         </div>
-      </motion.form>
+      </form>
     </motion.div>
   );
 }

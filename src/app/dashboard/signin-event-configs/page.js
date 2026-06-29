@@ -373,7 +373,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
             </div>
             <button onClick={async () => { await loadList(); await loadLookups(); }} disabled={loadingList}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] font-bold text-sm hover:bg-[var(--accent-primary)]/10 transition-colors disabled:opacity-50"
-              style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)' }}>
+              style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)' }}>
               <RefreshCw className={`w-4 h-4 ${loadingList ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">{loadingList ? 'Memuat...' : 'Refresh'}</span>
             </button>
@@ -395,7 +395,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
           <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-3">
             <select value={filterActive} onChange={(e) => { setPage(1); setFilterActive(e.target.value); }}
               className="px-3 py-2 rounded-xl border-2 bg-[var(--panel-bg)] text-[var(--foreground)] text-sm font-bold"
-              style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', borderColor: 'var(--panel-border)' }}>
+              style={{ boxShadow: '3px 3px 0 rgba(212,212,212,0.15)', borderColor: 'var(--panel-border)' }}>
               <option value="">Semua</option>
               <option value="true">Aktif saja</option>
               <option value="false">Nonaktif saja</option>
@@ -440,7 +440,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                   onChange={(e) => setForm((f) => ({ ...f, days_total: e.target.value }))}
                   placeholder="Contoh: 7"
                   className="w-full max-w-full min-w-0 px-3 py-2 border-2 rounded-xl font-bold text-sm"
-                  style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  style={{ boxShadow: '3px 3px 0 rgba(212,212,212,0.15)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 />
               </label>
 
@@ -457,7 +457,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                   value={form.starts_at}
                   onChange={(e) => setForm((f) => ({ ...f, starts_at: e.target.value }))}
                   className="block w-full max-w-full min-w-0 px-3 py-2 border-2 rounded-xl font-bold text-sm"
-                  style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  style={{ boxShadow: '3px 3px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 />
               </label>
               <label className={`${STYLES.card} p-4 grid gap-1 min-w-0`} style={STYLES.cardShadow}>
@@ -467,7 +467,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                   value={form.ends_at}
                   onChange={(e) => setForm((f) => ({ ...f, ends_at: e.target.value }))}
                   className="block w-full max-w-full min-w-0 px-3 py-2 border-2 rounded-xl font-bold text-sm"
-                  style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  style={{ boxShadow: '3px 3px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                 />
               </label>
             </div>
@@ -480,7 +480,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
               const needsId = t !== "NONE";
 
               return (
-                <div key={idx} className="rounded-[22px] border-4 p-4 space-y-3 min-w-0 overflow-hidden" style={{ boxShadow: "6px 6px 0 #000", background: idx % 2 === 0 ? "var(--background)" : "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
+                <div key={idx} className="rounded-[22px] border-4 p-4 space-y-3 min-w-0 overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)', background: idx % 2 === 0 ? "var(--background)" : "var(--panel-bg)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
                   <div className="flex items-center justify-between gap-2 min-w-0 flex-wrap">
                     <div className="text-sm font-black min-w-0">Hari #{idx + 1}</div>
                     <span className="px-2 py-0.5 rounded-full bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] text-[11px] font-bold">
@@ -497,7 +497,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                         value={normalizedCoins[idx]}
                         onChange={(e) => setDayField(idx, { coin: e.target.value })}
                         className="w-full max-w-full min-w-0 px-3 py-2 border-2 rounded-xl font-bold text-sm"
-                        style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                        style={{ boxShadow: '3px 3px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                       />
                     </label>
 
@@ -507,7 +507,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                         value={t}
                         onChange={(e) => setDayField(idx, { type: e.target.value })}
                         className="w-full max-w-full min-w-0 px-3 py-2 border-2 rounded-xl font-bold text-sm"
-                        style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                        style={{ boxShadow: '3px 3px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                       >
                         {REWARD_TYPES.map((rt) => (
                           <option key={rt} value={rt}>
@@ -525,7 +525,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                         value={normalizedIds[idx]}
                         onChange={(e) => setDayField(idx, { id: e.target.value })}
                         className="w-full max-w-full min-w-0 px-3 py-2 border-2 rounded-xl font-bold text-sm"
-                        style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                        style={{ boxShadow: '3px 3px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
                       >
                         <option value={0}>Pilih item</option>
                         {opts.map((o) => (
@@ -551,7 +551,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
               disabled={submitting}
               className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
               style={{
-                boxShadow: "4px 4px 0 #000",
+                boxShadow: 'var(--shadow-md)',
                 background: mode === "add" ? "var(--accent-add)" : "var(--accent-edit)",
                 color: mode === "add" ? "var(--accent-add-foreground)" : "var(--accent-edit-foreground)",
                 borderColor: "var(--panel-border)",
@@ -569,7 +569,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                 onClick={resetForm}
                 className="px-3 py-2 border-4 rounded-lg font-extrabold"
                 style={{
-                  boxShadow: "4px 4px 0 #000",
+                  boxShadow: 'var(--shadow-md)',
                   background: "var(--panel-bg)",
                   borderColor: "var(--panel-border)",
                   color: "var(--foreground)",
@@ -593,7 +593,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
             const preview = renderRewardPreview(it);
 
             return (
-              <div key={it.id} className="rounded-[22px] border-4 p-4" style={{ boxShadow: "6px 6px 0 #000", background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
+              <div key={it.id} className="rounded-[22px] border-4 p-4" style={{ boxShadow: 'var(--shadow-lg)', background: "var(--background)", borderColor: "var(--panel-border)", color: "var(--foreground)" }}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="grid gap-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -612,7 +612,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                       type="button"
                       onClick={() => onEdit(it)}
                       className="px-3 py-2 border-4 rounded-xl font-extrabold"
-                      style={{ boxShadow: "4px 4px 0 #000", background: "var(--accent-edit)", color: "var(--accent-edit-foreground)", borderColor: "var(--panel-border)" }}
+                      style={{ boxShadow: 'var(--shadow-md)', background: "var(--accent-edit)", color: "var(--accent-edit-foreground)", borderColor: "var(--panel-border)" }}
                     >
                       <span className="inline-flex items-center gap-2">
                         <Pencil className="size-4" /> Edit
@@ -623,7 +623,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                       disabled={togglingId === it.id}
                       onClick={() => onToggle(it)}
                       className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
-                      style={{ boxShadow: "4px 4px 0 #000", background: it.is_active ? "#22c55e" : "var(--panel-bg)", color: it.is_active ? "#fff" : "var(--foreground)", borderColor: "var(--panel-border)" }}
+                      style={{ boxShadow: 'var(--shadow-md)', background: it.is_active ? "#22c55e" : "var(--panel-bg)", color: it.is_active ? "#fff" : "var(--foreground)", borderColor: "var(--panel-border)" }}
                     >
                       {togglingId === it.id ? "..." : it.is_active ? (
                         <span className="inline-flex items-center gap-2">
@@ -640,7 +640,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
                       disabled={deletingId === it.id}
                       onClick={() => onDelete(it)}
                       className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
-                      style={{ boxShadow: "4px 4px 0 #000", background: "var(--panel-bg)", color: "var(--foreground)", borderColor: "var(--panel-border)" }}
+                      style={{ boxShadow: 'var(--shadow-md)', background: "var(--panel-bg)", color: "var(--foreground)", borderColor: "var(--panel-border)" }}
                     >
                       <span className="inline-flex items-center gap-2">
                         <Trash2 className="size-4" /> Hapus
@@ -698,7 +698,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
           onClick={() => setPage((p) => Math.max(1, p - 1))}
           className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold"
           style={{
-            boxShadow: "4px 4px 0 #000",
+            boxShadow: 'var(--shadow-md)',
             background: "var(--panel-bg)",
             borderColor: "var(--panel-border)",
             color: "var(--foreground)",
@@ -714,7 +714,7 @@ export function SigninEventConfigsContent({ embedded = false } = {}) {
           onClick={() => setPage((p) => p + 1)}
           className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold"
           style={{
-            boxShadow: "4px 4px 0 #000",
+            boxShadow: 'var(--shadow-md)',
             background: "var(--panel-bg)",
             borderColor: "var(--panel-border)",
             color: "var(--foreground)",

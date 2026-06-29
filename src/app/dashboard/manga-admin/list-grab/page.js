@@ -87,11 +87,11 @@ export default function MangaGrabListPage() {
       {loading || !user ? null : (
         <>
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="rounded-[28px] border-4 p-5 md:p-6" style={{ boxShadow: '10px 10px 0 #000', background: 'linear-gradient(135deg, var(--panel-bg) 0%, #dbeafe 100%)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            <div className="card p-5 md:p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 rounded-full border-2 px-3 py-1 text-xs font-bold" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--accent-primary)' }}>
-                    <Sparkles className="size-4" /> Monitoring Grab Manga
+                  <div className="label flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" /> Monitoring Grab Manga
                   </div>
                   <div>
                     <h2 className="text-2xl md:text-3xl font-black flex items-center gap-3">
@@ -107,8 +107,7 @@ export default function MangaGrabListPage() {
                   type="button"
                   onClick={() => loadItems()}
                   disabled={loadingList}
-                  className="inline-flex items-center gap-2 rounded-2xl border-4 px-4 py-3 font-black disabled:opacity-60"
-                  style={{ boxShadow: '6px 6px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}
+                  className="btn btn--primary disabled:opacity-60"
                 >
                   <RefreshCcw className={`size-4 ${loadingList ? 'animate-spin' : ''}`} />
                   {loadingList ? 'Menyegarkan...' : 'Refresh'}
@@ -116,13 +115,13 @@ export default function MangaGrabListPage() {
               </div>
             </div>
 
-            <div className="rounded-[28px] border-4 p-5" style={{ boxShadow: '10px 10px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            <div className="card p-5">
               <div className="text-sm font-black opacity-70">Sinkronisasi</div>
               <div className="mt-2 text-xl font-black flex items-center gap-2">
                 <Clock3 className="size-5" />
                 {lastUpdated ? formatDateTime(lastUpdated) : 'Belum pernah refresh'}
               </div>
-              <label className="mt-4 flex items-center gap-3 rounded-2xl border-4 px-4 py-3 font-bold" style={{ borderColor: 'var(--panel-border)', background: autoRefresh ? '#dcfce7' : 'var(--background)', color: autoRefresh ? '#14532d' : 'var(--foreground)' }}>
+              <label className="mt-4 flex items-center gap-3 card px-4 py-3 font-bold">
                 <input type="checkbox" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} />
                 Auto refresh tiap 3 detik
               </label>
@@ -130,7 +129,7 @@ export default function MangaGrabListPage() {
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
-            <div className="space-y-4 rounded-[28px] border-4 p-5" style={{ boxShadow: '10px 10px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            <div className="card p-5 space-y-4">
               <div>
                 <div className="text-sm font-black opacity-70">Filter</div>
                 <div className="mt-1 text-lg font-black">Atur tampilan job</div>
@@ -138,7 +137,7 @@ export default function MangaGrabListPage() {
 
               <div className="space-y-2">
                 <div className="text-xs font-black opacity-70">Status</div>
-                <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full rounded-2xl border-4 px-3 py-3 font-bold" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)', color: 'var(--foreground)' }}>
+                <select value={status} onChange={(e) => setStatus(e.target.value)} className="select">
                   <option value="">Semua Status</option>
                   {STATUS_OPTIONS.filter(Boolean).map((it) => (
                     <option key={it} value={it}>{it}</option>
@@ -148,7 +147,7 @@ export default function MangaGrabListPage() {
 
               <div className="space-y-2">
                 <div className="text-xs font-black opacity-70">Limit</div>
-                <select value={limit} onChange={(e) => setLimit(Number(e.target.value) || 20)} className="w-full rounded-2xl border-4 px-3 py-3 font-bold" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)', color: 'var(--foreground)' }}>
+                <select value={limit} onChange={(e) => setLimit(Number(e.target.value) || 20)} className="select">
                   {LIMIT_OPTIONS.map((it) => (
                     <option key={it} value={it}>{it} item</option>
                   ))}
@@ -167,7 +166,7 @@ export default function MangaGrabListPage() {
 
             <div className="space-y-4">
               {loadingList && items.length === 0 ? (
-                <div className="rounded-[28px] border-4 p-8" style={{ boxShadow: '10px 10px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                <div className="card p-8">
                   <div className="inline-flex items-center gap-3 text-lg font-black">
                     <LoaderCircle className="size-5 animate-spin" /> Memuat status grab...
                   </div>
@@ -175,8 +174,8 @@ export default function MangaGrabListPage() {
               ) : null}
 
               {!loadingList && items.length === 0 ? (
-                <div className="rounded-[28px] border-4 p-8 text-center" style={{ boxShadow: '10px 10px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                  <div className="mx-auto mb-3 inline-flex size-14 items-center justify-center rounded-2xl border-4" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
+                <div className="card p-8 text-center">
+                  <div className="mx-auto mb-3 inline-flex size-14 items-center justify-center border-2 border-[var(--border)]" style={{ background: 'var(--surface)' }}>
                     <BadgeCheck className="size-7" />
                   </div>
                   <div className="text-xl font-black">Belum ada job grab</div>
@@ -192,15 +191,15 @@ export default function MangaGrabListPage() {
                 const canFix = ['FAILED', 'PARTIAL', 'COMPLETED'].includes(String(job?.status || '').toUpperCase());
                 const fixKey = `${manga?.id}:${job?.id}`;
                 return (
-                  <div key={`${job?.id || 'job'}-${manga?.id || index}`} className="rounded-[28px] border-4 overflow-hidden" style={{ boxShadow: '10px 10px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <div key={`${job?.id || 'job'}-${manga?.id || index}`} className="card overflow-hidden">
                     <div className="grid gap-0 lg:grid-cols-[220px_minmax(0,1fr)]">
-                      <div className="relative min-h-[220px] border-b-4 lg:border-b-0 lg:border-r-4" style={{ borderColor: 'var(--panel-border)', background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' }}>
+                      <div className="relative min-h-[220px] border-b-4 lg:border-b-0 lg:border-r-4 border-[var(--border)]" style={{ background: '#0f172a' }}>
                         {manga?.cover_manga ? (
-                          <img src={manga.cover_manga} alt={manga?.judul_manga || 'manga'} className="absolute inset-0 h-full w-full object-cover opacity-80" />
+                          <img src={manga.cover_manga} alt={manga?.judul_manga || 'manga'} className="absolute inset-0 h-full w-full object-cover opacity-80" loading="lazy" decoding="async" />
                         ) : null}
                         <div className="absolute inset-0 bg-black/40" />
                         <div className="relative flex h-full flex-col justify-between p-4 text-white">
-                          <div className="inline-flex w-fit items-center gap-2 rounded-full border-4 px-3 py-1 text-xs font-black" style={{ borderColor: 'rgba(255,255,255,0.35)', background: tone.bg, color: tone.fg }}>
+                          <div className="inline-flex w-fit items-center gap-2 rounded-full border-4 px-3 py-1 text-xs font-black" style={{ borderColor: 'rgba(212,212,212,0.35)', background: tone.bg, color: tone.fg }}>
                             {renderStatusIcon(job?.status)}
                             {String(job?.status || 'UNKNOWN').toUpperCase()}
                           </div>
@@ -225,8 +224,7 @@ export default function MangaGrabListPage() {
                                 type="button"
                                 onClick={() => onFixGrabStack({ mangaId: manga.id, jobId: job.id, status: job?.status })}
                                 disabled={fixingKey === fixKey || loadingList}
-                                className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2 font-bold disabled:opacity-60"
-                                style={{ boxShadow: '3px 3px 0 rgba(0,0,0,0.15)', borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--foreground)' }}
+                                className="btn btn--secondary btn--sm disabled:opacity-60"
                               >
                                 <Wrench className={`size-4 ${fixingKey === fixKey ? 'animate-spin' : ''}`} />
                                 {fixingKey === fixKey ? 'Memperbaiki...' : 'Perbaiki'}
@@ -236,8 +234,7 @@ export default function MangaGrabListPage() {
                               <button
                                 type="button"
                                 onClick={() => router.push(`/dashboard/manga-admin/${manga.id}`)}
-                                className="rounded-2xl border-4 px-4 py-2 font-black"
-                                style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)', background: 'var(--background)', color: 'var(--foreground)' }}
+                                className="btn btn--secondary btn--sm"
                               >
                                 Buka Manga
                               </button>
@@ -250,7 +247,7 @@ export default function MangaGrabListPage() {
                             <span>Progress chapter</span>
                             <span>{progress.label}</span>
                           </div>
-                          <div className="h-4 rounded-full border-4 overflow-hidden" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
+                          <div className="h-4 border-2 border-[var(--border)] overflow-hidden" style={{ background: 'var(--surface)' }}>
                             <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress.percent}%`, background: tone.bar }} />
                           </div>
                         </div>
@@ -270,7 +267,7 @@ export default function MangaGrabListPage() {
                         </div>
 
                         {job?.error_message ? (
-                          <div className="rounded-2xl border-4 px-4 py-3 text-sm font-bold" style={{ borderColor: 'var(--panel-border)', background: '#fee2e2', color: '#7f1d1d' }}>
+                          <div className="card px-4 py-3 text-sm font-bold" style={{ background: '#fee2e2', color: '#7f1d1d' }}>
                             {job.error_message}
                           </div>
                         ) : null}
@@ -290,7 +287,7 @@ export default function MangaGrabListPage() {
 function SummaryMiniCard({ label, value, tone = 'neutral' }) {
   const meta = getMiniTone(tone);
   return (
-    <div className="rounded-2xl border-4 px-3 py-4" style={{ borderColor: 'var(--panel-border)', background: meta.bg, color: meta.fg }}>
+    <div className="stat-card" style={{ background: meta.bg, color: meta.fg }}>
       <div className="text-[11px] font-black uppercase tracking-[0.15em] opacity-70">{label}</div>
       <div className="mt-1 text-2xl font-black">{value}</div>
     </div>
@@ -298,10 +295,10 @@ function SummaryMiniCard({ label, value, tone = 'neutral' }) {
 }
 
 function MetricCard({ label, value, success = false, danger = false }) {
-  const bg = success ? '#dcfce7' : danger ? '#fee2e2' : 'var(--background)';
+  const bg = success ? '#dcfce7' : danger ? '#fee2e2' : 'var(--surface)';
   const fg = success ? '#166534' : danger ? '#991b1b' : 'var(--foreground)';
   return (
-    <div className="rounded-2xl border-4 px-4 py-3" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)', background: bg, color: fg }}>
+    <div className="card px-4 py-3" style={{ background: bg, color: fg }}>
       <div className="text-xs font-black opacity-70">{label}</div>
       <div className="mt-1 text-2xl font-black">{value}</div>
     </div>
@@ -310,7 +307,7 @@ function MetricCard({ label, value, success = false, danger = false }) {
 
 function InfoPill({ title, value }) {
   return (
-    <div className="rounded-2xl border-4 px-4 py-3" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)', color: 'var(--foreground)' }}>
+    <div className="card px-4 py-3">
       <div className="text-[11px] font-black uppercase tracking-[0.15em] opacity-60">{title}</div>
       <div className="mt-1 text-sm font-bold break-words">{value}</div>
     </div>

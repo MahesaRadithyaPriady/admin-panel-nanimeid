@@ -180,15 +180,7 @@ export default function VipPlansPage() {
       </div>
 
       {/* Filter */}
-      <div
-        className="p-3 border-4 rounded-lg"
-        style={{
-          boxShadow: "4px 4px 0 #000",
-          background: "var(--panel-bg)",
-          borderColor: "var(--panel-border)",
-          color: "var(--foreground)",
-        }}
-      >
+      <div className="card p-3">
         <div className="flex flex-wrap items-center gap-3 justify-between">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <label className="flex items-center gap-2">
@@ -210,15 +202,7 @@ export default function VipPlansPage() {
       </div>
 
       {/* Form Tambah / Edit VIP Plan */}
-      <div
-        className="p-3 border-4 rounded-lg space-y-3"
-        style={{
-          boxShadow: "4px 4px 0 #000",
-          background: "var(--panel-bg)",
-          borderColor: "var(--panel-border)",
-          color: "var(--foreground)",
-        }}
-      >
+      <div className="card p-3 space-y-3">
         <form onSubmit={onSubmit} className="grid gap-3">
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="grid gap-1">
@@ -228,13 +212,7 @@ export default function VipPlansPage() {
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="Nama paket (wajib, unik)"
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{
-                  boxShadow: "4px 4px 0 #000",
-                  background: "var(--panel-bg)",
-                  borderColor: "var(--panel-border)",
-                  color: "var(--foreground)",
-                }}
+                className="input w-full"
               />
             </div>
             <div className="grid gap-1">
@@ -244,13 +222,7 @@ export default function VipPlansPage() {
                 value={form.price_coins}
                 onChange={(e) => setForm((f) => ({ ...f, price_coins: e.target.value }))}
                 placeholder="Harga koin (wajib)"
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{
-                  boxShadow: "4px 4px 0 #000",
-                  background: "var(--panel-bg)",
-                  borderColor: "var(--panel-border)",
-                  color: "var(--foreground)",
-                }}
+                className="input w-full"
               />
             </div>
           </div>
@@ -262,13 +234,7 @@ export default function VipPlansPage() {
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               placeholder="Deskripsi (opsional)"
               rows={2}
-              className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{
-                boxShadow: "4px 4px 0 #000",
-                background: "var(--background)",
-                borderColor: "var(--panel-border)",
-                color: "var(--foreground)",
-              }}
+              className="input w-full resize-none"
             />
           </div>
 
@@ -279,13 +245,7 @@ export default function VipPlansPage() {
               onChange={(e) => setForm((f) => ({ ...f, benefits: e.target.value }))}
               placeholder={"Benefits, satu per baris (misal: \nNo ads\n1080p\nEarly access)"}
               rows={3}
-              className="px-3 py-2 border-4 rounded-lg font-semibold text-sm"
-              style={{
-                boxShadow: "4px 4px 0 #000",
-                background: "var(--background)",
-                borderColor: "var(--panel-border)",
-                color: "var(--foreground)",
-              }}
+              className="input w-full resize-none text-sm"
             />
           </div>
 
@@ -297,18 +257,12 @@ export default function VipPlansPage() {
                 value={form.color}
                 onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
                 placeholder="Warna hex, contoh #FFD700 (wajib)"
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{
-                  boxShadow: "4px 4px 0 #000",
-                  background: "var(--panel-bg)",
-                  borderColor: "var(--panel-border)",
-                  color: "var(--foreground)",
-                }}
+                className="input w-full"
               />
             </div>
             <div className="grid gap-1">
               <div className="text-xs font-extrabold">Status</div>
-              <label className="flex items-center gap-2 text-sm font-semibold px-3 py-2 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <label className="flex items-center gap-2 text-sm font-semibold px-3 py-2 border-4 border-[var(--border)]" style={{ boxShadow: 'var(--shadow-md)' }}>
                 <input
                   type="checkbox"
                   checked={!!form.is_active}
@@ -323,40 +277,21 @@ export default function VipPlansPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="flex items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-              style={{
-                boxShadow: "4px 4px 0 #000",
-                background: mode === "add" ? "var(--accent-add)" : "var(--accent-edit)",
-                color:
-                  mode === "add"
-                    ? "var(--accent-add-foreground)"
-                    : "var(--accent-edit-foreground)",
-                borderColor: "var(--panel-border)",
-              }}
+              className={`btn disabled:opacity-60 inline-flex items-center gap-2 ${mode === 'add' ? 'btn--primary' : 'btn--secondary'}`}
             >
               {submitting ? (
                 mode === "add" ? "Menambah..." : "Menyimpan..."
               ) : mode === "add" ? (
-                <>
-                  <Plus className="size-4" /> Tambah
-                </>
+                <><Plus className="size-4" /> Tambah</>
               ) : (
-                <>
-                  <Pencil className="size-4" /> Simpan
-                </>
+                <><Pencil className="size-4" /> Simpan</>
               )}
             </button>
             {mode === "edit" && (
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-3 py-2 border-4 rounded-lg font-extrabold"
-                style={{
-                  boxShadow: "4px 4px 0 #000",
-                  background: "var(--background)",
-                  borderColor: "var(--panel-border)",
-                  color: "var(--foreground)",
-                }}
+                className="btn btn--secondary"
               >
                 Batal Edit
               </button>
@@ -368,105 +303,44 @@ export default function VipPlansPage() {
       {/* Tabel List VIP Plans */}
       <div className="overflow-auto">
         <table
-          className="min-w-full border-4 rounded-lg overflow-hidden"
-          style={{
-            boxShadow: "6px 6px 0 #000",
-            borderColor: "var(--panel-border)",
-            color: "var(--foreground)",
-          }}
+          className="min-w-full border-4 border-[var(--border)] text-sm"
+          style={{ boxShadow: 'var(--shadow-lg)' }}
         >
-          <thead style={{ background: "var(--panel-bg)" }}>
+          <thead className="bg-[var(--panel-bg)]">
             <tr>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                ID
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                Name
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                Price (coins)
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                Color
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                Active
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
-                Aksi
-              </th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">ID</th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Name</th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Price (coins)</th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Color</th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Active</th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {items.map((it) => (
               <tr key={it.id}>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>
-                  {it.id}
-                </td>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>
-                  {it.name}
-                </td>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>
-                  {it.price_coins}
-                </td>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>
+                <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.id}</td>
+                <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.name}</td>
+                <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.price_coins}</td>
+                <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">
                   <span
-                    className="inline-flex items-center gap-2 px-2 py-1 border-2 rounded text-xs"
-                    style={{
-                      borderColor: "var(--panel-border)",
-                      background: it.color || "#FFF",
-                      color: "#000",
-                    }}
+                    className="inline-flex items-center gap-2 px-2 py-1 border-2 border-[var(--border)] text-xs font-bold"
+                    style={{ background: it.color || "#FFF", color: "#000" }}
                   >
-                    <span
-                      className="inline-block w-3 h-3 rounded-full border"
-                      style={{ background: it.color || "#FFF" }}
-                    />
+                    <span className="inline-block w-3 h-3 border border-[var(--border)]/20" style={{ background: it.color || "#FFF" }} />
                     {it.color}
                   </span>
                 </td>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: "var(--panel-border)" }}>
-                  {it.is_active ? "Ya" : "Tidak"}
-                </td>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: "var(--panel-border)" }}>
+                <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.is_active ? "Ya" : "Tidak"}</td>
+                <td className="px-3 py-2 border-b-4 border-[var(--border)]">
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(it)}
-                      className="px-2 py-1 border-4 rounded font-extrabold"
-                      style={{
-                        boxShadow: "3px 3px 0 #000",
-                        background: "var(--accent-edit)",
-                        color: "var(--accent-edit-foreground)",
-                        borderColor: "var(--panel-border)",
-                      }}
-                    >
+                    <button type="button" onClick={() => onEdit(it)} className="btn btn--secondary btn--sm">
                       <Pencil className="size-4" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => onToggleActive(it)}
-                      className="px-2 py-1 border-4 rounded font-extrabold"
-                      style={{
-                        boxShadow: "3px 3px 0 #000",
-                        background: "var(--panel-bg)",
-                        color: "var(--foreground)",
-                        borderColor: "var(--panel-border)",
-                      }}
-                    >
+                    <button type="button" onClick={() => onToggleActive(it)} className="btn btn--secondary btn--sm">
                       {it.is_active ? "Nonaktifkan" : "Aktifkan"}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => onRequestDelete(it)}
-                      className="px-2 py-1 border-4 rounded font-extrabold"
-                      style={{
-                        boxShadow: "3px 3px 0 #000",
-                        background: "var(--panel-bg)",
-                        color: "var(--foreground)",
-                        borderColor: "var(--panel-border)",
-                      }}
-                    >
+                    <button type="button" onClick={() => onRequestDelete(it)} className="btn btn--danger btn--sm">
                       <Trash2 className="size-4" />
                     </button>
                   </div>
@@ -492,13 +366,7 @@ export default function VipPlansPage() {
         <button
           disabled={page <= 1}
           onClick={() => setPage((p) => Math.max(1, p - 1))}
-          className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold"
-          style={{
-            boxShadow: "4px 4px 0 #000",
-            background: "var(--panel-bg)",
-            color: "var(--foreground)",
-            borderColor: "var(--panel-border)",
-          }}
+          className="btn btn--secondary disabled:opacity-60"
         >
           Prev
         </button>
@@ -508,13 +376,7 @@ export default function VipPlansPage() {
         <button
           disabled={page >= totalPages}
           onClick={() => setPage((p) => p + 1)}
-          className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold"
-          style={{
-            boxShadow: "4px 4px 0 #000",
-            background: "var(--panel-bg)",
-            color: "var(--foreground)",
-            borderColor: "var(--panel-border)",
-          }}
+          className="btn btn--secondary disabled:opacity-60"
         >
           Next
         </button>
@@ -524,40 +386,13 @@ export default function VipPlansPage() {
       {deleteTarget && (
         <div className="fixed inset-0 z-50 grid place-items-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setDeleteTarget(null)} />
-          <div
-            className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6"
-            style={{
-              boxShadow: "8px 8px 0 #000",
-              background: "var(--panel-bg)",
-              borderColor: "var(--panel-border)",
-              color: "var(--foreground)",
-            }}
-          >
+          <div className="relative z-10 w-[92%] max-w-md card p-4 sm:p-6" style={{ boxShadow: 'var(--shadow-xl)' }}>
             <div className="mb-3 text-sm font-semibold">
               Hapus VIP plan {deleteTarget?.name}?
             </div>
             <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={() => setDeleteTarget(null)}
-                className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-                style={{
-                  boxShadow: "4px 4px 0 #000",
-                  background: "var(--panel-bg)",
-                  borderColor: "var(--panel-border)",
-                  color: "var(--foreground)",
-                }}
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={onConfirmDelete}
-                className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold disabled:opacity-60"
-                style={{ boxShadow: "4px 4px 0 #000", borderColor: "var(--panel-border)" }}
-              >
+              <button type="button" disabled={deleting} onClick={() => setDeleteTarget(null)} className="btn btn--secondary disabled:opacity-60">Batal</button>
+              <button type="button" disabled={deleting} onClick={onConfirmDelete} className="btn btn--danger disabled:opacity-60">
                 {deleting ? "Menghapus..." : "Ya, Hapus"}
               </button>
             </div>

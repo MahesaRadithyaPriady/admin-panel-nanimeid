@@ -181,7 +181,7 @@ export default function BadgeOwnersPage() {
           <Link
             href="/dashboard/badges"
             className="px-2 py-1 border-4 rounded font-extrabold"
-            style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           >
             <ArrowLeft className="size-4" />
           </Link>
@@ -193,7 +193,7 @@ export default function BadgeOwnersPage() {
           type="button"
           onClick={() => router.back()}
           className="px-3 py-2 border-4 rounded-lg font-extrabold text-sm"
-          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+          style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
         >
           Kembali
         </button>
@@ -202,15 +202,13 @@ export default function BadgeOwnersPage() {
       {badgeInfo && (
         <div
           className="p-3 border-4 rounded-lg flex items-center gap-3"
-          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+          style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
         >
           {badgeInfo.badge_url && (
-            <img
-              src={badgeInfo.badge_url}
+            <img src={badgeInfo.badge_url}
               alt={badgeInfo.name || badgeInfo.code}
               className="w-12 h-12 object-contain border-2 rounded"
-              style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
-            />
+              style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} loading="lazy" decoding="async" />
           )}
           <div>
             <div className="font-extrabold text-sm">
@@ -225,7 +223,7 @@ export default function BadgeOwnersPage() {
 
       <div
         className="p-3 border-4 rounded-lg"
-        style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+        style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
       >
         <form onSubmit={onSearch} className="grid sm:grid-cols-[2fr_1fr_140px] gap-3">
           <input
@@ -234,13 +232,13 @@ export default function BadgeOwnersPage() {
             onChange={(e) => setQ(e.target.value)}
             placeholder="Cari username/email/nama badge"
             className="px-3 py-2 border-4 rounded-lg font-semibold"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           />
           <select
             value={activeFilter}
             onChange={(e) => setActiveFilter(e.target.value)}
             className="px-3 py-2 border-4 rounded-lg font-semibold text-sm"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           >
             <option value="">Semua status</option>
             <option value="true">Aktif</option>
@@ -250,7 +248,7 @@ export default function BadgeOwnersPage() {
             type="submit"
             disabled={loadingList}
             className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
+            style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
           >
             {loadingList ? 'Memuat...' : 'Terapkan'}
           </button>
@@ -259,7 +257,7 @@ export default function BadgeOwnersPage() {
 
       <div
         className="p-3 border-4 rounded-lg"
-        style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+        style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
       >
         <form onSubmit={onAdd} className="space-y-3">
           <div className="grid sm:grid-cols-[1fr_auto] gap-3 items-center">
@@ -269,13 +267,13 @@ export default function BadgeOwnersPage() {
               onChange={(e) => setNewUserId(e.target.value)}
               placeholder="user_id (wajib)"
               className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             />
             <button
               type="submit"
               disabled={submitting}
               className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60 text-sm"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}
+              style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}
             >
               {submitting ? 'Menyimpan...' : (
                 <span className="inline-flex items-center justify-center gap-2">
@@ -288,7 +286,7 @@ export default function BadgeOwnersPage() {
 
           <div
             className="flex items-center gap-2 px-3 py-2 border-4 rounded-lg"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           >
             <Clock className="size-4 flex-shrink-0" />
             <input
@@ -308,7 +306,7 @@ export default function BadgeOwnersPage() {
       <div className="overflow-auto">
         <table
           className="min-w-full border-4 rounded-lg overflow-hidden"
-          style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+          style={{ boxShadow: 'var(--shadow-lg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
         >
           <thead style={{ background: 'var(--panel-bg)' }}>
             <tr>
@@ -352,7 +350,7 @@ export default function BadgeOwnersPage() {
                       onClick={() => toggleActive(it)}
                       disabled={actingId === it.id}
                       className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60"
-                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                      style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
                       title={it.active ? 'Set Nonaktif' : 'Set Aktif'}
                     >
                       {it.active ? <XCircle className="size-4" /> : <CheckCircle2 className="size-4" />}
@@ -361,7 +359,7 @@ export default function BadgeOwnersPage() {
                       type="button"
                       onClick={() => onRequestDelete(it)}
                       className="px-2 py-1 border-4 rounded font-extrabold"
-                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                      style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
                     >
                       <Trash2 className="size-4" />
                     </button>
@@ -385,7 +383,7 @@ export default function BadgeOwnersPage() {
           disabled={page <= 1}
           onClick={() => setPage((p) => Math.max(1, p - 1))}
           className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold"
-          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+          style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
         >
           Prev
         </button>
@@ -396,7 +394,7 @@ export default function BadgeOwnersPage() {
           disabled={page >= totalPages}
           onClick={() => setPage((p) => p + 1)}
           className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold"
-          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+          style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
         >
           Next
         </button>
@@ -407,12 +405,12 @@ export default function BadgeOwnersPage() {
           <div className="absolute inset-0 bg-black/40" onClick={onCancelDelete} />
           <div
             className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6"
-            style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            style={{ boxShadow: 'var(--shadow-xl)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           >
             <div className="flex items-center gap-3 mb-3">
               <div
                 className="grid place-items-center size-10 bg-[#FEB2B2] border-4 rounded-md"
-                style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}
+                style={{ boxShadow: 'var(--shadow-md)', borderColor: 'var(--panel-border)' }}
               >
                 <Trash2 className="size-5" />
               </div>
@@ -429,7 +427,7 @@ export default function BadgeOwnersPage() {
                 disabled={deleting}
                 onClick={onCancelDelete}
                 className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
               >
                 Batal
               </button>
@@ -438,7 +436,7 @@ export default function BadgeOwnersPage() {
                 disabled={deleting}
                 onClick={onConfirmDelete}
                 className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold disabled:opacity-60"
-                style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}
+                style={{ boxShadow: 'var(--shadow-md)', borderColor: 'var(--panel-border)' }}
               >
                 {deleting ? 'Menghapus...' : 'Ya, Hapus'}
               </button>

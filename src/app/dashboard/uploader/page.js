@@ -57,7 +57,7 @@ export default function UploaderOverviewPage() {
   if (!allowed.includes(user.role)) {
     return (
       <div className="text-sm font-semibold">
-        Halaman ini untuk role <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">superadmin</span> atau <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">uploader</span>.
+        Halaman ini untuk role <span className="px-2 py-1 border-2 border-[var(--border)] rounded bg-[#F2F2F2]">superadmin</span> atau <span className="px-2 py-1 border-2 border-[var(--border)] rounded bg-[#F2F2F2]">uploader</span>.
       </div>
     );
   }
@@ -113,7 +113,7 @@ export default function UploaderOverviewPage() {
       </div>
 
       {/* Form Data Episode (Full Width) */}
-      <div className="p-4 border-4 rounded-lg space-y-3" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+      <div className="p-4 border-4 rounded-lg space-y-3" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
           <div className="flex items-center gap-2 text-lg font-extrabold"><ListPlus className="size-5" /> Data Episode</div>
           <div>
             <label className="text-xs font-bold">Pilih Anime</label>
@@ -195,18 +195,23 @@ export default function UploaderOverviewPage() {
             </div>
             <div className="flex items-center gap-2 text-xs mt-1" style={{ color: 'var(--foreground)' }}>
               <span>Preview:</span>
-              <img
-                src={formEpisode.previewUrl || ((formEpisode.thumbnail_mode || 'upload') === 'url' ? (formEpisode.thumbnail_url || '') : '') || ''}
-                alt="thumb"
-                className="w-10 h-10 object-contain border-2 rounded"
-                style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
-              />
+              {(() => {
+                const thumbSrc = formEpisode.previewUrl || ((formEpisode.thumbnail_mode || 'upload') === 'url' ? (formEpisode.thumbnail_url || '') : '') || null;
+                return thumbSrc ? (
+                  <img src={thumbSrc}
+                    alt="thumb"
+                    className="w-10 h-10 object-contain border-2 rounded"
+                    style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} loading="lazy" decoding="async" />
+                ) : (
+                  <span className="w-10 h-10 grid place-items-center border-2 rounded text-xs" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)', color: 'var(--muted)' }}>—</span>
+                );
+              })()}
             </div>
           </div>
       </div>
 
       {/* Quality & Source Card below the two columns (full width) */}
-      <div className="p-4 border-4 rounded-lg space-y-3" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+      <div className="p-4 border-4 rounded-lg space-y-3" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
         <div className="flex items-center gap-2 text-lg font-extrabold"><Plus className="size-5" /> Kualitas & Sumber</div>
         <div className="space-y-2">
           {formEpisode.sources.map((row, idx) => (
@@ -261,7 +266,7 @@ export default function UploaderOverviewPage() {
             type="button"
             onClick={() => setFormEpisode((f) => ({ ...f, sources: [...f.sources, { quality: '720p', url: '' }] }))}
             className="px-3 py-2 border-4 rounded-lg font-extrabold"
-            style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}
+            style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}
           >
             <Plus className="inline size-4" /> Tambah Kualitas
           </button>
@@ -269,7 +274,7 @@ export default function UploaderOverviewPage() {
         </div>
       </div>
 
-      <button onClick={onAddEpisode} disabled={uploading} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>
+      <button onClick={onAddEpisode} disabled={uploading} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>
         {uploading ? 'Mengupload...' : (<><Upload className="inline size-4" /> Upload Episode</>)}
       </button>
     </div>

@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { motion } from 'framer-motion';
-import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity, Terminal, Trophy, Menu, Sparkles, Inbox, AlertTriangle, Film } from 'lucide-react';
+import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity, Terminal, Trophy, Inbox, AlertTriangle, Film } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import Sidebar from '@/components/dashboard/Sidebar';
+import BottomNav from '@/components/dashboard/BottomNav';
+import Header from '@/components/dashboard/Header';
 import nacl from 'tweetnacl';
 import { getAdminLivechatStats, getAnimeRequestStats, listMyAdminPublicKeys, upsertMyAdminPublicKey } from '@/lib/api';
 
@@ -314,95 +315,104 @@ export default function DashboardLayout({ children }) {
 
   if (loading || !user) {
     return (
-      <main className="min-h-screen grid place-items-center gradient-bg" style={{ color: 'var(--foreground)' }}>
-        <div className="glass-card rounded-2xl p-8 flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] p-0.5 shadow-lg animate-pulse">
-            <img
-              src="/icon.png"
-              alt="NanimeID"
-              className="w-full h-full object-contain rounded-lg bg-white"
-            />
+      <main className="min-h-screen grid place-items-center" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
+        <div
+          className="p-8 flex flex-col items-center gap-4"
+          style={{ border: '2px solid var(--border)', boxShadow: 'var(--shadow-md)' }}
+        >
+          <div
+            className="w-12 h-12 flex items-center justify-center"
+            style={{ background: 'var(--foreground)', color: 'var(--background)', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1rem' }}
+          >
+            N/A
           </div>
-          <div className="text-sm font-medium">Memuat...</div>
+          <div className="text-sm font-bold uppercase tracking-widest" style={{ fontFamily: 'var(--font-mono)' }}>Memuat...</div>
         </div>
       </main>
     );
   }
 
-  // Mobile Header Component
+  // Mobile Header Component — no hamburger, navigation is via bottom nav
   const MobileHeader = () => (
-    <motion.header
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="md:hidden fixed top-0 left-0 right-0 z-30 px-4 py-3 glass-card border-b border-[var(--panel-border)]"
+    <header
+      className="md:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4"
+      style={{
+        height: '56px',
+        background: 'var(--surface-raised)',
+        borderBottom: '2px solid var(--border)',
+      }}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {/* Logo */}
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] p-0.5 shadow-lg">
-            <img
-              src="/icon.png"
-              alt="NanimeID"
-              className="w-full h-full object-contain rounded-lg bg-white"
-            />
-          </div>
-          <div>
-            <div className="flex items-center gap-1">
-              <span className="text-sm font-bold text-[var(--foreground)]">NanimeID</span>
-              <Sparkles className="w-3 h-3 text-[var(--accent-secondary)]" />
-            </div>
-            <span className="text-[10px] text-[var(--foreground)]/50">
-              {user?.username || user?.email?.split('@')[0] || '-'}
-            </span>
-          </div>
-        </div>
-
-        {/* Hamburger Button */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={toggleMobileMenu}
-          className="p-2.5 rounded-xl bg-[var(--panel-bg)] border border-[var(--panel-border)] text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 transition-colors"
-          aria-label="Buka menu"
+      <div className="flex items-center gap-3">
+        <div
+          className="flex items-center justify-center w-9 h-9 border-2 border-[var(--border)] flex-shrink-0"
+          style={{ background: 'var(--foreground)', color: 'var(--background)', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.75rem' }}
         >
-          <Menu className="w-5 h-5" />
-        </motion.button>
+          N/A
+        </div>
+        <span
+          className="text-sm font-bold uppercase tracking-widest truncate"
+          style={{ fontFamily: 'var(--font-mono)', color: 'var(--foreground)' }}
+        >
+          NanimeID Admin
+        </span>
       </div>
-    </motion.header>
+      {user?.email && (
+        <span
+          className="text-[10px] truncate max-w-[120px]"
+          style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}
+        >
+          {user.email}
+        </span>
+      )}
+    </header>
   );
 
   return (
-    <main className="min-h-screen overflow-x-hidden gradient-bg" style={{ color: 'var(--foreground)' }}>
+    <main
+      className="min-h-screen overflow-x-hidden"
+      style={{ background: 'var(--background)', color: 'var(--foreground)' }}
+    >
       {/* Mobile Header */}
       {!loading && user && <MobileHeader />}
 
       <div
-        className={`min-h-screen md:h-screen grid min-w-0 transition-all duration-300 ease-in-out ${
+        className={`min-h-screen md:h-screen grid min-w-0 transition-all duration-200 ease-in-out ${
           sidebarCollapsed
             ? 'grid-cols-1 md:grid-cols-[80px_1fr]'
             : 'grid-cols-1 md:grid-cols-[280px_1fr]'
-        } ${!loading && user ? 'pt-[72px] md:pt-0' : ''}`}
+        } ${!loading && user ? 'pt-[56px] md:pt-0 pb-[64px] md:pb-0' : ''}`}
       >
         <Sidebar
           menus={visibleMenus}
           currentPath={pathname}
           collapsed={sidebarCollapsed}
-          onToggleCollapsed={onToggleSidebar}
           animeRequestStats={animeRequestStats}
           livechatStats={livechatStats}
           user={user}
           role={role}
-          onLogout={onLogout}
           mobileOpen={mobileMenuOpen}
           onMobileClose={closeMobileMenu}
         />
 
-        <section className="overflow-y-auto p-4 sm:p-6 w-full">
-          <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 min-w-0 overflow-x-hidden w-full">
+        <section className="overflow-y-auto w-full flex flex-col">
+          <Header user={user} role={role} onLogout={onLogout} onMenuClick={onToggleSidebar} />
+          <div
+            className="min-w-0 overflow-x-hidden w-full p-4 sm:p-6 lg:p-8 flex-1"
+          >
             {children}
           </div>
         </section>
       </div>
+
+      {/* Mobile Bottom Nav — all menus rendered here, sidebar hidden on mobile */}
+      {!loading && user && (
+        <BottomNav
+          menus={visibleMenus}
+          currentPath={pathname}
+          onLogout={onLogout}
+          user={user}
+        />
+      )}
     </main>
   );
 }

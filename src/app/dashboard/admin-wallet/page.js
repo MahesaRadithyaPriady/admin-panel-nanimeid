@@ -179,7 +179,7 @@ export default function AdminWalletPage() {
       {/* Header */}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div className="grid gap-2">
-          <div className="inline-flex w-fit items-center gap-2 px-3 py-2 border-4 rounded-full font-extrabold text-sm" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <div className="inline-flex w-fit items-center gap-2 px-3 py-2 border-4 border-[var(--border)] font-extrabold text-sm" style={{ boxShadow: 'var(--shadow-md)' }}>
             <Wallet className="size-4" /> Admin Wallet
           </div>
           <div>
@@ -188,22 +188,11 @@ export default function AdminWalletPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-start lg:justify-end gap-2">
-          <button 
-            type="button" 
-            onClick={() => setShowFilters(!showFilters)} 
-            className="px-3 py-2 border-4 rounded-lg font-extrabold"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-          >
-            <Filter className="size-4 inline-block mr-1" /> Filter
+          <button type="button" onClick={() => setShowFilters(!showFilters)} className="btn btn--secondary inline-flex items-center gap-2">
+            <Filter className="size-4" /> Filter
           </button>
-          <button 
-            type="button" 
-            onClick={loadAll} 
-            disabled={loading} 
-            className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" 
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}
-          >
-            <RefreshCcw className="size-4 inline-block mr-1" /> {loading ? 'Loading...' : 'Refresh'}
+          <button type="button" onClick={loadAll} disabled={loading} className="btn btn--secondary disabled:opacity-60 inline-flex items-center gap-2">
+            <RefreshCcw className="size-4" /> {loading ? 'Loading...' : 'Refresh'}
           </button>
         </div>
       </div>
@@ -211,57 +200,34 @@ export default function AdminWalletPage() {
       {/* Stats Cards */}
       {userInfo && (
         <div className="grid gap-3 md:grid-cols-3">
-          <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #FDE68A 0%, #FCD34D 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
-            <div className="flex items-center gap-2">
-              <Wallet className="size-5" />
-              <div className="text-xs font-black uppercase tracking-wide opacity-80">Saldo Koin</div>
-            </div>
+          <div className="stat-card">
+            <div className="flex items-center gap-2 label"><Wallet className="w-4 h-4" /> Saldo Koin</div>
             <div className="mt-2 text-3xl font-black">{formatNumber(userInfo.wallet?.balance_coins || 0)}</div>
-            <div className="text-sm font-semibold opacity-80 mt-1">{userInfo.user?.username}</div>
+            <div className="text-sm font-semibold text-[var(--muted)] mt-1">{userInfo.user?.username}</div>
           </div>
-          
-          <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #BFDBFE 0%, #93C5FD 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
-            <div className="flex items-center gap-2">
-              <UserIcon className="size-5" />
-              <div className="text-xs font-black uppercase tracking-wide opacity-80">User ID</div>
-            </div>
+          <div className="stat-card">
+            <div className="flex items-center gap-2 label"><UserIcon className="w-4 h-4" /> User ID</div>
             <div className="mt-2 text-3xl font-black">#{userInfo.user?.id || '-'}</div>
-            <div className="text-sm font-semibold opacity-80 mt-1">{userInfo.user?.email || '-'}</div>
+            <div className="text-sm font-semibold text-[var(--muted)] mt-1">{userInfo.user?.email || '-'}</div>
           </div>
-          
-          <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #C7F9CC 0%, #86EFAC 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="size-5" />
-              <div className="text-xs font-black uppercase tracking-wide opacity-80">Total Transaksi</div>
-            </div>
+          <div className="stat-card">
+            <div className="flex items-center gap-2 label"><TrendingUp className="w-4 h-4" /> Total Transaksi</div>
             <div className="mt-2 text-3xl font-black">{formatNumber(tx.total || 0)}</div>
-            <div className="text-sm font-semibold opacity-80 mt-1">Semua waktu</div>
+            <div className="text-sm font-semibold text-[var(--muted)] mt-1">Semua waktu</div>
           </div>
         </div>
       )}
 
       {/* Search Section */}
-      <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+      <div className="card p-4">
         <form onSubmit={onSearch} className="grid gap-4 md:grid-cols-[1fr_200px]">
           <div>
             <label className="text-xs font-bold">User ID</label>
-            <input 
-              type="number" 
-              min="1" 
-              placeholder="Masukkan User ID" 
-              value={userId} 
-              onChange={(e) => setUserId(e.target.value)} 
-              className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" 
-              style={{ boxShadow: '3px 3px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} 
-            />
+            <input type="number" min="1" placeholder="Masukkan User ID" value={userId} onChange={(e) => setUserId(e.target.value)} className="input mt-1" />
           </div>
           <div className="flex items-end">
-            <button 
-              type="submit" 
-              className="w-full px-4 py-2 border-4 rounded-xl font-extrabold" 
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}
-            >
-              <Search className="size-4 inline-block mr-1" /> Cari User
+            <button type="submit" className="btn btn--primary w-full">
+              <Search className="w-4 h-4" /> Cari User
             </button>
           </div>
         </form>
@@ -269,7 +235,7 @@ export default function AdminWalletPage() {
 
       {/* User Info Card */}
       {userInfo && (
-        <div className="border-4 rounded-2xl p-6" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+        <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-extrabold text-lg">Informasi User</h3>
             <div className="text-2xl font-black text-yellow-500">
@@ -278,9 +244,9 @@ export default function AdminWalletPage() {
           </div>
           <div className="flex items-center gap-4">
             {userInfo.user?.profile?.avatar_url ? (
-              <img src={userInfo.user.profile.avatar_url} alt="avatar" className="w-16 h-16 object-cover border-4 rounded-xl" style={{ borderColor: 'var(--panel-border)' }} />
+              <img src={userInfo.user.profile.avatar_url} alt="avatar" className="w-16 h-16 object-cover border-4 border-[var(--border)]" loading="lazy" decoding="async" />
             ) : (
-              <div className="w-16 h-16 border-4 rounded-xl flex items-center justify-center" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
+              <div className="w-16 h-16 border-4 border-[var(--border)] flex items-center justify-center" style={{ background: 'var(--background)' }}>
                 <UserIcon className="size-6 opacity-50" />
               </div>
             )}
@@ -297,53 +263,53 @@ export default function AdminWalletPage() {
       {/* Transaction Actions */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Global Actions */}
-        <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+        <div className="card p-4">
           <h3 className="font-extrabold mb-4 flex items-center gap-2">
-            <Globe className="size-4" /> Transaksi Global
+            <Globe className="w-4 h-4" /> Transaksi Global
           </h3>
           <div className="grid gap-4">
             <form onSubmit={onCreditGlobal} className="space-y-3">
               <div>
                 <label className="text-xs font-bold">User ID</label>
-                <input name="userId" type="number" placeholder="User ID" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+                <input name="userId" type="number" placeholder="User ID" className="input mt-1" required />
               </div>
               <div>
                 <label className="text-xs font-bold">Jumlah Koin</label>
-                <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+                <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="input mt-1" required />
               </div>
               <div>
                 <label className="text-xs font-bold">Catatan</label>
-                <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="input mt-1" />
               </div>
-              <button type="submit" disabled={submitting} className="w-full px-4 py-3 border-4 rounded-xl font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: '#22C55E', borderColor: 'var(--panel-border)', color: 'white' }}>
-                <PlusCircle className="size-4 inline-block mr-1" /> {submitting ? 'Processing...' : 'Kreditkan'}
+              <button type="submit" disabled={submitting} className="btn btn--primary w-full disabled:opacity-60">
+                <PlusCircle className="w-4 h-4" /> {submitting ? 'Processing...' : 'Kreditkan'}
               </button>
             </form>
             
             <form onSubmit={onDebitGlobal} className="space-y-3">
               <div>
                 <label className="text-xs font-bold">User ID</label>
-                <input name="userId" type="number" placeholder="User ID" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+                <input name="userId" type="number" placeholder="User ID" className="input mt-1" required />
               </div>
               <div>
                 <label className="text-xs font-bold">Jumlah Koin</label>
-                <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+                <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="input mt-1" required />
               </div>
               <div>
                 <label className="text-xs font-bold">Catatan</label>
-                <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="input mt-1" />
               </div>
-              <button type="submit" disabled={submitting} className="w-full px-4 py-3 border-4 rounded-xl font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: '#EF4444', borderColor: 'var(--panel-border)', color: 'white' }}>
-                <MinusCircle className="size-4 inline-block mr-1" /> {submitting ? 'Processing...' : 'Debetkan'}
+              <button type="submit" disabled={submitting} className="btn btn--danger w-full disabled:opacity-60">
+                <MinusCircle className="w-4 h-4" /> {submitting ? 'Processing...' : 'Debetkan'}
               </button>
             </form>
           </div>
         </div>
 
         {/* Current User Actions */}
-        <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+        <div className="card p-4">
           <h3 className="font-extrabold mb-4 flex items-center gap-2">
-            <UserIcon className="size-4" /> Transaksi User Saat Ini
+            <UserIcon className="w-4 h-4" /> Transaksi User Saat Ini
           </h3>
           {!userId ? (
             <div className="text-center py-8 opacity-70">
@@ -355,28 +321,28 @@ export default function AdminWalletPage() {
               <form onSubmit={onCreditUser} className="space-y-3">
                 <div>
                   <label className="text-xs font-bold">Jumlah Koin</label>
-                  <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+                  <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="input mt-1" required />
                 </div>
                 <div>
                   <label className="text-xs font-bold">Catatan</label>
-                  <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="input mt-1" />
                 </div>
-                <button type="submit" disabled={submitting} className="w-full px-4 py-3 border-4 rounded-xl font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: '#22C55E', borderColor: 'var(--panel-border)', color: 'white' }}>
-                  <PlusCircle className="size-4 inline-block mr-1" /> {submitting ? 'Processing...' : 'Kreditkan'}
+                <button type="submit" disabled={submitting} className="btn btn--primary w-full disabled:opacity-60">
+                  <PlusCircle className="w-4 h-4" /> {submitting ? 'Processing...' : 'Kreditkan'}
                 </button>
               </form>
               
               <form onSubmit={onDebitUser} className="space-y-3">
                 <div>
                   <label className="text-xs font-bold">Jumlah Koin</label>
-                  <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+                  <input name="amount" type="number" min="1" placeholder="Jumlah koin" className="input mt-1" required />
                 </div>
                 <div>
                   <label className="text-xs font-bold">Catatan</label>
-                  <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                  <input name="note" maxLength={80} placeholder="Catatan (max 80)" className="input mt-1" />
                 </div>
-                <button type="submit" disabled={submitting} className="w-full px-4 py-3 border-4 rounded-xl font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: '#EF4444', borderColor: 'var(--panel-border)', color: 'white' }}>
-                  <MinusCircle className="size-4 inline-block mr-1" /> {submitting ? 'Processing...' : 'Debetkan'}
+                <button type="submit" disabled={submitting} className="btn btn--danger w-full disabled:opacity-60">
+                  <MinusCircle className="w-4 h-4" /> {submitting ? 'Processing...' : 'Debetkan'}
                 </button>
               </form>
             </div>
@@ -385,8 +351,8 @@ export default function AdminWalletPage() {
       </div>
 
       {/* Transactions Table */}
-      <div className="border-4 rounded-2xl overflow-hidden" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-        <div className="p-4 border-b" style={{ borderColor: 'var(--panel-border)', background: 'var(--background)' }}>
+      <div className="card overflow-hidden">
+        <div className="p-4 border-b-4 border-[var(--border)]" style={{ background: 'var(--background)' }}>
           <h3 className="font-extrabold flex items-center gap-2">
             <Calendar className="size-4" /> Riwayat Transaksi
           </h3>
@@ -404,7 +370,7 @@ export default function AdminWalletPage() {
             </thead>
             <tbody>
               {tx.items.map((transaction) => (
-                <tr key={transaction.id} className="border-t" style={{ borderColor: 'var(--panel-border)' }}>
+                <tr key={transaction.id} className="border-t-4 border-[var(--border)]">
                   <td className="px-4 py-3 font-mono text-sm">#{transaction.id}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
@@ -413,7 +379,7 @@ export default function AdminWalletPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`font-bold ${transaction.amount > 0 ? 'text-[var(--foreground)]' : 'opacity-60'}`}>
                       {transaction.amount > 0 ? '+' : ''}{formatNumber(transaction.amount)}
                     </span>
                   </td>
@@ -440,23 +406,13 @@ export default function AdminWalletPage() {
             Menampilkan {tx.items.length} dari {formatNumber(tx.total)} transaksi
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page <= 1}
-              className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-            >
+            <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} className="btn btn--secondary disabled:opacity-60">
               Previous
             </button>
             <span className="px-3 py-2 text-sm font-semibold">
               {page} / {tx.totalPages}
             </span>
-            <button
-              onClick={() => setPage(Math.min(tx.totalPages, page + 1))}
-              disabled={page >= tx.totalPages}
-              className="px-3 py-2 border-4 rounded-xl font-extrabold disabled:opacity-60"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-            >
+            <button onClick={() => setPage(Math.min(tx.totalPages, page + 1))} disabled={page >= tx.totalPages} className="btn btn--secondary disabled:opacity-60">
               Next
             </button>
           </div>

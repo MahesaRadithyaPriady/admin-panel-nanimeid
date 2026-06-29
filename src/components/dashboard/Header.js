@@ -1,18 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Sun, Moon, Sparkles } from 'lucide-react';
+import { Sun, Moon, LogOut, Menu } from 'lucide-react';
 
-export default function Header({ user, role, onLogout }) {
+export default function Header({ user, role, onLogout, onMenuClick }) {
   const getInitialTheme = () => {
     if (typeof window === 'undefined') return 'light';
     const saved = localStorage.getItem('theme');
     if (saved === 'light' || saved === 'dark') return saved;
-    const prefersDark =
-      window.matchMedia &&
-      window.matchMedia('(prefers-color-scheme: dark)').matches;
-    return prefersDark ? 'dark' : 'light';
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   };
 
   const [theme, setTheme] = useState(getInitialTheme);
@@ -32,69 +28,77 @@ export default function Header({ user, role, onLogout }) {
       root.classList.add('light');
       body.classList.add('light');
     }
-    try {
-      localStorage.setItem('theme', theme);
-    } catch {}
+    try { localStorage.setItem('theme', theme); } catch {}
   }, [theme]);
 
-  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('themechange', { detail: next }));
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onThemeChange = (e) => setTheme(e.detail);
+    window.addEventListener('themechange', onThemeChange);
+    return () => window.removeEventListener('themechange', onThemeChange);
+  }, []);
 
   return (
-    <motion.header
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="px-6 py-4"
+    <header
+      className="sticky top-0 z-30 hidden md:flex items-center justify-between px-6"
+      style={{
+        height: '56px',
+        borderBottom: '2px solid var(--border)',
+        background: 'var(--surface-raised)',
+        flexShrink: 0,
+      }}
     >
-      <div className="glass-card rounded-2xl px-6 py-4 flex items-center justify-between">
-        {/* Left: Logo & Title */}
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] p-0.5 shadow-lg">
-            <img
-              src="/icon.png"
-              alt="NanimeID"
-              className="w-full h-full object-contain rounded-lg bg-white"
-            />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-[var(--foreground)] tracking-tight">
-                Dashboard
-              </h1>
-              <Sparkles className="w-4 h-4 text-[var(--accent-secondary)]" />
-            </div>
-            <div className="text-xs text-[var(--foreground)]/50 font-medium">
-              {user?.email}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Theme Toggle Only */}
-        <div className="flex items-center gap-3">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={toggleTheme}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--panel-bg)] border border-[var(--panel-border)] text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 transition-all duration-200"
-            title={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onMenuClick}
+          className="btn btn--secondary btn--sm btn--icon"
+          title="Menu"
+          aria-label="Menu"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+        {user?.email && (
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.7rem',
+              color: 'var(--muted)',
+              letterSpacing: '0.04em',
+            }}
           >
-            <motion.div
-              initial={false}
-              animate={{ rotate: theme === 'dark' ? 0 : 180 }}
-              transition={{ duration: 0.3 }}
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-4 h-4" />
-              ) : (
-                <Moon className="w-4 h-4" />
-              )}
-            </motion.div>
-            <span className="hidden sm:inline text-sm font-medium">
-              {theme === 'dark' ? 'Terang' : 'Gelap'}
-            </span>
-          </motion.button>
-        </div>
+            {user.email}
+          </span>
+        )}
       </div>
-    </motion.header>
+
+      <div className="flex items-center gap-2">
+        <button
+          onClick={toggleTheme}
+          className="btn btn--secondary btn--sm btn--icon"
+          title={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
+          aria-label={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
+        >
+          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
+
+        <button
+          onClick={onLogout}
+          className="btn btn--danger btn--sm"
+          title="Keluar"
+          aria-label="Keluar"
+        >
+          <LogOut className="w-4 h-4" />
+          <span className="hidden sm:inline">Keluar</span>
+        </button>
+      </div>
+    </header>
   );
 }

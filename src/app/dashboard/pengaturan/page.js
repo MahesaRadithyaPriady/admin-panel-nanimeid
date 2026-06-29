@@ -211,8 +211,8 @@ export default function PengaturanPage() {
     <div className="space-y-6">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div className="grid gap-2">
-          <div className="inline-flex w-fit items-center gap-2 px-3 py-2 border-4 rounded-full font-extrabold text-sm" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-            <Settings className="size-4" /> Control Center Pengaturan
+          <div className="label flex items-center gap-2">
+            <Settings className="w-4 h-4" /> Control Center Pengaturan
           </div>
           <div>
             <h2 className="text-2xl sm:text-3xl font-black leading-tight">Atur maintenance, download, reward watch-lite, dan announcement dari satu dashboard yang lebih nyaman.</h2>
@@ -220,61 +220,60 @@ export default function PengaturanPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-start lg:justify-end gap-2">
-          <button type="button" onClick={() => window.location.reload()} disabled={loadingSettings} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-            <RefreshCcw className="size-4 inline-block mr-1" /> Refresh
+          <button type="button" onClick={() => window.location.reload()} disabled={loadingSettings} className="btn btn--secondary disabled:opacity-60">
+            <RefreshCcw className="w-4 h-4" /> Refresh
           </button>
         </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-4">
-        <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #FDE68A 0%, #FCD34D 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
-          <div className="text-xs font-black uppercase tracking-wide opacity-80">Flag aktif</div>
+        <div className="stat-card">
+          <div className="label">Flag aktif</div>
           <div className="mt-2 text-3xl font-black">{settingsSummary.activeFlags}</div>
-          <div className="text-sm font-semibold opacity-80 mt-1">Maintenance, disable download, dan paid quality yang sedang hidup.</div>
+          <div className="text-sm text-[var(--muted)] mt-1">Maintenance, download, paid quality aktif.</div>
         </div>
-        <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #BFDBFE 0%, #93C5FD 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
-          <div className="text-xs font-black uppercase tracking-wide opacity-80">Coin per minute</div>
+        <div className="stat-card">
+          <div className="label">Coin per minute</div>
           <div className="mt-2 text-3xl font-black">{settingsSummary.watchLiteCoinPerMinute}</div>
-          <div className="text-sm font-semibold opacity-80 mt-1">Reward watch-lite per menit tontonan aktif.</div>
+          <div className="text-sm text-[var(--muted)] mt-1">Reward watch-lite per menit.</div>
         </div>
-        <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #C7F9CC 0%, #86EFAC 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
-          <div className="text-xs font-black uppercase tracking-wide opacity-80">Quality premium</div>
+        <div className="stat-card">
+          <div className="label">Quality premium</div>
           <div className="mt-2 text-3xl font-black">{settingsSummary.lockedQualityCount}</div>
-          <div className="text-sm font-semibold opacity-80 mt-1">Jumlah kualitas yang sedang dikunci untuk user premium.</div>
+          <div className="text-sm text-[var(--muted)] mt-1">Kualitas dikunci untuk premium.</div>
         </div>
-        <div className="border-4 rounded-2xl p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'linear-gradient(135deg, #FBCFE8 0%, #F9A8D4 100%)', borderColor: 'var(--panel-border)', color: '#111827' }}>
-          <div className="text-xs font-black uppercase tracking-wide opacity-80">Announcement</div>
+        <div className="stat-card">
+          <div className="label">Announcement</div>
           <div className="mt-2 text-3xl font-black">{settingsSummary.announcementLength}</div>
-          <div className="text-sm font-semibold opacity-80 mt-1">Jumlah karakter pesan yang siap tampil ke aplikasi.</div>
+          <div className="text-sm text-[var(--muted)] mt-1">Karakter pesan aktif ke user.</div>
         </div>
       </div>
 
       {/* Maintenance Mode */}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] items-start">
         <div className="grid gap-6">
-          <section className="p-5 sm:p-6 border-4 rounded-[24px] space-y-5" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <section className="card p-5 sm:p-6 space-y-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="inline-flex items-center gap-2 text-sm font-extrabold"><Sparkles className="size-4" /> Konfigurasi Aplikasi</div>
-                <div className="text-sm opacity-75 mt-1">Kelola perilaku global aplikasi seperti maintenance, download, dan quality gating.</div>
+                <div className="flex items-center gap-2 section-title"><Sparkles className="w-4 h-4" /> Konfigurasi Aplikasi</div>
+                <div className="text-sm text-[var(--muted)] mt-1">Kelola perilaku global aplikasi seperti maintenance, download, dan quality gating.</div>
               </div>
-              <button type="button" onClick={saveGeneralSettings} disabled={savingGeneral || loadingSettings} className="px-4 py-3 border-4 rounded-xl font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>
-                <Save className="size-4 inline-block mr-1" /> {savingGeneral ? 'Menyimpan...' : 'Simpan Konfigurasi'}
+              <button type="button" onClick={saveGeneralSettings} disabled={savingGeneral || loadingSettings} className="btn btn--primary disabled:opacity-60">
+                <Save className="w-4 h-4" /> {savingGeneral ? 'Menyimpan...' : 'Simpan Konfigurasi'}
               </button>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="border-4 rounded-2xl p-4 space-y-4" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+              <div className="card p-4 space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="flex items-center gap-2 text-sm font-extrabold"><AlertTriangle className="size-4" /> Mode Pemeliharaan</div>
+                    <div className="flex items-center gap-2 text-sm font-extrabold"><AlertTriangle className="w-4 h-4" /> Mode Pemeliharaan</div>
                     <div className="text-xs opacity-70 mt-1">Tampilkan mode maintenance untuk semua user ketika sedang ada gangguan atau deployment besar.</div>
                   </div>
                   <button
                     type="button"
                     onClick={() => toggle('maintenanceMode')}
-                    className="px-3 py-2 border-4 rounded-xl font-extrabold"
-                    style={{ boxShadow: '4px 4px 0 #000', background: settings.maintenanceMode ? 'var(--accent-add)' : 'var(--panel-bg)', color: settings.maintenanceMode ? 'var(--accent-add-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                    className={`btn btn--sm ${settings.maintenanceMode ? 'btn--primary' : 'btn--secondary'}`}
                     disabled={loadingSettings}
                   >
                     {settings.maintenanceMode ? 'AKTIF' : 'NONAKTIF'}
@@ -286,25 +285,23 @@ export default function PengaturanPage() {
                     value={settings.maintenanceMessage}
                     onChange={(e) => setSettings((s) => ({ ...s, maintenanceMessage: e.target.value }))}
                     placeholder="Contoh: Server sedang maintenance pukul 00:00 - 01:00 WIB"
-                    className="w-full h-28 mt-1 px-3 py-3 border-4 rounded-xl font-semibold"
-                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                    className="input mt-1 h-28 resize-none"
                     disabled={loadingSettings}
                   />
                 </div>
               </div>
 
               <div className="grid gap-4">
-                <div className="border-4 rounded-2xl p-4 space-y-3" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+                <div className="card p-4 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="flex items-center gap-2 text-sm font-extrabold"><Download className="size-4" /> Pengunduhan</div>
+                      <div className="flex items-center gap-2 text-sm font-extrabold"><Download className="w-4 h-4" /> Pengunduhan</div>
                       <div className="text-xs opacity-70 mt-1">Sembunyikan atau nonaktifkan tombol download untuk seluruh aplikasi.</div>
                     </div>
                     <button
                       type="button"
                       onClick={() => toggle('disableDownload')}
-                      className="px-3 py-2 border-4 rounded-xl font-extrabold"
-                      style={{ boxShadow: '4px 4px 0 #000', background: settings.disableDownload ? 'var(--accent-add)' : 'var(--panel-bg)', color: settings.disableDownload ? 'var(--accent-add-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                      className={`btn btn--sm ${settings.disableDownload ? 'btn--primary' : 'btn--secondary'}`}
                       disabled={loadingSettings}
                     >
                       {settings.disableDownload ? 'AKTIF' : 'NONAKTIF'}
@@ -312,17 +309,16 @@ export default function PengaturanPage() {
                   </div>
                 </div>
 
-                <div className="border-4 rounded-2xl p-4 space-y-3" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+                <div className="card p-4 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="flex items-center gap-2 text-sm font-extrabold"><BadgeDollarSign className="size-4" /> Kualitas Berbayar</div>
+                      <div className="flex items-center gap-2 text-sm font-extrabold"><BadgeDollarSign className="w-4 h-4" /> Kualitas Berbayar</div>
                       <div className="text-xs opacity-70 mt-1">Batasi kualitas tertentu untuk user premium atau user yang punya akses khusus.</div>
                     </div>
                     <button
                       type="button"
                       onClick={() => toggle('paidQualityEnabled')}
-                      className="px-3 py-2 border-4 rounded-xl font-extrabold"
-                      style={{ boxShadow: '4px 4px 0 #000', background: settings.paidQualityEnabled ? 'var(--accent-add)' : 'var(--panel-bg)', color: settings.paidQualityEnabled ? 'var(--accent-add-foreground)' : 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                      className={`btn btn--sm ${settings.paidQualityEnabled ? 'btn--primary' : 'btn--secondary'}`}
                       disabled={loadingSettings}
                     >
                       {settings.paidQualityEnabled ? 'AKTIF' : 'NONAKTIF'}
@@ -334,30 +330,23 @@ export default function PengaturanPage() {
                       value={settings.paidQuality}
                       onChange={(e) => setSettings((s) => ({ ...s, paidQuality: e.target.value }))}
                       placeholder="cth: 720p, 1080p, 4K"
-                      className="w-full mt-1 px-3 py-3 border-4 rounded-xl font-semibold"
-                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                      className="input mt-1"
                       disabled={loadingSettings || !settings.paidQualityEnabled}
                     />
                     <div className="text-xs opacity-70 mt-1">Pisahkan dengan koma. Contoh: 720p, 1080p, 4K.</div>
                   </div>
                 </div>
 
-                <div className="border-4 rounded-2xl p-4 space-y-3" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+                <div className="card p-4 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="flex items-center gap-2 text-sm font-extrabold"><RefreshCcw className="size-4" /> Force Update</div>
+                      <div className="flex items-center gap-2 text-sm font-extrabold"><RefreshCcw className="w-4 h-4" /> Force Update</div>
                       <div className="text-xs opacity-70 mt-1">Paksa user untuk update ke versi minimum aplikasi.</div>
                     </div>
                     <button
                       type="button"
                       onClick={() => toggle('forceUpdateEnabled')}
-                      className="px-3 py-2 border-4 rounded-xl font-extrabold"
-                      style={{ 
-                        boxShadow: '4px 4px 0 #000', 
-                        background: settings.forceUpdateEnabled ? '#EF4444' : 'var(--panel-bg)', 
-                        color: settings.forceUpdateEnabled ? 'white' : 'var(--foreground)', 
-                        borderColor: 'var(--panel-border)' 
-                      }}
+                      className={`btn btn--sm ${settings.forceUpdateEnabled ? 'btn--danger' : 'btn--secondary'}`}
                       disabled={loadingSettings}
                     >
                       {settings.forceUpdateEnabled ? 'AKTIF' : 'NONAKTIF'}
@@ -370,8 +359,7 @@ export default function PengaturanPage() {
                         value={settings.forceUpdateVersion}
                         onChange={(e) => setSettings((s) => ({ ...s, forceUpdateVersion: e.target.value }))}
                         placeholder="Contoh: 2.5.0"
-                        className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold text-sm"
-                        style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                        className="input mt-1"
                         disabled={loadingSettings}
                       />
                       <div className="text-xs opacity-70 mt-1">Format: x.y.z (contoh: 2.5.0). User dengan versi lebih rendah akan diminta update.</div>
@@ -382,21 +370,21 @@ export default function PengaturanPage() {
             </div>
           </section>
 
-          <section className="p-5 sm:p-6 border-4 rounded-[24px] space-y-5" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <section className="card p-5 sm:p-6 space-y-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="inline-flex items-center gap-2 text-sm font-extrabold"><ToggleLeft className="size-4" /> Feature Toggles</div>
+                <div className="flex items-center gap-2 section-title"><ToggleLeft className="w-4 h-4" /> Feature Toggles</div>
                 <div className="text-sm opacity-75 mt-1">Aktifkan/nonaktifkan fitur aplikasi untuk semua user.</div>
               </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               {/* Nonton Bareng */}
-              <div className="border-4 rounded-2xl p-4 space-y-3" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+              <div className="card p-4 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2 text-sm font-extrabold">
-                      {settings.featureNobarEnabled ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                      {settings.featureNobarEnabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                       Nonton Bareng
                     </div>
                     <div className="text-xs opacity-70 mt-1">Fitur nonton bareng dengan teman-teman.</div>
@@ -404,13 +392,7 @@ export default function PengaturanPage() {
                   <button
                     type="button"
                     onClick={() => toggle('featureNobarEnabled')}
-                    className="px-3 py-2 border-4 rounded-xl font-extrabold"
-                    style={{ 
-                      boxShadow: '4px 4px 0 #000', 
-                      background: settings.featureNobarEnabled ? '#22C55E' : 'var(--panel-bg)', 
-                      color: settings.featureNobarEnabled ? 'white' : 'var(--foreground)', 
-                      borderColor: 'var(--panel-border)' 
-                    }}
+                    className={`btn btn--sm ${settings.featureNobarEnabled ? 'btn--primary' : 'btn--secondary'}`}
                     disabled={loadingSettings}
                   >
                     {settings.featureNobarEnabled ? 'AKTIF' : 'NONAKTIF'}
@@ -423,8 +405,7 @@ export default function PengaturanPage() {
                       value={settings.featureNobarMessage}
                       onChange={(e) => setSettings((s) => ({ ...s, featureNobarMessage: e.target.value }))}
                       placeholder="Alasan kenapa fitur nobar dinonaktifkan"
-                      className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold text-sm"
-                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                      className="input mt-1"
                       disabled={loadingSettings}
                     />
                   </div>
@@ -432,11 +413,11 @@ export default function PengaturanPage() {
               </div>
 
               {/* Mode Baca */}
-              <div className="border-4 rounded-2xl p-4 space-y-3" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+              <div className="card p-4 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2 text-sm font-extrabold">
-                      {settings.featureReadModeEnabled ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                      {settings.featureReadModeEnabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                       Mode Baca
                     </div>
                     <div className="text-xs opacity-70 mt-1">Mode baca manga/novel yang nyaman.</div>
@@ -444,13 +425,7 @@ export default function PengaturanPage() {
                   <button
                     type="button"
                     onClick={() => toggle('featureReadModeEnabled')}
-                    className="px-3 py-2 border-4 rounded-xl font-extrabold"
-                    style={{ 
-                      boxShadow: '4px 4px 0 #000', 
-                      background: settings.featureReadModeEnabled ? '#22C55E' : 'var(--panel-bg)', 
-                      color: settings.featureReadModeEnabled ? 'white' : 'var(--foreground)', 
-                      borderColor: 'var(--panel-border)' 
-                    }}
+                    className={`btn btn--sm ${settings.featureReadModeEnabled ? 'btn--primary' : 'btn--secondary'}`}
                     disabled={loadingSettings}
                   >
                     {settings.featureReadModeEnabled ? 'AKTIF' : 'NONAKTIF'}
@@ -463,8 +438,7 @@ export default function PengaturanPage() {
                       value={settings.featureReadModeMessage}
                       onChange={(e) => setSettings((s) => ({ ...s, featureReadModeMessage: e.target.value }))}
                       placeholder="Alasan kenapa mode baca dinonaktifkan"
-                      className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold text-sm"
-                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                      className="input mt-1"
                       disabled={loadingSettings}
                     />
                   </div>
@@ -472,11 +446,11 @@ export default function PengaturanPage() {
               </div>
 
               {/* Download Episode */}
-              <div className="border-4 rounded-2xl p-4 space-y-3" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+              <div className="card p-4 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2 text-sm font-extrabold">
-                      {settings.featureDownloadEpisodeEnabled ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                      {settings.featureDownloadEpisodeEnabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                       Download Episode
                     </div>
                     <div className="text-xs opacity-70 mt-1">Download episode anime individual.</div>
@@ -484,13 +458,7 @@ export default function PengaturanPage() {
                   <button
                     type="button"
                     onClick={() => toggle('featureDownloadEpisodeEnabled')}
-                    className="px-3 py-2 border-4 rounded-xl font-extrabold"
-                    style={{ 
-                      boxShadow: '4px 4px 0 #000', 
-                      background: settings.featureDownloadEpisodeEnabled ? '#22C55E' : 'var(--panel-bg)', 
-                      color: settings.featureDownloadEpisodeEnabled ? 'white' : 'var(--foreground)', 
-                      borderColor: 'var(--panel-border)' 
-                    }}
+                    className={`btn btn--sm ${settings.featureDownloadEpisodeEnabled ? 'btn--primary' : 'btn--secondary'}`}
                     disabled={loadingSettings}
                   >
                     {settings.featureDownloadEpisodeEnabled ? 'AKTIF' : 'NONAKTIF'}
@@ -503,8 +471,7 @@ export default function PengaturanPage() {
                       value={settings.featureDownloadEpisodeMessage}
                       onChange={(e) => setSettings((s) => ({ ...s, featureDownloadEpisodeMessage: e.target.value }))}
                       placeholder="Alasan kenapa download episode dinonaktifkan"
-                      className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold text-sm"
-                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                      className="input mt-1"
                       disabled={loadingSettings}
                     />
                   </div>
@@ -512,11 +479,11 @@ export default function PengaturanPage() {
               </div>
 
               {/* Download Batch */}
-              <div className="border-4 rounded-2xl p-4 space-y-3" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+              <div className="card p-4 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2 text-sm font-extrabold">
-                      {settings.featureDownloadBatchEnabled ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                      {settings.featureDownloadBatchEnabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                       Download Batch
                     </div>
                     <div className="text-xs opacity-70 mt-1">Download multiple episodes sekaligus.</div>
@@ -524,13 +491,7 @@ export default function PengaturanPage() {
                   <button
                     type="button"
                     onClick={() => toggle('featureDownloadBatchEnabled')}
-                    className="px-3 py-2 border-4 rounded-xl font-extrabold"
-                    style={{ 
-                      boxShadow: '4px 4px 0 #000', 
-                      background: settings.featureDownloadBatchEnabled ? '#22C55E' : 'var(--panel-bg)', 
-                      color: settings.featureDownloadBatchEnabled ? 'white' : 'var(--foreground)', 
-                      borderColor: 'var(--panel-border)' 
-                    }}
+                    className={`btn btn--sm ${settings.featureDownloadBatchEnabled ? 'btn--primary' : 'btn--secondary'}`}
                     disabled={loadingSettings}
                   >
                     {settings.featureDownloadBatchEnabled ? 'AKTIF' : 'NONAKTIF'}
@@ -543,8 +504,7 @@ export default function PengaturanPage() {
                       value={settings.featureDownloadBatchMessage}
                       onChange={(e) => setSettings((s) => ({ ...s, featureDownloadBatchMessage: e.target.value }))}
                       placeholder="Alasan kenapa download batch dinonaktifkan"
-                      className="w-full mt-1 px-3 py-2 border-4 rounded-xl font-semibold text-sm"
-                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                      className="input mt-1"
                       disabled={loadingSettings}
                     />
                   </div>
@@ -553,18 +513,18 @@ export default function PengaturanPage() {
             </div>
           </section>
 
-          <section className="p-5 sm:p-6 border-4 rounded-[24px] space-y-5" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <section className="card p-5 sm:p-6 space-y-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="inline-flex items-center gap-2 text-sm font-extrabold"><BellRing className="size-4" /> In-App Announcement</div>
+                <div className="flex items-center gap-2 section-title"><BellRing className="w-4 h-4" /> In-App Announcement</div>
                 <div className="text-sm opacity-75 mt-1">Tulis pesan pengumuman yang akan ditampilkan langsung di aplikasi client.</div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <button type="button" onClick={clearAnnouncement} disabled={savingAnnouncement || clearingAnnouncement || loadingSettings || !announcement.exists} className="px-4 py-3 border-4 rounded-xl font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                <button type="button" onClick={clearAnnouncement} disabled={savingAnnouncement || clearingAnnouncement || loadingSettings || !announcement.exists} className="btn btn--secondary disabled:opacity-60">
                   {clearingAnnouncement ? 'Menghapus...' : 'Hapus Pesan'}
                 </button>
-                <button type="button" onClick={saveAnnouncement} disabled={savingAnnouncement || clearingAnnouncement || loadingSettings} className="px-4 py-3 border-4 rounded-xl font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>
-                  <Save className="size-4 inline-block mr-1" /> {savingAnnouncement ? 'Menyimpan...' : 'Simpan Announcement'}
+                <button type="button" onClick={saveAnnouncement} disabled={savingAnnouncement || clearingAnnouncement || loadingSettings} className="btn btn--primary disabled:opacity-60">
+                  <Save className="w-4 h-4" /> {savingAnnouncement ? 'Menyimpan...' : 'Simpan Announcement'}
                 </button>
               </div>
             </div>
@@ -576,15 +536,14 @@ export default function PengaturanPage() {
                   value={announcement.message}
                   onChange={(e) => setAnnouncement((prev) => ({ ...prev, message: e.target.value }))}
                   placeholder="Tulis pengumuman penting yang ingin muncul di aplikasi..."
-                  className="w-full h-40 mt-1 px-3 py-3 border-4 rounded-xl font-semibold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  className="input mt-1 h-40 resize-none"
                   disabled={loadingSettings}
                 />
                 <div className="text-xs opacity-70 mt-2">Gunakan pesan yang singkat, jelas, dan mudah dibaca karena ini akan tampil langsung ke user.</div>
               </div>
-              <div className="border-4 rounded-2xl p-4 space-y-3" style={{ background: 'linear-gradient(135deg, rgba(255,216,3,0.14) 0%, rgba(255,255,255,0.03) 100%)', borderColor: 'var(--panel-border)' }}>
+              <div className="card p-4 space-y-3">
                 <div className="text-sm font-black">Preview Pengumuman</div>
-                <div className="border-4 rounded-2xl p-4 min-h-[180px] text-sm leading-6 whitespace-pre-wrap" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+                <div className="card p-4 min-h-[180px] text-sm leading-6 whitespace-pre-wrap" style={{ background: 'var(--surface)' }}>
                   {announcement.message.trim() || 'Belum ada pesan announcement yang disiapkan.'}
                 </div>
                 <div className="text-xs opacity-70">Terakhir diperbarui: {announcement.updatedAt ? new Date(announcement.updatedAt).toLocaleString('id-ID') : 'Belum pernah'}</div>
@@ -594,43 +553,34 @@ export default function PengaturanPage() {
         </div>
 
         <div className="grid gap-6">
-          <section className="p-5 sm:p-6 border-4 rounded-[24px] space-y-5" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <section className="card p-5 sm:p-6 space-y-5">
             <div className="flex flex-col gap-2">
-              <div className="inline-flex items-center gap-2 text-sm font-extrabold"><Coins className="size-4" /> Watch Lite Reward</div>
+              <div className="flex items-center gap-2 section-title"><Coins className="w-4 h-4" /> Watch Lite Reward</div>
               <div className="text-sm opacity-75">Atur berapa lite coin yang didapat user untuk setiap menit watch-lite.</div>
             </div>
-            <div className="border-4 rounded-2xl p-4 space-y-3" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
+            <div className="card p-4 space-y-3">
               <label className="text-xs font-bold">Lite Coin per Minute</label>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={settings.watchLiteCoinPerMinute}
-                onChange={(e) => setSettings((s) => ({ ...s, watchLiteCoinPerMinute: e.target.value }))}
-                className="w-full px-3 py-3 border-4 rounded-xl font-black text-2xl"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                disabled={loadingSettings}
-              />
-              <div className="text-xs opacity-70">Nilai harus berupa integer lebih besar atau sama dengan 0. Semakin besar nilainya, semakin cepat user mendapat reward watch-lite.</div>
-              <button type="button" onClick={saveWatchLite} disabled={savingWatchLite || loadingSettings} className="w-full px-4 py-3 border-4 rounded-xl font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: '#FFD803', borderColor: 'var(--panel-border)', color: '#111827' }}>
-                <Save className="size-4 inline-block mr-1" /> {savingWatchLite ? 'Menyimpan...' : 'Simpan Reward Watch-Lite'}
+              <input type="number" min="0" step="1" value={settings.watchLiteCoinPerMinute} onChange={(e) => setSettings((s) => ({ ...s, watchLiteCoinPerMinute: e.target.value }))} className="input font-black text-2xl" disabled={loadingSettings} />
+              <div className="text-xs text-[var(--muted)]">Nilai integer ≥ 0. Semakin besar, semakin cepat user dapat reward.</div>
+              <button type="button" onClick={saveWatchLite} disabled={savingWatchLite || loadingSettings} className="btn btn--primary w-full disabled:opacity-60">
+                <Save className="w-4 h-4" /> {savingWatchLite ? 'Menyimpan...' : 'Simpan Reward Watch-Lite'}
               </button>
             </div>
           </section>
 
-          <section className="p-5 sm:p-6 border-4 rounded-[24px] space-y-4" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-            <div className="text-sm font-extrabold">Ringkasan cepat</div>
+          <section className="card p-5 sm:p-6 space-y-4">
+            <div className="section-title">Ringkasan cepat</div>
             <div className="grid gap-3">
-              <div className="border-4 rounded-2xl p-4" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
-                <div className="text-xs font-black uppercase tracking-wide opacity-70">Status maintenance</div>
+              <div className="stat-card">
+                <div className="label">Status maintenance</div>
                 <div className="mt-1 text-lg font-black">{settings.maintenanceMode ? 'Aktif' : 'Nonaktif'}</div>
               </div>
-              <div className="border-4 rounded-2xl p-4" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
-                <div className="text-xs font-black uppercase tracking-wide opacity-70">Download global</div>
+              <div className="stat-card">
+                <div className="label">Download global</div>
                 <div className="mt-1 text-lg font-black">{settings.disableDownload ? 'Dimatikan' : 'Tetap tersedia'}</div>
               </div>
-              <div className="border-4 rounded-2xl p-4" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
-                <div className="text-xs font-black uppercase tracking-wide opacity-70">Announcement aktif</div>
+              <div className="stat-card">
+                <div className="label">Announcement aktif</div>
                 <div className="mt-1 text-lg font-black">{announcement.message.trim() ? 'Ada pesan aktif' : 'Belum ada pesan'}</div>
               </div>
             </div>

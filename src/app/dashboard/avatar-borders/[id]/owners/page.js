@@ -152,7 +152,7 @@ export default function BorderOwnersPage() {
         <>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Link href="/dashboard/avatar-borders" className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <Link href="/dashboard/avatar-borders" className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                 <ArrowLeft className="size-4" />
               </Link>
               <h2 className="text-xl font-extrabold flex items-center gap-2">
@@ -169,9 +169,9 @@ export default function BorderOwnersPage() {
               onChange={(e) => setUserId(e.target.value)}
               placeholder="Filter ID Pengguna"
               className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             />
-            <button type="submit" className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>Terapkan</button>
+            <button type="submit" className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>Terapkan</button>
           </form>
 
           {/* Upsert form */}
@@ -182,19 +182,19 @@ export default function BorderOwnersPage() {
               onChange={(e) => setUpUserId(e.target.value)}
               placeholder="user_id"
               className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
             />
             <label className="flex items-center gap-2 font-extrabold">
               <input type="checkbox" checked={upActive} onChange={(e) => setUpActive(e.target.checked)} /> Set Aktif
             </label>
-            <button type="submit" disabled={submitting} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>
+            <button type="submit" disabled={submitting} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}>
               {submitting ? 'Menyimpan...' : (<><Plus className="inline size-4" /> Tambah / Perbarui</>)}
             </button>
           </form>
 
           {/* Table */}
           <div className="overflow-auto">
-            <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
               <thead style={{ background: 'var(--panel-bg)' }}>
                 <tr>
                   <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>ID Pengguna</th>
@@ -213,10 +213,10 @@ export default function BorderOwnersPage() {
                     <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.obtained_at ? new Date(it.obtained_at).toLocaleString() : '-'}</td>
                     <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => toggleOwnerActive(it)} disabled={actingId === it.id} className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }} title={it.is_active ? 'Set Nonaktif' : 'Set Aktif'}>
+                        <button onClick={() => toggleOwnerActive(it)} disabled={actingId === it.id} className="px-2 py-1 border-4 rounded font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }} title={it.is_active ? 'Set Nonaktif' : 'Set Aktif'}>
                           {it.is_active ? <XCircle className="size-4" /> : <CheckCircle2 className="size-4" />}
                         </button>
-                        <button onClick={() => onRequestDelete(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>
+                        <button onClick={() => onRequestDelete(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>
                           <Trash2 className="size-4" />
                         </button>
                       </div>
@@ -234,18 +234,18 @@ export default function BorderOwnersPage() {
 
           {/* Pagination */}
           <div className="flex items-center gap-2">
-            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Sebelumnya</button>
+            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Sebelumnya</button>
             <div className="text-sm font-extrabold">Halaman {page} / {Math.max(1, Math.ceil(total / limit))}</div>
-            <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Berikutnya</button>
+            <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Berikutnya</button>
           </div>
 
           {/* Confirm Delete Modal */}
           {confirmOpen && (
             <div className="fixed inset-0 z-50 grid place-items-center">
               <div className="absolute inset-0 bg-black/40" onClick={onCancelDelete} />
-              <div className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <div className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6" style={{ boxShadow: 'var(--shadow-xl)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 rounded-md" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}>
+                  <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 rounded-md" style={{ boxShadow: 'var(--shadow-md)', borderColor: 'var(--panel-border)' }}>
                     <Trash2 className="size-5" />
                   </div>
                   <div>
@@ -254,10 +254,10 @@ export default function BorderOwnersPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-end gap-2">
-                  <button onClick={onCancelDelete} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <button onClick={onCancelDelete} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
                     Batal
                   </button>
-                  <button onClick={onConfirmDelete} disabled={deleting} className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}>
+                  <button onClick={onConfirmDelete} disabled={deleting} className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', borderColor: 'var(--panel-border)' }}>
                     Ya, Hapus
                   </button>
                 </div>

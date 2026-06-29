@@ -153,8 +153,8 @@ export default function AdminVipPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-extrabold flex items-center gap-2"><Crown className="size-5" /> Admin VIP</h2>
-        <button onClick={loadAll} disabled={loading} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
-          <RefreshCcw className="size-4 inline-block mr-1" /> {loading ? 'Memuat...' : 'Refresh'}
+        <button onClick={loadAll} disabled={loading} className="btn btn--primary disabled:opacity-60">
+          <RefreshCcw className="w-4 h-4" /> {loading ? 'Memuat...' : 'Refresh'}
         </button>
       </div>
 
@@ -162,21 +162,21 @@ export default function AdminVipPage() {
       <form onSubmit={onSearch} className="grid sm:grid-cols-[1fr_140px] gap-3">
         <div className="grid gap-1">
           <div className="text-xs font-extrabold">User ID</div>
-          <input type="number" min="1" placeholder="Masukkan User ID" value={userId} onChange={(e) => setUserId(e.target.value)} className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+          <input type="number" min="1" placeholder="Masukkan User ID" value={userId} onChange={(e) => setUserId(e.target.value)} className="input" />
         </div>
-        <button type="submit" className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
-          <Search className="size-4 inline-block mr-1" /> Cari
+        <button type="submit" className="btn btn--primary">
+          <Search className="w-4 h-4" /> Cari
         </button>
       </form>
 
       {/* Status Card */}
-      <div className="border-4 rounded-lg p-4" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+      <div className="card p-4">
         <div className="font-extrabold mb-2">Status VIP</div>
         {status ? (
           <div className="grid sm:grid-cols-2 gap-2 text-sm">
             <div className="col-span-2 flex items-center gap-3">
               {status.user?.profile?.avatar_url ? (
-                <img src={status.user.profile.avatar_url} alt="avatar" className="w-10 h-10 object-cover border-4 rounded" style={{ borderColor: 'var(--panel-border)' }} />
+                <img src={status.user.profile.avatar_url} alt="avatar" className="w-10 h-10 object-cover border-2 border-[var(--border)]" loading="lazy" decoding="async" />
               ) : null}
               <div className="font-extrabold">{status.user?.username || '-'} <span className="opacity-70 text-xs">(ID: {status.user?.id ?? '-'})</span></div>
             </div>
@@ -198,15 +198,15 @@ export default function AdminVipPage() {
       {/* Actions */}
       <div className="grid md:grid-cols-2 gap-4">
         {/* Activate */}
-        <form onSubmit={onActivate} className="grid gap-2 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+        <form onSubmit={onActivate} className="card p-3 grid gap-2">
           <div className="font-extrabold flex items-center gap-2"><Check className="size-4" /> Activate VIP</div>
           <div className="grid gap-1">
             <div className="text-xs font-extrabold">VIP Level</div>
-            <input name="vip_level" placeholder="VIP Level (Diamond)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+            <input name="vip_level" placeholder="VIP Level (Diamond)" className="input" />
           </div>
           <div className="grid gap-1">
             <div className="text-xs font-extrabold">Durasi (hari)</div>
-            <input name="durationDays" type="number" placeholder="Durasi (hari) default 30" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+            <input name="durationDays" type="number" placeholder="Durasi (hari) default 30" className="input" />
           </div>
           <div className="flex items-center gap-2">
             <input id="act-autorenew" name="auto_renew" type="checkbox" className="size-4" />
@@ -214,49 +214,49 @@ export default function AdminVipPage() {
           </div>
           <div className="grid gap-1">
             <div className="text-xs font-extrabold">Metode Pembayaran</div>
-            <input name="payment_method" placeholder="Metode Pembayaran (GOPAY/OVO/...)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+            <input name="payment_method" placeholder="Metode Pembayaran (GOPAY/OVO/...)" className="input" />
           </div>
           <div className="grid gap-1">
             <div className="text-xs font-extrabold">Catatan</div>
-            <textarea name="notes" rows={2} placeholder="Catatan" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+            <textarea name="notes" rows={2} placeholder="Catatan" className="input" />
           </div>
-          <button type="submit" disabled={submitting || !userId} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>Aktifkan</button>
+          <button type="submit" disabled={submitting || !userId} className="btn btn--primary disabled:opacity-60">Aktifkan</button>
         </form>
 
         {/* Renew / Cancel / Toggle Auto-Renew */}
         <div className="grid gap-4">
-          <form onSubmit={onRenew} className="grid gap-2 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <form onSubmit={onRenew} className="card p-3 grid gap-2">
             <div className="font-extrabold flex items-center gap-2"><CreditCard className="size-4" /> Renew VIP</div>
             <div className="grid gap-1">
               <div className="text-xs font-extrabold">Durasi (hari)</div>
-              <input name="durationDays" type="number" placeholder="Durasi (hari) default 30" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              <input name="durationDays" type="number" placeholder="Durasi (hari) default 30" className="input" />
             </div>
             <div className="grid gap-1">
               <div className="text-xs font-extrabold">Metode Pembayaran</div>
-              <input name="payment_method" placeholder="Metode Pembayaran (BANK_TRANSFER/...)" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              <input name="payment_method" placeholder="Metode Pembayaran (BANK_TRANSFER/...)" className="input" />
             </div>
             <div className="grid gap-1">
               <div className="text-xs font-extrabold">Catatan</div>
-              <textarea name="notes" rows={2} placeholder="Catatan" className="px-3 py-2 border-4 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              <textarea name="notes" rows={2} placeholder="Catatan" className="input" />
             </div>
-            <button type="submit" disabled={submitting || !userId} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>Perpanjang</button>
+            <button type="submit" disabled={submitting || !userId} className="btn btn--primary disabled:opacity-60">Perpanjang</button>
           </form>
 
-          <div className="grid gap-2 p-3 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <div className="card p-3 grid gap-2">
             <div className="font-extrabold flex items-center gap-2"><RotateCcw className="size-4" /> Auto-Renew</div>
             <div className="flex items-center gap-2">
-              <button onClick={() => onToggleAutoRenew(true)} disabled={submitting || !userId} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>Enable</button>
-              <button onClick={() => onToggleAutoRenew(false)} disabled={submitting || !userId} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Disable</button>
+              <button onClick={() => onToggleAutoRenew(true)} disabled={submitting || !userId} className="btn btn--primary disabled:opacity-60">Enable</button>
+              <button onClick={() => onToggleAutoRenew(false)} disabled={submitting || !userId} className="btn btn--secondary disabled:opacity-60">Disable</button>
             </div>
             <div className="font-extrabold flex items-center gap-2 mt-2"><X className="size-4" /> Batalkan VIP</div>
-            <button onClick={onCancel} disabled={submitting || !userId} className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>Batalkan</button>
+            <button onClick={onCancel} disabled={submitting || !userId} className="btn btn--danger disabled:opacity-60">Batalkan</button>
           </div>
         </div>
       </div>
 
       {/* History Table */}
       <div className="overflow-auto">
-        <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+        <table className="min-w-full border-4 border-[var(--border)] overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)' }}>
           <thead style={{ background: 'var(--panel-bg)' }}>
             <tr>
               <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Action</th>
@@ -283,9 +283,9 @@ export default function AdminVipPage() {
 
       {/* Pagination */}
       <div className="flex items-center gap-2">
-        <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Prev</button>
+        <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="btn btn--secondary disabled:opacity-60">Prev</button>
         <div className="text-sm font-extrabold">Page {page} / {history.totalPages || 1}</div>
-        <button disabled={page >= (history.totalPages || 1)} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Next</button>
+        <button disabled={page >= (history.totalPages || 1)} onClick={() => setPage((p) => p + 1)} className="btn btn--secondary disabled:opacity-60">Next</button>
       </div>
     </div>
   );

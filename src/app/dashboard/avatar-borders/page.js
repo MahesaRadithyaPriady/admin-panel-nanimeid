@@ -257,273 +257,172 @@ export default function AvatarBordersPage() {
             <h2 className="text-xl font-extrabold flex items-center gap-2">
               <ImageIcon className="size-5" /> {mode === 'add' ? 'Tambah Avatar Border' : 'Ubah Avatar Border'}
             </h2>
-            <div className="flex items-center gap-2">
-              <button onClick={() => router.push('/dashboard')} className="btn-pg flex items-center gap-2">
-                <ArrowLeft className="size-4" /> Kembali
-              </button>
-            </div>
+            <button onClick={() => router.push('/dashboard')} className="btn btn--secondary inline-flex items-center gap-2">
+              <ArrowLeft className="size-4" /> Kembali
+            </button>
           </div>
 
           {/* Filters */}
-          <form onSubmit={onSearch} className="grid sm:grid-cols-[1fr_160px_120px] gap-3 mb-4">
-            <input
-              type="text"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Cari (kode/judul)"
-              className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-            />
-            <select
-              value={active}
-              onChange={(e) => setActive(e.target.value)}
-              className="px-3 py-2 border-4 rounded-lg bg-white font-extrabold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-            >
+          <form onSubmit={onSearch} className="card p-3 grid sm:grid-cols-[1fr_160px_120px] gap-3">
+            <input type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari (kode/judul)" className="input w-full" />
+            <select value={active} onChange={(e) => setActive(e.target.value)} className="select w-full">
               <option value="">Semua</option>
               <option value="true">Aktif</option>
               <option value="false">Nonaktif</option>
             </select>
-            <button type="submit" className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>Terapkan</button>
+            <button type="submit" className="btn btn--primary">Terapkan</button>
           </form>
 
-          {/* Form Add/Edit */}
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-sm font-extrabold">Code *</label>
-                <input
-                  type="text"
-                  value={form.code}
-                  onChange={onChange('code')}
-                  placeholder="ELAINA_WHITE"
-                  className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-extrabold">Title *</label>
-                <input
-                  type="text"
-                  value={form.title}
-                  onChange={onChange('title')}
-                  placeholder="Elaina White"
-                  className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                />
-              </div>
-            </div>
+          {/* Main layout: form left, table right */}
+          <div className="grid lg:grid-cols-[340px_minmax(0,1fr)] gap-6 items-start">
 
-            <div className="space-y-1">
-              <label className="text-sm font-extrabold">Gambar Border {mode === 'add' ? '*' : '(biarkan kosong jika tidak diubah)'}</label>
-              <div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)]">
-                <select
-                  value={form.image_mode}
-                  onChange={onChange('image_mode')}
-                  className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                >
-                  <option value="upload">Upload file</option>
-                  <option value="url">Gunakan URL</option>
-                </select>
-                {form.image_mode === 'upload' ? (
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={onFileChange}
-                    className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                  />
-                ) : (
-                  <input
-                    type="url"
-                    value={form.image_url}
-                    onChange={onChange('image_url')}
-                    placeholder="https://..."
-                    className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                  />
-                )}
-              </div>
-              {(form.preview_url || form.image_url || form.existing_image_url) ? (
-                <div className="mt-2">
-                  <img src={form.preview_url || form.image_url || form.existing_image_url} alt="Preview" className="max-h-40 border-4 rounded-lg" style={{ borderColor: 'var(--panel-border)' }} />
+            {/* Form Add/Edit — sticky on large screens */}
+            <div className="lg:sticky lg:top-4">
+              <form onSubmit={onSubmit} className="card p-4 space-y-3">
+                <div className="text-sm font-extrabold border-b-2 border-[var(--border)] pb-2 mb-1">
+                  {mode === 'add' ? '+ Tambah Border Baru' : '✎ Edit Border'}
                 </div>
-              ) : null}
+
+                <div className="grid gap-1">
+                  <label className="text-xs font-extrabold">Code *</label>
+                  <input type="text" value={form.code} onChange={onChange('code')} placeholder="ELAINA_WHITE" className="input w-full" />
+                </div>
+                <div className="grid gap-1">
+                  <label className="text-xs font-extrabold">Title *</label>
+                  <input type="text" value={form.title} onChange={onChange('title')} placeholder="Elaina White" className="input w-full" />
+                </div>
+
+                <div className="grid gap-1">
+                  <label className="text-xs font-extrabold">Gambar {mode === 'add' ? '*' : '(kosong = tidak diubah)'}</label>
+                  <select value={form.image_mode} onChange={onChange('image_mode')} className="select w-full">
+                    <option value="upload">Upload file</option>
+                    <option value="url">Gunakan URL</option>
+                  </select>
+                  {form.image_mode === 'upload' ? (
+                    <input type="file" accept="image/*" onChange={onFileChange} className="input w-full" />
+                  ) : (
+                    <input type="url" value={form.image_url} onChange={onChange('image_url')} placeholder="https://..." className="input w-full" />
+                  )}
+                  {(form.preview_url || form.image_url || form.existing_image_url) && (
+                    <img src={form.preview_url || form.image_url || form.existing_image_url} alt="Preview" className="mt-1 max-h-32 border-4 border-[var(--border)]" loading="lazy" decoding="async" />
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="grid gap-1">
+                    <label className="text-xs font-extrabold">Harga Koin</label>
+                    <input type="number" value={form.coin_price} onChange={onChange('coin_price')} placeholder="500" className="input w-full" />
+                  </div>
+                  <div className="grid gap-1">
+                    <label className="text-xs font-extrabold">Batas / User</label>
+                    <input type="number" value={form.per_user_limit} onChange={onChange('per_user_limit')} placeholder="1" className="input w-full" />
+                  </div>
+                </div>
+
+                <div className="grid gap-1">
+                  <label className="text-xs font-extrabold">Tier</label>
+                  <select value={form.tier} onChange={onChange('tier')} className="select w-full">
+                    <option value="C">C</option>
+                    <option value="B">B</option>
+                    <option value="A">A</option>
+                    <option value="S">S</option>
+                    <option value="S_PLUS">S_PLUS</option>
+                    <option value="SS_PLUS">SS_PLUS</option>
+                    <option value="SSS_PLUS">SSS_PLUS</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="grid gap-1 min-w-0">
+                    <label className="text-xs font-extrabold">Mulai</label>
+                    <input type="datetime-local" value={form.starts_at} onChange={onChange('starts_at')} className="input w-full min-w-0 text-xs" />
+                  </div>
+                  <div className="grid gap-1 min-w-0">
+                    <label className="text-xs font-extrabold">Berakhir</label>
+                    <input type="datetime-local" value={form.ends_at} onChange={onChange('ends_at')} className="input w-full min-w-0 text-xs" />
+                  </div>
+                </div>
+
+                <div className="grid gap-1">
+                  <label className="text-xs font-extrabold">Total Stok (opsional)</label>
+                  <input type="number" value={form.total_supply} onChange={onChange('total_supply')} placeholder="contoh: 250" className="input w-full" />
+                </div>
+
+                <div className="flex items-center gap-4 text-sm font-semibold">
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={form.is_active} onChange={onChange('is_active')} /> Aktif
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={form.is_limited} onChange={onChange('is_limited')} /> Limited Supply
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <button type="submit" disabled={submitting} className={`btn disabled:opacity-60 inline-flex items-center gap-2 ${mode === 'add' ? 'btn--primary' : 'btn--secondary'}`}>
+                    {submitting ? 'Menyimpan...' : mode === 'add' ? <><Plus className="size-4" /> Simpan Baru</> : <><Pencil className="size-4" /> Simpan Perubahan</>}
+                  </button>
+                  {mode === 'edit' && (
+                    <button type="button" onClick={() => { setMode('add'); setEditingId(null); resetForm(); }} className="btn btn--secondary">Batal</button>
+                  )}
+                </div>
+              </form>
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <label className="text-sm font-extrabold">Harga Koin (kosongkan untuk null)</label>
-                <input
-                  type="number"
-                  value={form.coin_price}
-                  onChange={onChange('coin_price')}
-                  placeholder="500"
-                  className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                />
+            {/* Table + Pagination */}
+            <div className="space-y-4">
+              <div className="overflow-auto">
+                <table className="min-w-full border-4 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
+                  <thead className="bg-[var(--panel-bg)]">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Code</th>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Title</th>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Harga</th>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aktif</th>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Terbatas</th>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Stok</th>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((it) => (
+                      <tr key={it.id}>
+                        <td className="px-3 py-2 border-b-4 border-[var(--border)] font-extrabold">{it.code}</td>
+                        <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.title}</td>
+                        <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.coin_price == null ? '-' : it.coin_price}</td>
+                        <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.is_active ? 'Ya' : 'Tidak'}</td>
+                        <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.is_limited ? 'Ya' : 'Tidak'}</td>
+                        <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.total_supply == null ? '-' : it.total_supply}</td>
+                        <td className="px-3 py-2 border-b-4 border-[var(--border)]">
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => onEdit(it)} className="btn btn--secondary btn--sm"><Pencil className="size-4" /></button>
+                            <button onClick={() => onRequestDelete(it)} className="btn btn--danger btn--sm"><Trash2 className="size-4" /></button>
+                            <Link href={`/dashboard/avatar-borders/${it.id}/owners`} className="btn btn--secondary btn--sm" title="Lihat pemilik border"><ArrowRight className="size-4" /></Link>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {items.length === 0 && (
+                      <tr><td colSpan={7} className="px-3 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Tidak ada data.'}</td></tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-extrabold">Batas per Pengguna</label>
-                <input
-                  type="number"
-                  value={form.per_user_limit}
-                  onChange={onChange('per_user_limit')}
-                  placeholder="1"
-                  className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-extrabold">Tier</label>
-                <select
-                  value={form.tier}
-                  onChange={onChange('tier')}
-                  className="w-full px-3 py-2 border-4 rounded-lg font-extrabold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                >
-                  <option value="C">C</option>
-                  <option value="B">B</option>
-                  <option value="A">A</option>
-                  <option value="S">S</option>
-                  <option value="S_PLUS">S_PLUS</option>
-                  <option value="SS_PLUS">SS_PLUS</option>
-                  <option value="SSS_PLUS">SSS_PLUS</option>
-                </select>
-              </div>
-              <div className="flex items-end gap-2">
-                <label className="flex items-center gap-2 font-extrabold">
-                  <input type="checkbox" checked={form.is_active} onChange={onChange('is_active')} /> Aktif
-                </label>
+
+              <div className="flex items-center gap-2">
+                <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="btn btn--secondary disabled:opacity-60">Sebelumnya</button>
+                <div className="text-sm font-extrabold">Halaman {page} / {Math.max(1, Math.ceil(total / limit))}</div>
+                <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} className="btn btn--secondary disabled:opacity-60">Berikutnya</button>
               </div>
             </div>
-
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-sm font-extrabold">Starts At (opsional)</label>
-                <input
-                  type="datetime-local"
-                  value={form.starts_at}
-                  onChange={onChange('starts_at')}
-                  className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-extrabold">Ends At (opsional)</label>
-                <input
-                  type="datetime-local"
-                  value={form.ends_at}
-                  onChange={onChange('ends_at')}
-                  className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                />
-              </div>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div className="flex items-end gap-2">
-                <label className="flex items-center gap-2 font-extrabold">
-                  <input type="checkbox" checked={form.is_limited} onChange={onChange('is_limited')} /> Limited Supply
-                </label>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-extrabold">Total Stok (isi angka jika terbatas)</label>
-                <input
-                  type="number"
-                  value={form.total_supply}
-                  onChange={onChange('total_supply')}
-                  placeholder="contoh: 250"
-                  className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2">
-              <button
-                type="submit"
-                disabled={submitting}
-                className={`px-4 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60`}
-                style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)', background: mode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', color: mode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)' }}
-              >
-                {submitting ? 'Menyimpan...' : mode === 'add' ? (<><Plus className="inline size-4" /> Simpan Baru</>) : (<><Pencil className="inline size-4" /> Simpan Perubahan</>)}
-              </button>
-              {mode === 'edit' && (
-                <button
-                  type="button"
-                  onClick={() => { setMode('add'); setEditingId(null); }}
-                  className="px-4 py-2 border-4 rounded-lg font-extrabold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                >
-                  Batal Edit
-                </button>
-              )}
-            </div>
-          </form>
-
-          {/* Table */}
-          <div className="overflow-auto">
-            <table className="min-w-full border-4 rounded-lg overflow-hidden" style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-              <thead style={{ background: 'var(--panel-bg)' }}>
-                <tr>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Code</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Title</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Harga</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aktif</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Terbatas</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Stok</th>
-                  <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((it) => (
-                  <tr key={it.id}>
-                    <td className="px-3 py-2 border-b-4 font-extrabold" style={{ borderColor: 'var(--panel-border)' }}>{it.code}</td>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.title}</td>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.coin_price == null ? '-' : it.coin_price}</td>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.is_active ? 'Ya' : 'Tidak'}</td>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.is_limited ? 'Ya' : 'Tidak'}</td>
-                    <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.total_supply == null ? '-' : it.total_supply}</td>
-                    <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => onEdit(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>
-                          <Pencil className="size-4" />
-                        </button>
-                        <button onClick={() => onRequestDelete(it)} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>
-                          <Trash2 className="size-4" />
-                        </button>
-                        <Link href={`/dashboard/avatar-borders/${it.id}/owners`} className="px-2 py-1 border-4 rounded font-extrabold" style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }} title="Lihat pemilik border">
-                          <ArrowRight className="size-4" />
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {items.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-3 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Tidak ada data.'}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          <div className="flex items-center gap-2">
-            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Sebelumnya</button>
-            <div className="text-sm font-extrabold">Halaman {page} / {Math.max(1, Math.ceil(total / limit))}</div>
-            <button disabled={page >= Math.ceil(total / limit)} onClick={() => setPage((p) => p + 1)} className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>Berikutnya</button>
           </div>
 
           {/* Confirm Delete Modal */}
           {confirmOpen && (
             <div className="fixed inset-0 z-50 grid place-items-center">
               <div className="absolute inset-0 bg-black/40" onClick={onCancelDelete} />
-              <div className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6" style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+              <div className="relative z-10 w-[92%] max-w-md card p-4 sm:p-6" style={{ boxShadow: 'var(--shadow-xl)' }}>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 rounded-md" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}>
+                  <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 border-[var(--border)]" style={{ boxShadow: 'var(--shadow-md)' }}>
                     <Trash2 className="size-5" />
                   </div>
                   <div>
@@ -532,12 +431,8 @@ export default function AvatarBordersPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-end gap-2">
-                  <button onClick={onCancelDelete} className="px-3 py-2 border-4 rounded-lg font-extrabold" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                    Batal
-                  </button>
-                  <button onClick={onConfirmDelete} disabled={deleting} className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold disabled:opacity-60" style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}>
-                    Ya, Hapus
-                  </button>
+                  <button onClick={onCancelDelete} className="btn btn--secondary">Batal</button>
+                  <button onClick={onConfirmDelete} disabled={deleting} className="btn btn--danger disabled:opacity-60">{deleting ? 'Menghapus...' : 'Ya, Hapus'}</button>
                 </div>
               </div>
             </div>

@@ -9,14 +9,9 @@ import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { batchCreateEpisodes, getAnimeDetail, listEpisodes } from '@/lib/api';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0 },
+const pageVariants = {
+  hidden:  { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.15, ease: 'easeOut' } },
 };
 
 const QUALITIES = [
@@ -163,14 +158,10 @@ export default function BatchUploadPage() {
   };
 
   const onSubmit = async () => {
-    console.log('SUBMIT DEBUG - episodes:', episodes);
-    console.log('SUBMIT DEBUG - episodes.length:', episodes?.length);
-    console.log('SUBMIT DEBUG - filledCount:', filledCount);
     
     const errors = validateEpisodes();
     if (errors.length > 0) {
       errors.forEach(err => toast.error(err));
-      console.log('Validation errors:', errors);
       return;
     }
 
@@ -183,7 +174,6 @@ export default function BatchUploadPage() {
       const token = getSession()?.token;
 
       // Format episodes untuk API (hanya support URL thumbnail di batch)
-      console.log('Formatting episodes:', episodes);
       
       const formattedEpisodes = episodes.map((ep, idx) => {
         const epData = {
@@ -211,7 +201,6 @@ export default function BatchUploadPage() {
         return epData;
       });
       
-      console.log('Formatted episodes:', formattedEpisodes);
       
       if (formattedEpisodes.length === 0) {
         toast.error('Tidak ada episode yang valid untuk disimpan');
@@ -280,20 +269,14 @@ export default function BatchUploadPage() {
     }
   };
 
-  console.log('DEBUG episodes array:', episodes);
-  console.log('DEBUG episodes.length:', episodes?.length);
   
   const filledCount = episodes.filter(ep => {
-    console.log('DEBUG ep:', ep);
     const hasJudul = ep.judul_episode?.trim?.() || false;
     const qualitiesObj = ep.qualities || {};
     const hasQuality = Object.values(qualitiesObj).some(q => q?.trim?.() !== '');
     const isFilled = hasJudul && hasQuality;
-    console.log(`Ep ${ep.nomor_episode}: judul=${hasJudul}, quality=${hasQuality}, filled=${isFilled}`);
-    console.log('  qualities:', qualitiesObj);
     return isFilled;
   }).length;
-  console.log('Total filledCount:', filledCount, 'episodes:', episodes.length);
 
   if (loadingAnime) {
     return (
@@ -304,14 +287,14 @@ export default function BatchUploadPage() {
   }
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6 min-w-0 max-w-5xl mx-auto">
+    <motion.div variants={pageVariants} initial="hidden" animate="visible" className="space-y-6 min-w-0 max-w-5xl mx-auto">
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-3">
           <button
             onClick={() => router.push(`/dashboard/daftar-konten/anime/${animeId}`)}
             className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2 font-bold transition-all hover:translate-y-[-2px]"
-            style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+            style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -323,12 +306,12 @@ export default function BatchUploadPage() {
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={addOneEpisode}
             disabled={saving}
             className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 font-bold disabled:opacity-60 transition-all hover:translate-y-[-2px]"
-            style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+            style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
           >
             <Plus className="w-4 h-4" /> Tambah Episode
           </button>
@@ -336,13 +319,13 @@ export default function BatchUploadPage() {
             onClick={onSubmit}
             disabled={saving || filledCount === 0}
             className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 font-bold disabled:opacity-60 transition-all hover:translate-y-[-2px]"
-            style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.15)', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}
+            style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? `Menyimpan ${progress.current}/${progress.total}...` : `Simpan ${filledCount} Episode`}
           </button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Progress Bar (saat saving) */}
       {saving && (
@@ -371,24 +354,20 @@ export default function BatchUploadPage() {
       )}
 
       {/* Episode List */}
-      <motion.div variants={itemVariants} className="space-y-4">
+      <div className="space-y-4">
         <AnimatePresence mode="popLayout">
           {episodes.map((ep, index) => (
-            <motion.div
+            <div
               key={ep.id}
-              layout
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95, x: -100 }}
               className="rounded-2xl border-2 overflow-hidden"
               style={{ 
-                boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', 
+                boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', 
                 borderColor: ep.status === 'done' ? '#22c55e' : ep.status === 'uploading' ? '#3b82f6' : 'var(--panel-border)',
                 background: 'var(--panel-bg)',
               }}
             >
               {/* Episode Header */}
-              <div className="flex items-center gap-4 p-4">
+              <div className="flex items-center gap-4 p-4 flex-wrap sm:flex-nowrap">
                 {/* Status Icon (Click to expand) */}
                 <button
                   onClick={() => setExpandedEpisode(expandedEpisode === ep.id ? null : ep.id)}
@@ -416,7 +395,7 @@ export default function BatchUploadPage() {
                     onClick={(e) => e.stopPropagation()}
                     className="w-full text-lg font-bold bg-transparent border-none focus:outline-none focus:ring-0 placeholder:text-[var(--foreground)]/30 text-[var(--foreground)]"
                   />
-                  <div className="flex items-center gap-2 text-xs text-[var(--foreground)]/50">
+                  <div className="flex items-center gap-2 text-xs text-[var(--foreground)]/50 flex-wrap">
                     <span>Ep #{ep.nomor_episode}</span>
                     <span>•</span>
                     <span>{Object.values(ep.qualities).filter(q => q.trim()).length} quality</span>
@@ -425,7 +404,7 @@ export default function BatchUploadPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {index > 0 && (
                     <button
                       onClick={() => copyFromPrevious(index)}
@@ -489,12 +468,13 @@ export default function BatchUploadPage() {
                           <label className="block text-xs font-bold text-[var(--foreground)]/60 mb-1.5">Thumbnail URL (opsional)</label>
                           <div className="flex items-center gap-3">
                             {ep.thumbnailUrl && (
-                              <img 
-                                src={ep.thumbnailUrl} 
+                              <img src={ep.thumbnailUrl} 
                                 alt="Preview"
                                 className="w-16 h-12 object-cover rounded-lg border-2"
                                 style={{ borderColor: 'var(--panel-border)' }}
-                                onError={(e) => e.target.style.display = 'none'}
+                                loading="lazy"
+                                decoding="async"
+                                onError={(e) => { e.target.style.display = 'none'; }}
                               />
                             )}
                             <div className="flex-1">
@@ -651,29 +631,25 @@ export default function BatchUploadPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </div>
           ))}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
       {/* Add More Button (Bottom) */}
-      <motion.div variants={itemVariants} className="flex justify-center">
+      <div className="flex justify-center">
         <button
           onClick={addOneEpisode}
           disabled={saving}
           className="inline-flex items-center gap-2 rounded-xl border-2 px-6 py-3 font-bold disabled:opacity-60 transition-all hover:translate-y-[-2px]"
-          style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+          style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
         >
           <Plus className="w-5 h-5" /> Tambah Episode Lagi
         </button>
-      </motion.div>
+      </div>
 
       {/* Tips Card */}
-      <motion.div
-        variants={itemVariants}
-        className="rounded-2xl border-2 p-5"
-        style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.15)', background: 'rgba(59,130,246,0.1)', borderColor: 'var(--panel-border)' }}
-      >
+      <div className="card p-5">
         <h3 className="font-bold text-[var(--foreground)] mb-2 flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-blue-500" /> Tips Upload Batch
         </h3>
@@ -686,7 +662,7 @@ export default function BatchUploadPage() {
           <li>Episode dengan border hijau = sudah tersimpan</li>
           <li>Semua episode akan diproses sekaligus saat klik Simpan</li>
         </ul>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }

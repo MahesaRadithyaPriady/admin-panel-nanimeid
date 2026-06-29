@@ -9,46 +9,15 @@ import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { listAdminLivechatQueue } from '@/lib/api';
 
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: 'easeOut' }
-  }
+const pageVariants = {
+  hidden:  { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.15, ease: 'easeOut' } },
 };
 
 const STATUS_CONFIG = {
-  QUEUED: {
-    label: 'Queued',
-    bg: 'from-amber-500 to-orange-500',
-    text: 'text-white',
-    icon: Clock,
-    desc: 'Menunggu'
-  },
-  ACTIVE: {
-    label: 'Active',
-    bg: 'from-blue-500 to-cyan-500',
-    text: 'text-white',
-    icon: MessageCircle,
-    desc: 'Sedang Berlangsung'
-  },
-  CLOSED: {
-    label: 'Closed',
-    bg: 'from-emerald-500 to-teal-500',
-    text: 'text-white',
-    icon: CheckCircle2,
-    desc: 'Selesai'
-  }
+  QUEUED: { label: 'Queued', icon: Clock,          desc: 'Menunggu' },
+  ACTIVE: { label: 'Active', icon: MessageCircle,  desc: 'Sedang Berlangsung' },
+  CLOSED: { label: 'Closed', icon: CheckCircle2,   desc: 'Selesai' },
 };
 
 function formatDate(d) {
@@ -147,48 +116,34 @@ export default function LivechatQueuePage() {
 
   return (
     <motion.div
-      variants={containerVariants}
+      variants={pageVariants}
       initial="hidden"
       animate="visible"
       className="space-y-6 min-w-0"
     >
-      {/* Header - Glassbrutalism */}
-      <motion.div variants={itemVariants} className="glass-card rounded-2xl sm:rounded-3xl border-2 p-5 sm:p-6 relative overflow-hidden" style={{ boxShadow: '8px 8px 0 rgba(0,0,0,0.3)', borderColor: 'var(--panel-border)' }}>
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
-                <MessageSquareText className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xs font-medium text-[var(--foreground)]/60 uppercase tracking-wide">Live Chat Moderation</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-[var(--foreground)] tracking-tight">
-              Live Chat Queue
-            </h1>
-            <p className="text-sm text-[var(--foreground)]/60 mt-1 max-w-xl">
-              Kelola tiket live chat, monitor status antrian, dan tangani issue user dengan cepat.
-            </p>
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <MessageSquareText className="w-5 h-5" />
+            <span className="label uppercase">Live Chat Moderation</span>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setSkip(0);
-              setItems([]);
-              setHasMore(true);
-              loadQueue({ reset: true });
-            }}
-            disabled={loadingList}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white font-bold shadow-lg shadow-[var(--accent-primary)]/25 disabled:opacity-60 transition-all hover:translate-y-[-2px]"
-            style={{ boxShadow: '6px 6px 0 rgba(0,0,0,0.3)' }}
-          >
-            <RefreshCw className={`w-4 h-4 ${loadingList ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">{loadingList ? 'Memuat...' : 'Refresh'}</span>
-          </button>
+          <h1 className="page-title">Live Chat Queue</h1>
+          <p className="label mt-1">Kelola tiket live chat, monitor status antrian, dan tangani issue user.</p>
         </div>
-      </motion.div>
+        <button
+          type="button"
+          onClick={() => { setSkip(0); setItems([]); setHasMore(true); loadQueue({ reset: true }); }}
+          disabled={loadingList}
+          className="btn btn--secondary btn--sm flex-shrink-0"
+        >
+          <RefreshCw className={`w-4 h-4 ${loadingList ? 'animate-spin' : ''}`} />
+          {loadingList ? 'Memuat...' : 'Refresh'}
+        </button>
+      </div>
 
-      {/* Status Badge Menu */}
-      <motion.div variants={itemVariants} className="flex flex-wrap gap-2 sm:gap-3">
+      {/* Status Tabs */}
+      <div className="flex flex-wrap gap-2">
         {Object.entries(STATUS_CONFIG).map(([key, config]) => {
           const Icon = config.icon;
           const count = statusCounts[key] || 0;
@@ -197,42 +152,30 @@ export default function LivechatQueuePage() {
             <button
               key={key}
               onClick={() => setStatus(key)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                isActive
-                  ? `bg-gradient-to-r ${config.bg} ${config.text}`
-                  : 'bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10'
-              }`}
-              style={{ 
-                boxShadow: isActive ? '4px 4px 0 rgba(0,0,0,0.3)' : '3px 3px 0 rgba(0,0,0,0.2)',
-                transform: isActive ? 'translateY(-2px)' : 'none'
-              }}
+              className={isActive ? 'tab tab--active' : 'tab'}
             >
               <Icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{config.label}</span>
-              <span className={`px-2 py-0.5 rounded-full text-xs ${isActive ? 'bg-white/20' : 'bg-[var(--panel-bg)]'}`}>
-                {count}
-              </span>
+              {config.label}
+              <span className="mono text-xs font-bold ml-1">{count}</span>
             </button>
           );
         })}
-      </motion.div>
+      </div>
 
-      {/* Ticket Cards - Mobile/Tablet/Desktop Responsive */}
-      <motion.div variants={itemVariants} className="space-y-3">
+      {/* Ticket Cards */}
+      <div className="space-y-3">
         {sortedItems.length === 0 ? (
-          <div className="glass-card rounded-2xl border-2 p-8 text-center" style={{ borderColor: 'var(--panel-border)', boxShadow: '6px 6px 0 rgba(0,0,0,0.2)' }}>
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center">
-              <AlertCircle className="w-8 h-8 text-white" />
-            </div>
-            <div className="text-lg font-bold text-[var(--foreground)]">
+          <div className="card p-8 text-center">
+            <AlertCircle className="w-8 h-8 mx-auto mb-3" style={{ color: 'var(--muted)' }} />
+            <div className="section-title">
               {loadingList ? 'Memuat tiket...' : 'Tidak ada tiket'}
             </div>
-            <div className="text-sm text-[var(--foreground)]/60 mt-1">
+            <div className="label mt-1">
               {loadingList ? 'Mohon tunggu sebentar' : 'Tidak ada tiket dengan status ini'}
             </div>
           </div>
         ) : (
-          sortedItems.map((it, index) => {
+          sortedItems.map((it) => {
             const ticketId = it?.id;
             const issueText = it?.issue_text ?? it?.issueText ?? it?.issue ?? it?.content ?? '-';
             const userDisplay = it?.user_display ?? it?.userDisplay ?? it?.user ?? null;
@@ -245,103 +188,66 @@ export default function LivechatQueuePage() {
             const StatusIcon = statusConfig.icon;
 
             return (
-              <motion.div
-                key={ticketId}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="glass-card rounded-2xl border-2 p-4 sm:p-5 relative overflow-hidden group hover:shadow-lg transition-all"
-                style={{ borderColor: 'var(--panel-border)', boxShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}
-              >
+              <div key={ticketId} className="card p-4 sm:p-5">
                 <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                   {/* Left: ID & Status */}
-                  <div className="flex items-start gap-3 lg:w-48">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-[var(--panel-border)] flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm font-bold text-[var(--accent-primary)]">#{ticketId}</span>
-                    </div>
-                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${statusConfig.bg} ${statusConfig.text} border`} style={{ borderColor: 'rgba(0,0,0,0.2)' }}>
+                  <div className="flex items-center gap-3 lg:w-48">
+                    <span className="mono text-sm font-bold" style={{ color: 'var(--foreground)' }}>#{ticketId}</span>
+                    <span className="badge">
                       <StatusIcon className="w-3 h-3" />
                       {it?.status}
-                    </div>
+                    </span>
                   </div>
 
                   {/* Middle: User & Issue */}
                   <div className="flex-1 min-w-0 space-y-2">
                     <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-[var(--foreground)]/50" />
-                      <span className="font-bold text-[var(--foreground)]">{userName}</span>
-                      <span className="text-sm text-[var(--foreground)]/50">({userEmail})</span>
+                      <Users className="w-4 h-4" style={{ color: 'var(--muted)' }} />
+                      <span className="font-bold" style={{ color: 'var(--foreground)' }}>{userName}</span>
+                      <span className="text-sm" style={{ color: 'var(--muted)' }}>({userEmail})</span>
                     </div>
-                    <div className="bg-[var(--panel-bg)]/50 rounded-xl p-3 border border-[var(--panel-border)]">
+                    <div className="p-3" style={{ background: 'var(--muted-bg)', border: '1px solid var(--border-muted)' }}>
                       <div className="flex items-start gap-2">
-                        <MessageCircle className="w-4 h-4 text-[var(--accent-primary)] mt-0.5 flex-shrink-0" />
-                        <p className="text-sm text-[var(--foreground)]/80 line-clamp-2">{issueText}</p>
+                        <MessageCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--muted)' }} />
+                        <p className="text-sm" style={{ color: 'var(--foreground)' }}>{issueText}</p>
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--foreground)]/60">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {createdAt}
-                      </span>
+                    <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: 'var(--muted)' }}>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{createdAt}</span>
                       {assigned !== '-' && (
-                        <span className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          Assigned: {assigned}
-                        </span>
+                        <span className="flex items-center gap-1"><Users className="w-3 h-3" />Assigned: {assigned}</span>
                       )}
                     </div>
                   </div>
 
                   {/* Right: Action */}
                   <div className="flex items-center lg:justify-end">
-                    <button
-                      type="button"
-                      onClick={() => onOpen(ticketId)}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all hover:translate-y-[-2px]"
-                      style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.3)' }}
-                    >
-                      Buka
-                      <ArrowUpRight className="w-4 h-4" />
+                    <button type="button" onClick={() => onOpen(ticketId)} className="btn btn--primary btn--sm">
+                      Buka <ArrowUpRight className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             );
           })
         )}
-      </motion.div>
+      </div>
 
       {/* Load More */}
       {items.length > 0 && (
-        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
-          <div className="text-sm font-medium text-[var(--foreground)]/60">
-            Showing {items.length} of {total || '?'} tickets
-          </div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
+          <div className="label">Menampilkan {items.length} dari {total || '?'} tiket</div>
           <button
             type="button"
             onClick={() => loadQueue({ reset: false })}
             disabled={loadingList || !hasMore}
-            className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--panel-bg)] border-2 border-[var(--panel-border)] text-[var(--foreground)] transition-all hover:translate-y-[-2px]"
-            style={{ boxShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}
+            className="btn btn--secondary btn--sm"
           >
-            {loadingList ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                Memuat...
-              </>
-            ) : hasMore ? (
-              <>
-                Load More
-                <ChevronRight className="w-4 h-4" />
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="w-4 h-4" />
-                Semua tiket sudah dimuat
-              </>
-            )}
+            {loadingList ? (<><RefreshCw className="w-4 h-4 animate-spin" />Memuat...</>) :
+             hasMore   ? (<>Load More <ChevronRight className="w-4 h-4" /></>) :
+             (<><CheckCircle2 className="w-4 h-4" />Semua tiket dimuat</>)}
           </button>
-        </motion.div>
+        </div>
       )}
     </motion.div>
   );

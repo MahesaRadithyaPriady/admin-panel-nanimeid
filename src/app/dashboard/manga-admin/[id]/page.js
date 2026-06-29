@@ -275,7 +275,7 @@ export default function MangaDetailPage() {
           {loadingItem ? (
             <div className="text-sm">Memuat...</div>
           ) : (
-            <form onSubmit={onSave} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            <form onSubmit={onSave} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: 'var(--shadow-lg)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
               <div className="grid sm:grid-cols-2 gap-3">
                 <L label="Judul"><input value={form.judul_manga} onChange={(e)=>updateField('judul_manga', e.target.value)} required className="inp" /></L>
                 <L label="Cover">
@@ -321,7 +321,7 @@ export default function MangaDetailPage() {
                     {(coverPreviewUrl || (coverMode === 'url' ? String(coverUrl || '').trim() : existingCoverUrl)) && (
                       <div className="flex items-center gap-2 text-xs">
                         <span>Preview:</span>
-                        <img src={coverPreviewUrl || (coverMode === 'url' ? coverUrl : existingCoverUrl)} alt="cover" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                        <img src={coverPreviewUrl || (coverMode === 'url' ? coverUrl : existingCoverUrl)} alt="cover" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} loading="lazy" decoding="async" />
                       </div>
                     )}
                   </div>
@@ -412,7 +412,7 @@ export default function MangaDetailPage() {
               <input placeholder="Judul (opsional)" value={grab.title} onChange={(e)=>setGrab(g=>({...g, title: e.target.value}))} className="inp" />
               <button disabled={grabbing} className="btn-add">{grabbing ? 'Mengambil...' : (<><Download className="size-4" /> Grab</>)}</button>
             </form>
-            <div className="px-3 py-2 border-4 rounded-lg text-sm font-semibold" style={{ boxShadow: '3px 3px 0 #000', background: grabStatusTone.bg, color: grabStatusTone.fg, borderColor: 'var(--panel-border)' }}>
+            <div className="px-3 py-2 border-4 rounded-lg text-sm font-semibold" style={{ boxShadow: 'var(--shadow-sm)', background: grabStatusTone.bg, color: grabStatusTone.fg, borderColor: 'var(--panel-border)' }}>
               {grabStatusText}
             </div>
           </div>

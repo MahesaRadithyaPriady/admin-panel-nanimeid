@@ -149,7 +149,7 @@ export default function MangaAdminPage() {
             <button disabled={loadingList} className="btn-add">{loadingList ? 'Memuat...' : (<><Plus className="size-4" /> Cari</>)}</button>
           </form>
 
-          <form onSubmit={onCreate} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <form onSubmit={onCreate} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: 'var(--shadow-lg)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <div className="grid sm:grid-cols-2 gap-3">
               <L label="Judul"><input value={form.judul_manga} onChange={(e)=>updateForm('judul_manga', e.target.value)} required className="inp" /></L>
               <L label="Cover">
@@ -195,7 +195,7 @@ export default function MangaAdminPage() {
                   {(coverPreviewUrl || (coverMode === 'url' ? String(coverUrl || '').trim() : '')) && (
                     <div className="flex items-center gap-2 text-xs">
                       <span>Preview:</span>
-                      <img src={coverPreviewUrl || coverUrl} alt="cover" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} />
+                      <img src={coverPreviewUrl || coverUrl} alt="cover" className="w-10 h-10 object-contain border-2 rounded" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }} loading="lazy" decoding="async" />
                     </div>
                   )}
                 </div>
@@ -222,7 +222,7 @@ export default function MangaAdminPage() {
           </form>
 
           {/* Grab Range (Komiku) */}
-          <form onSubmit={onGrabRange} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: '6px 6px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+          <form onSubmit={onGrabRange} className="space-y-3 p-4 border-4 rounded-lg" style={{ boxShadow: 'var(--shadow-lg)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
             <div className="grid sm:grid-cols-2 gap-3">
               <L label="Manga ID"><input value={grabRange.mangaId} onChange={(e)=>setGrabRange(g=>({...g, mangaId: e.target.value}))} className="inp" placeholder="ID manga target" /></L>
               <L label="Sample URL"><input value={grabRange.sample_url} onChange={(e)=>setGrabRange(g=>({...g, sample_url: e.target.value}))} className="inp" placeholder="https://komiku.org/...-chapter-02/" /></L>

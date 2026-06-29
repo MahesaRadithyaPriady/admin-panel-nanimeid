@@ -68,7 +68,7 @@ export default function DashboardPage() {
   return (
     <div className="text-sm font-semibold">
       Overview khusus superadmin/uploader. Anda login sebagai{' '}
-      <span className="px-2 py-1 border-2 border-black rounded bg-[#F2F2F2]">{role}</span>.
+      <span className="px-2 py-1 border-2 border-[var(--border)] rounded bg-[#F2F2F2]">{role}</span>.
     </div>
   );
 }

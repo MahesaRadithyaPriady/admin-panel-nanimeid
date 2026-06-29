@@ -139,7 +139,7 @@ export default function ChapterPagesPage() {
                   <div key={idx} className="border-4 rounded-lg p-2" style={{ borderColor: 'var(--panel-border)' }}>
                     <div className="text-xs font-extrabold mb-1">Draft Page { (Array.isArray(pages) && pages.length ? Math.max(...pages.map(p=>Number(p.page_number)||0)) : 0) + idx + 1 }</div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={URL.createObjectURL(f)} alt={`draft-${idx}`} className="w-full h-auto" />
+                    <img src={URL.createObjectURL(f)} alt={`draft-${idx}`} className="w-full h-auto" loading="lazy" decoding="async" />
                     <div className="mt-2">
                       <button onClick={() => onRemoveQueued(idx)} className="btn-act">Hapus</button>
                     </div>
@@ -161,7 +161,7 @@ export default function ChapterPagesPage() {
                     </button>
                   </div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.image_url} alt={`Page ${p.page_number}`} className="w-full h-auto" />
+                  <img src={p.image_url} alt={`Page ${p.page_number}`} className="w-full h-auto" loading="lazy" decoding="async" />
                 </div>
               ))}
               {pages.length === 0 && (

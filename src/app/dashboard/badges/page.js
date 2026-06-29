@@ -211,408 +211,167 @@ export default function BadgesPage() {
           <List className="size-5" /> Badges
         </h2>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => router.push('/dashboard')}
-            className="btn-pg flex items-center gap-2"
-          >
+          <button type="button" onClick={() => router.push('/dashboard')} className="btn btn--secondary inline-flex items-center gap-2">
             <ArrowLeft className="size-4" /> Kembali
           </button>
         </div>
       </div>
 
       {/* Search & Filter */}
-      <div
-        className="p-3 border-4 rounded-lg"
-        style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-      >
-        <form onSubmit={onSearch} className="grid sm:grid-cols-[2fr_1fr_140px] gap-3">
-          <input
-            type="text"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Cari kode/nama/description"
-            className="px-3 py-2 border-4 rounded-lg font-semibold"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-          />
-          <select
-            value={activeFilter}
-            onChange={(e) => setActiveFilter(e.target.value)}
-            className="px-3 py-2 border-4 rounded-lg font-semibold text-sm"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-          >
-            <option value="">Semua status</option>
-            <option value="true">Aktif</option>
-            <option value="false">Nonaktif</option>
-          </select>
-          <button
-            type="submit"
-            disabled={loadingList}
-            className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-            style={{ boxShadow: '4px 4px 0 #000', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
-          >
-            {loadingList ? 'Memuat...' : 'Cari'}
-          </button>
-        </form>
-      </div>
+      <form onSubmit={onSearch} className="card p-3 grid sm:grid-cols-[2fr_1fr_140px] gap-3">
+        <input type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari kode/nama/description" className="input w-full" />
+        <select value={activeFilter} onChange={(e) => setActiveFilter(e.target.value)} className="select w-full">
+          <option value="">Semua status</option>
+          <option value="true">Aktif</option>
+          <option value="false">Nonaktif</option>
+        </select>
+        <button type="submit" disabled={loadingList} className="btn btn--primary disabled:opacity-60">{loadingList ? 'Memuat...' : 'Cari'}</button>
+      </form>
 
-      {/* Form Tambah / Edit */}
-      <div
-        className="p-3 border-4 rounded-lg space-y-3"
-        style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-      >
-        <form onSubmit={onSubmit} className="grid gap-3">
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div className="grid gap-1">
-              <div className="text-xs font-extrabold">Code</div>
-              <input
-                type="text"
-                value={form.code}
-                onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
-                placeholder="Code (wajib, unik)"
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              />
-            </div>
-            <div className="grid gap-1">
-              <div className="text-xs font-extrabold">Name</div>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Name (wajib)"
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              />
-            </div>
-          </div>
+      {/* Main layout: form left sticky, table right */}
+      <div className="grid lg:grid-cols-[320px_minmax(0,1fr)] gap-6 items-start">
 
-          <div className="grid gap-1">
-            <div className="text-xs font-extrabold">Description</div>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder="Description (opsional)"
-              rows={2}
-              className="px-3 py-2 border-4 rounded-lg font-semibold"
-              style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-            />
-          </div>
+        {/* Form sticky panel */}
+        <div className="lg:sticky lg:top-4">
+          <form onSubmit={onSubmit} className="card p-4 space-y-3">
+            <div className="text-sm font-extrabold border-b-2 border-[var(--border)] pb-2 mb-1">
+              {mode === 'add' ? '+ Tambah Badge Baru' : '✎ Edit Badge'}
+            </div>
 
-          <div className="grid sm:grid-cols-3 gap-3 items-start">
             <div className="grid gap-1">
-              <div className="text-xs font-extrabold">Poin Collection</div>
-              <input
-                type="number"
-                value={form.poin_collection}
-                onChange={(e) => setForm((f) => ({ ...f, poin_collection: e.target.value }))}
-                placeholder="Poin collection (default 500)"
-                className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              />
+              <div className="text-xs font-extrabold">Code *</div>
+              <input type="text" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} placeholder="Code (wajib, unik)" className="input w-full" />
             </div>
             <div className="grid gap-1">
-              <div className="text-xs font-extrabold">Sort Order</div>
-              <input
-                type="number"
-                value={form.sort_order}
-                onChange={(e) => setForm((f) => ({ ...f, sort_order: e.target.value }))}
-                placeholder="Sort order (opsional)"
-                className="w-full px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              />
+              <div className="text-xs font-extrabold">Name *</div>
+              <input type="text" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Name (wajib)" className="input w-full" />
             </div>
             <div className="grid gap-1">
-              <div className="text-xs font-extrabold">Status</div>
-              <label className="flex items-center gap-2 text-sm font-semibold px-3 py-2 border-4 rounded-lg" style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
-                <input
-                  type="checkbox"
-                  checked={!!form.is_active}
-                  onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
-                />
-                <span>Aktif</span>
-              </label>
+              <div className="text-xs font-extrabold">Description</div>
+              <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Description (opsional)" rows={2} className="input w-full resize-none" />
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <div className="text-xs font-extrabold">Gambar</div>
-            <div className="grid sm:grid-cols-[180px_minmax(0,1fr)] gap-3 items-start">
-              <select
-                value={form.image_mode}
-                onChange={(e) => setForm((f) => ({ ...f, image_mode: e.target.value, image_url: e.target.value === 'url' ? f.image_url : '', file: e.target.value === 'upload' ? f.file : null, previewUrl: e.target.value === 'upload' ? f.previewUrl : '' }))}
-                className="px-3 py-2 border-4 rounded-lg font-semibold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              >
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Poin Collection</div>
+                <input type="number" value={form.poin_collection} onChange={(e) => setForm((f) => ({ ...f, poin_collection: e.target.value }))} placeholder="500" className="input w-full" />
+              </div>
+              <div className="grid gap-1">
+                <div className="text-xs font-extrabold">Sort Order</div>
+                <input type="number" value={form.sort_order} onChange={(e) => setForm((f) => ({ ...f, sort_order: e.target.value }))} placeholder="Opsional" className="input w-full" />
+              </div>
+            </div>
+
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Gambar</div>
+              <select value={form.image_mode} onChange={(e) => setForm((f) => ({ ...f, image_mode: e.target.value, image_url: e.target.value === 'url' ? f.image_url : '', file: e.target.value === 'upload' ? f.file : null, previewUrl: e.target.value === 'upload' ? f.previewUrl : '' }))} className="select w-full">
                 <option value="upload">Upload file</option>
                 <option value="url">Gunakan URL</option>
               </select>
               {form.image_mode === 'upload' ? (
-                <div className="flex items-center gap-2">
-                  <label
-                    className="px-3 py-2 border-4 rounded-lg font-extrabold cursor-pointer"
-                    style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                  >
-                    <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                    <span className="flex items-center gap-2">
-                      <ImageIcon className="size-4" /> Pilih Gambar
-                    </span>
-                  </label>
-                  {(form.previewUrl || form.existingImageUrl) && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span>Preview:</span>
-                      <img
-                        src={form.previewUrl || form.existingImageUrl}
-                        alt="preview"
-                        className="w-10 h-10 object-contain border-2 rounded"
-                        style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
-                      />
-                    </div>
-                  )}
+                <label className="btn btn--secondary cursor-pointer inline-flex items-center gap-2 mt-1">
+                  <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                  <ImageIcon className="size-4" /> Pilih Gambar
+                </label>
+              ) : (
+                <input type="url" value={form.image_url} onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value, previewUrl: '' }))} placeholder="https://..." className="input w-full mt-1" />
+              )}
+              {(form.previewUrl || form.existingImageUrl || (form.image_mode === 'url' && form.image_url)) && (
+                <div className="flex items-center gap-2 text-xs mt-1">
+                  <span className="font-semibold">Preview:</span>
+                  <img src={form.previewUrl || form.image_url || form.existingImageUrl} alt="preview" className="w-12 h-12 object-contain border-2 border-[var(--border)]" loading="lazy" decoding="async" />
                 </div>
-              ) : (
-                <input
-                  type="url"
-                  value={form.image_url}
-                  onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value, previewUrl: '' }))}
-                  placeholder="https://..."
-                  className="px-3 py-2 border-4 rounded-lg font-semibold"
-                  style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-                />
               )}
-            </div>
-            {form.image_mode === 'url' && (form.image_url || form.existingImageUrl) && (
-              <div className="flex items-center gap-2 text-xs">
-                <span>Preview:</span>
-                <img
-                  src={form.image_url || form.existingImageUrl}
-                  alt="preview"
-                  className="w-10 h-10 object-contain border-2 rounded"
-                  style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
-                />
+              <div className="flex items-start gap-2 text-xs font-semibold opacity-80 mt-1">
+                <Info className="size-4 flex-shrink-0" />
+                <span>Gambar badge <strong>WAJIB</strong> PNG transparan (remove BG).</span>
               </div>
-            )}
-            <div className="flex items-start gap-2 text-xs sm:text-[11px] font-semibold opacity-90">
-              <Info className="size-4 flex-shrink-0" />
-              <span>
-                Gambar badge <strong>WAJIB</strong> sudah di-remove background (PNG transparan) sebelum diupload.
-              </span>
             </div>
-          </div>
 
-          <div className="grid sm:grid-cols-[160px_auto] gap-3 items-center">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex items-center justify-center gap-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-              style={{ boxShadow: '4px 4px 0 #000', background: mode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', color: mode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}
-            >
-              {submitting ? (
-                mode === 'add' ? 'Menambah...' : 'Menyimpan...'
-              ) : mode === 'add' ? (
-                <>
-                  <Plus className="size-4" /> Tambah
-                </>
-              ) : (
-                <>
-                  <Pencil className="size-4" /> Simpan
-                </>
-              )}
-            </button>
-            {mode === 'edit' && (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-3 py-2 border-4 rounded-lg font-extrabold"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              >
-                Batal Edit
+            <label className="flex items-center gap-2 text-sm font-semibold">
+              <input type="checkbox" checked={!!form.is_active} onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))} />
+              Aktif
+            </label>
+
+            <div className="flex items-center gap-2 pt-1">
+              <button type="submit" disabled={submitting} className={`btn disabled:opacity-60 inline-flex items-center gap-2 ${mode === 'add' ? 'btn--primary' : 'btn--secondary'}`}>
+                {submitting ? (mode === 'add' ? 'Menambah...' : 'Menyimpan...') : mode === 'add' ? <><Plus className="size-4" /> Tambah</> : <><Pencil className="size-4" /> Simpan</>}
               </button>
-            )}
-          </div>
-        </form>
-      </div>
-
-      {/* Tabel List Badges */}
-      <div className="overflow-auto">
-        <table
-          className="min-w-full border-4 rounded-lg overflow-hidden"
-          style={{ boxShadow: '6px 6px 0 #000', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-        >
-          <thead style={{ background: 'var(--panel-bg)' }}>
-            <tr>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                ID
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                Preview
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                Code
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                Name
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                Poin
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                Active
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                Sort
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                Size
-              </th>
-              <th className="text-left px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                Aksi
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it) => (
-              <tr key={it.id}>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>
-                  {it.id}
-                </td>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                  {it.badge_url ? (
-                    <img
-                      src={it.badge_url}
-                      alt={it.name || it.code}
-                      className="w-10 h-10 object-contain border-2 rounded"
-                      style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}
-                    />
-                  ) : (
-                    <span className="text-xs opacity-60">-</span>
-                  )}
-                </td>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>
-                  {it.code}
-                </td>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>
-                  {it.name}
-                </td>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>
-                  {it.poin_collection ?? 500}
-                </td>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>
-                  {it.is_active ? 'Ya' : 'Tidak'}
-                </td>
-                <td className="px-3 py-2 border-b-4 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>
-                  {it.sort_order ?? '-'}
-                </td>
-                <td className="px-3 py-2 border-b-4 font-semibold text-xs" style={{ borderColor: 'var(--panel-border)' }}>
-                  {it.width && it.height ? `${it.width}x${it.height}` : '-'}
-                </td>
-                <td className="px-3 py-2 border-b-4" style={{ borderColor: 'var(--panel-border)' }}>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(it)}
-                      className="px-2 py-1 border-4 rounded font-extrabold"
-                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}
-                    >
-                      <Pencil className="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onRequestDelete(it)}
-                      className="px-2 py-1 border-4 rounded font-extrabold"
-                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
-                    <Link
-                      href={`/dashboard/badges/${it.id}/owners`}
-                      className="px-2 py-1 border-4 rounded font-extrabold"
-                      style={{ boxShadow: '3px 3px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                      title="Lihat pemilik badge"
-                    >
-                      <ArrowRight className="size-4" />
-                    </Link>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {items.length === 0 && (
-              <tr>
-                <td
-                  colSpan={9}
-                  className="px-3 py-6 text-center text-sm opacity-70"
-                >
-                  {loadingList ? 'Memuat...' : 'Belum ada badge.'}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      <div className="flex items-center gap-2">
-        <button
-          disabled={page <= 1}
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold"
-          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-        >
-          Prev
-        </button>
-        <div className="text-sm font-extrabold">
-          Page {page} / {totalPages}
+              {mode === 'edit' && <button type="button" onClick={resetForm} className="btn btn--secondary">Batal</button>}
+            </div>
+          </form>
         </div>
-        <button
-          disabled={page >= totalPages}
-          onClick={() => setPage((p) => p + 1)}
-          className="px-3 py-2 border-4 rounded-lg disabled:opacity-60 font-extrabold"
-          style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-        >
-          Next
-        </button>
+
+        {/* Table + Pagination */}
+        <div className="space-y-4">
+          <div className="overflow-auto">
+            <table className="min-w-full border-4 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
+              <thead className="bg-[var(--panel-bg)]">
+                <tr>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">ID</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Preview</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Code</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Name</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Poin</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Active</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Sort</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Size</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-4 border-[var(--border)]">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((it) => (
+                  <tr key={it.id}>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.id}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)]">
+                      {it.badge_url ? <img src={it.badge_url} alt={it.name || it.code} className="w-10 h-10 object-contain border-2 border-[var(--border)]" loading="lazy" decoding="async" /> : <span className="text-xs opacity-60">-</span>}
+                    </td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.code}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.name}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.poin_collection ?? 500}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.is_active ? 'Ya' : 'Tidak'}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold">{it.sort_order ?? '-'}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)] font-semibold text-xs">{it.width && it.height ? `${it.width}x${it.height}` : '-'}</td>
+                    <td className="px-3 py-2 border-b-4 border-[var(--border)]">
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => onEdit(it)} className="btn btn--secondary btn--sm"><Pencil className="size-4" /></button>
+                        <button type="button" onClick={() => onRequestDelete(it)} className="btn btn--danger btn--sm"><Trash2 className="size-4" /></button>
+                        <Link href={`/dashboard/badges/${it.id}/owners`} className="btn btn--secondary btn--sm" title="Lihat pemilik badge"><ArrowRight className="size-4" /></Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {items.length === 0 && (
+                  <tr><td colSpan={9} className="px-3 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Belum ada badge.'}</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="btn btn--secondary disabled:opacity-60">Prev</button>
+            <div className="text-sm font-extrabold">Page {page} / {totalPages}</div>
+            <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="btn btn--secondary disabled:opacity-60">Next</button>
+          </div>
+        </div>
       </div>
 
       {confirmOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center">
           <div className="absolute inset-0 bg-black/40" onClick={onCancelDelete} />
-          <div
-            className="relative z-10 w-[92%] max-w-md border-4 rounded-xl p-4 sm:p-6"
-            style={{ boxShadow: '8px 8px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-          >
+          <div className="relative z-10 w-[92%] max-w-md card p-4 sm:p-6" style={{ boxShadow: 'var(--shadow-xl)' }}>
             <div className="flex items-center gap-3 mb-3">
-              <div
-                className="grid place-items-center size-10 bg-[#FEB2B2] border-4 rounded-md"
-                style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}
-              >
+              <div className="grid place-items-center size-10 bg-[#FEB2B2] border-4 border-[var(--border)]" style={{ boxShadow: 'var(--shadow-md)' }}>
                 <Trash2 className="size-5" />
               </div>
               <div>
                 <h3 className="text-lg font-extrabold">Hapus Badge?</h3>
-                <p className="text-sm opacity-80 break-words">
-                  {confirmTarget?.name} ({confirmTarget?.code})
-                </p>
+                <p className="text-sm opacity-80 break-words">{confirmTarget?.name} ({confirmTarget?.code})</p>
               </div>
             </div>
             <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={onCancelDelete}
-                className="px-3 py-2 border-4 rounded-lg font-extrabold disabled:opacity-60"
-                style={{ boxShadow: '4px 4px 0 #000', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={onConfirmDelete}
-                className="px-3 py-2 border-4 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold disabled:opacity-60"
-                style={{ boxShadow: '4px 4px 0 #000', borderColor: 'var(--panel-border)' }}
-              >
-                {deleting ? 'Menghapus...' : 'Ya, Hapus'}
-              </button>
+              <button type="button" disabled={deleting} onClick={onCancelDelete} className="btn btn--secondary disabled:opacity-60">Batal</button>
+              <button type="button" disabled={deleting} onClick={onConfirmDelete} className="btn btn--danger disabled:opacity-60">{deleting ? 'Menghapus...' : 'Ya, Hapus'}</button>
             </div>
           </div>
         </div>

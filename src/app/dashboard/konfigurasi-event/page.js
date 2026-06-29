@@ -56,7 +56,7 @@ export default function KonfigurasiEventPage() {
 
   return (
     <motion.div
-      variants={ANIMATIONS.container}
+      variants={ANIMATIONS.page}
       initial="hidden"
       animate="visible"
       className="space-y-6 min-w-0"
@@ -69,10 +69,10 @@ export default function KonfigurasiEventPage() {
       />
 
       {/* Tab Content */}
-      <motion.div variants={ANIMATIONS.item}>
+      <div>
         {activeTab === 'watch' && <WatchEventConfigsContent embedded />}
         {activeTab === 'signin' && <SigninEventConfigsContent embedded />}
-      </motion.div>
+      </div>
     </motion.div>
   );
 }

@@ -40,22 +40,9 @@ import {
   getSharpTokenLeaderboard
 } from '@/lib/api';
 
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08 }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: 'easeOut' }
-  }
+const pageVariants = {
+  hidden:  { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.15, ease: 'easeOut' } },
 };
 
 export default function LeaderboardPage() {
@@ -184,32 +171,23 @@ export default function LeaderboardPage() {
 
   const getRankIcon = (rank) => {
     if (rank === 1) return (
-      <motion.div
-        whileHover={{ scale: 1.1, rotate: 5 }}
-        className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg shadow-yellow-500/30"
-      >
-        <Trophy className="w-5 h-5 text-white" />
-      </motion.div>
+      <div className="w-10 h-10 border-2 border-[var(--border)] flex items-center justify-center" style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--foreground)' }}>
+        <Trophy className="w-5 h-5" style={{ color: 'var(--background)' }} />
+      </div>
     );
     if (rank === 2) return (
-      <motion.div
-        whileHover={{ scale: 1.1 }}
-        className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center shadow-lg"
-      >
-        <Medal className="w-5 h-5 text-white" />
-      </motion.div>
+      <div className="w-10 h-10 border-2 border-[var(--border)] flex items-center justify-center" style={{ background: 'var(--surface)' }}>
+        <Medal className="w-5 h-5" />
+      </div>
     );
     if (rank === 3) return (
-      <motion.div
-        whileHover={{ scale: 1.1 }}
-        className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center shadow-lg"
-      >
-        <Award className="w-5 h-5 text-white" />
-      </motion.div>
+      <div className="w-10 h-10 border-2 border-[var(--border)] flex items-center justify-center" style={{ background: 'var(--surface)' }}>
+        <Award className="w-5 h-5" />
+      </div>
     );
     return (
-      <div className="w-10 h-10 rounded-full bg-[var(--panel-bg)] border border-[var(--panel-border)] flex items-center justify-center">
-        <span className="font-bold text-[var(--foreground)]">#{rank}</span>
+      <div className="w-10 h-10 border-2 border-[var(--border)] flex items-center justify-center" style={{ background: 'var(--surface)' }}>
+        <span className="font-bold text-sm">#{rank}</span>
       </div>
     );
   };
@@ -227,9 +205,7 @@ export default function LeaderboardPage() {
     };
     
     return (
-      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r ${colors[vip.level] || 'from-gray-400 to-gray-500'} text-white shadow-sm`}>
-        {vip.level}
-      </span>
+      <span className="badge">{vip.level}</span>
     );
   };
 
@@ -237,251 +213,128 @@ export default function LeaderboardPage() {
 
   return (
     <motion.div
-      variants={containerVariants}
+      variants={pageVariants}
       initial="hidden"
       animate="visible"
       className="space-y-6 min-w-0 overflow-x-hidden"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-              <Trophy className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-xs font-medium text-[var(--foreground)]/60 uppercase tracking-wide">Leaderboard</span>
+          <div className="flex items-center gap-2 mb-1">
+            <Trophy className="w-5 h-5" />
+            <span className="label uppercase">Leaderboard</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">
-            Kelola Leaderboard
-          </h1>
-          <p className="text-sm text-[var(--foreground)]/60 mt-1 max-w-2xl">
-            Monitor XP, coins, sharp tokens, dan koleksi user dengan interface yang komprehensif.
-          </p>
+          <h1 className="page-title">Kelola Leaderboard</h1>
+          <p className="label mt-1">Monitor XP, coins, sharp tokens, dan koleksi user.</p>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => window.location.reload()}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--panel-bg)] border border-[var(--panel-border)] text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 transition-all duration-200"
-        >
-          <RefreshCw className="w-4 h-4" />
-          <span>Refresh</span>
-        </motion.button>
-      </motion.div>
+        <button onClick={() => window.location.reload()} className="btn btn--secondary btn--sm">
+          <RefreshCw className="w-4 h-4" /> Refresh
+        </button>
+      </div>
 
       {/* Stats Cards */}
       {stats && (
-        <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Total Users */}
-          <div className="glass-card rounded-2xl p-5 relative overflow-hidden group hover:shadow-lg transition-all duration-300">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-full blur-2xl -mr-6 -mt-6 group-hover:scale-150 transition-transform duration-500" />
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
-                  <Users className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-xs font-medium text-[var(--foreground)]/60">Total Users</span>
-              </div>
-              <div className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
-                {formatNumber(stats.overview?.totalUsers || 0)}
-              </div>
-              <div className="text-xs text-[var(--foreground)]/50 mt-1">Registered users</div>
-            </div>
+        <div className="stat-grid">
+          <div className="stat-card">
+            <div className="flex items-center gap-2 mb-2"><Users className="w-4 h-4" /><span className="stat-card__label">Total Users</span></div>
+            <div className="stat-card__value">{formatNumber(stats.overview?.totalUsers || 0)}</div>
+            <div className="label truncate">Registered users</div>
           </div>
-
-          {/* Coins */}
-          <div className="glass-card rounded-2xl p-5 relative overflow-hidden group hover:shadow-lg transition-all duration-300">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full blur-2xl -mr-6 -mt-6 group-hover:scale-150 transition-transform duration-500" />
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
-                  <Coins className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-xs font-medium text-[var(--foreground)]/60">Coins</span>
-              </div>
-              <div className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
-                {formatNumber(stats.coins?.totalCoinsInCirculation || 0)}
-              </div>
-              <div className="text-xs text-[var(--foreground)]/50 mt-1 truncate">
-                Top: {stats.coins?.topHolder?.username || '-'}
-              </div>
-            </div>
+          <div className="stat-card">
+            <div className="flex items-center gap-2 mb-2"><Coins className="w-4 h-4" /><span className="stat-card__label">Coins</span></div>
+            <div className="stat-card__value">{formatNumber(stats.coins?.totalCoinsInCirculation || 0)}</div>
+            <div className="label truncate">Top: {stats.coins?.topHolder?.username || '-'}</div>
           </div>
-
-          {/* Sharp Tokens */}
-          <div className="glass-card rounded-2xl p-5 relative overflow-hidden group hover:shadow-lg transition-all duration-300">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-2xl -mr-6 -mt-6 group-hover:scale-150 transition-transform duration-500" />
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg">
-                  <Star className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-xs font-medium text-[var(--foreground)]/60">Sharp Tokens</span>
-              </div>
-              <div className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
-                {formatNumber(stats.sharpTokens?.totalTokensInCirculation || 0)}
-              </div>
-              <div className="text-xs text-[var(--foreground)]/50 mt-1 truncate">
-                Top: {stats.sharpTokens?.topHolder?.username || '-'}
-              </div>
-            </div>
+          <div className="stat-card">
+            <div className="flex items-center gap-2 mb-2"><Star className="w-4 h-4" /><span className="stat-card__label">Sharp Tokens</span></div>
+            <div className="stat-card__value">{formatNumber(stats.sharpTokens?.totalTokensInCirculation || 0)}</div>
+            <div className="label truncate">Top: {stats.sharpTokens?.topHolder?.username || '-'}</div>
           </div>
-
-          {/* Daily Active */}
-          <div className="glass-card rounded-2xl p-5 relative overflow-hidden group hover:shadow-lg transition-all duration-300">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-rose-500/20 to-pink-500/20 rounded-full blur-2xl -mr-6 -mt-6 group-hover:scale-150 transition-transform duration-500" />
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center shadow-lg">
-                  <Zap className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-xs font-medium text-[var(--foreground)]/60">Daily Active</span>
-              </div>
-              <div className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
-                {formatNumber(stats.leaderboard?.daily?.participants || 0)}
-              </div>
-              <div className="text-xs text-[var(--foreground)]/50 mt-1 truncate">
-                Top: {stats.leaderboard?.daily?.topUser?.username || '-'}
-              </div>
-            </div>
+          <div className="stat-card">
+            <div className="flex items-center gap-2 mb-2"><Zap className="w-4 h-4" /><span className="stat-card__label">Daily Active</span></div>
+            <div className="stat-card__value">{formatNumber(stats.leaderboard?.daily?.participants || 0)}</div>
+            <div className="label truncate">Top: {stats.leaderboard?.daily?.topUser?.username || '-'}</div>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Tabs */}
-      <motion.div variants={itemVariants} className="glass-card rounded-2xl p-2">
-        <div className="flex flex-wrap gap-2">
-          {[
-            { key: 'overview', label: 'Overview', icon: BarChart3 },
-            { key: 'leaderboard', label: 'Leaderboard', icon: Medal },
-            { key: 'coins', label: 'Coins', icon: Coins },
-            { key: 'tokens', label: 'Sharp Tokens', icon: Star }
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.key;
-            return (
-              <motion.button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                  isActive
-                    ? 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white shadow-lg shadow-[var(--accent-primary)]/25'
-                    : 'text-[var(--foreground)]/70 hover:bg-[var(--panel-bg)]/50 hover:text-[var(--foreground)]'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{tab.label}</span>
-                <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
-              </motion.button>
-            );
-          })}
-        </div>
-      </motion.div>
+      <div className="tab-bar">
+        {[
+          { key: 'overview', label: 'Overview', icon: BarChart3 },
+          { key: 'leaderboard', label: 'Leaderboard', icon: Medal },
+          { key: 'coins', label: 'Coins', icon: Coins },
+          { key: 'tokens', label: 'Sharp Tokens', icon: Star }
+        ].map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`tab ${activeTab === tab.key ? 'tab--active' : ''}`}
+            >
+              <Icon className="w-4 h-4" />
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Filters */}
-      <AnimatePresence mode="wait">
-        {activeTab === 'leaderboard' && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="glass-card rounded-2xl p-4"
-          >
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {activeTab === 'leaderboard' && (
+        <div className="filter-bar">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <label className="label uppercase block mb-1">Period</label>
+              <select value={period} onChange={(e) => setPeriod(e.target.value)} className="select w-full">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            {period === 'monthly' && (
               <div>
-                <label className="text-xs font-medium text-[var(--foreground)]/60 mb-1.5 block">Period</label>
-                <select
-                  value={period}
-                  onChange={(e) => setPeriod(e.target.value)}
-                  className="modern-input w-full rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--foreground)] outline-none"
-                >
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
+                <label className="label uppercase block mb-1">Month</label>
+                <select value={selectedMonth?.label || ''} onChange={(e) => { const month = availableMonths.find(m => m.label === e.target.value); setSelectedMonth(month); }} className="select w-full">
+                  {availableMonths.map((month) => (
+                    <option key={month.label} value={month.label}>{month.label}</option>
+                  ))}
                 </select>
               </div>
-              
-              {period === 'monthly' && (
-                <div>
-                  <label className="text-xs font-medium text-[var(--foreground)]/60 mb-1.5 block">Month</label>
-                  <select
-                    value={selectedMonth?.label || ''}
-                    onChange={(e) => {
-                      const month = availableMonths.find(m => m.label === e.target.value);
-                      setSelectedMonth(month);
-                    }}
-                    className="modern-input w-full rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--foreground)] outline-none"
-                  >
-                    {availableMonths.map((month) => (
-                      <option key={month.label} value={month.label}>{month.label}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {(activeTab === 'coins' || activeTab === 'tokens') && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="glass-card rounded-2xl p-4"
-          >
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <label className="text-xs font-medium text-[var(--foreground)]/60 mb-1.5 block">Search</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--foreground)]/40" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Username, email..."
-                    className="modern-input w-full rounded-xl pl-10 pr-3 py-2.5 text-sm font-medium text-[var(--foreground)] outline-none"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="text-xs font-medium text-[var(--foreground)]/60 mb-1.5 block">Min {activeTab === 'coins' ? 'Coins' : 'Tokens'}</label>
-                <input
-                  type="number"
-                  value={activeTab === 'coins' ? minCoins : minTokens}
-                  onChange={(e) => activeTab === 'coins' ? setMinCoins(parseInt(e.target.value) || 0) : setMinTokens(parseInt(e.target.value) || 0)}
-                  placeholder="0"
-                  className="modern-input w-full rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--foreground)] outline-none"
-                />
-              </div>
-              
-              <div>
-                <label className="text-xs font-medium text-[var(--foreground)]/60 mb-1.5 block">Max {activeTab === 'coins' ? 'Coins' : 'Tokens'}</label>
-                <input
-                  type="number"
-                  value={activeTab === 'coins' ? maxCoins : maxTokens}
-                  onChange={(e) => activeTab === 'coins' ? setMaxCoins(e.target.value) : setMaxTokens(e.target.value)}
-                  placeholder="Optional"
-                  className="modern-input w-full rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--foreground)] outline-none"
-                />
+            )}
+          </div>
+        </div>
+      )}
+      {(activeTab === 'coins' || activeTab === 'tokens') && (
+        <div className="filter-bar">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <label className="label uppercase block mb-1">Search</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--muted)' }} />
+                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Username, email..." className="input w-full pl-9" />
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <div>
+              <label className="label uppercase block mb-1">Min {activeTab === 'coins' ? 'Coins' : 'Tokens'}</label>
+              <input type="number" value={activeTab === 'coins' ? minCoins : minTokens} onChange={(e) => activeTab === 'coins' ? setMinCoins(parseInt(e.target.value) || 0) : setMinTokens(parseInt(e.target.value) || 0)} placeholder="0" className="input w-full" />
+            </div>
+            <div>
+              <label className="label uppercase block mb-1">Max {activeTab === 'coins' ? 'Coins' : 'Tokens'}</label>
+              <input type="number" value={activeTab === 'coins' ? maxCoins : maxTokens} onChange={(e) => activeTab === 'coins' ? setMaxCoins(e.target.value) : setMaxTokens(e.target.value)} placeholder="Optional" className="input w-full" />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
-      <motion.div variants={itemVariants} className="glass-card rounded-2xl overflow-hidden">
+      <div className="card overflow-hidden">
         {loadingData ? (
           <div className="p-12 text-center">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              className="w-10 h-10 rounded-full border-3 border-[var(--accent-primary)]/20 border-t-[var(--accent-primary)] mx-auto mb-4"
-            />
-            <p className="text-[var(--foreground)]/60">Memuat data...</p>
+            <RefreshCw className="w-8 h-8 mx-auto mb-4 animate-spin" style={{ color: 'var(--muted)' }} />
+            <p className="label">Memuat data...</p>
           </div>
         ) : (
           <AnimatePresence mode="wait">
@@ -495,13 +348,13 @@ export default function LeaderboardPage() {
                 className="overflow-x-auto"
               >
                 <table className="w-full">
-                  <thead className="bg-[var(--panel-bg)]/50 border-b border-[var(--panel-border)]">
+                  <thead style={{ background: 'var(--muted-bg)', borderBottom: '2px solid var(--border)' }}>
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">Rank</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">User</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">XP</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60">Events</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground)]/60 hidden sm:table-cell">Collection</th>
+                      <th className="px-4 py-3 text-left label uppercase">Rank</th>
+                      <th className="px-4 py-3 text-left label uppercase">User</th>
+                      <th className="px-4 py-3 text-left label uppercase">XP</th>
+                      <th className="px-4 py-3 text-left label uppercase">Events</th>
+                      <th className="px-4 py-3 text-left label uppercase hidden sm:table-cell">Collection</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -521,7 +374,7 @@ export default function LeaderboardPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             {entry.user.avatarUrl && (
-                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-[var(--panel-border)]" />
+                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-[var(--panel-border)]" loading="lazy" decoding="async" />
                             )}
                             <div>
                               <div className="font-semibold text-[var(--foreground)]">{entry.user.username}</div>
@@ -578,7 +431,7 @@ export default function LeaderboardPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             {entry.user.avatarUrl && (
-                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-[var(--panel-border)]" />
+                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-[var(--panel-border)]" loading="lazy" decoding="async" />
                             )}
                             <div>
                               <div className="font-semibold text-[var(--foreground)]">{entry.user.username}</div>
@@ -645,7 +498,7 @@ export default function LeaderboardPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             {entry.user.avatarUrl && (
-                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-[var(--panel-border)]" />
+                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-[var(--panel-border)]" loading="lazy" decoding="async" />
                             )}
                             <div>
                               <div className="font-semibold text-[var(--foreground)]">{entry.user.username}</div>
@@ -698,7 +551,7 @@ export default function LeaderboardPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             {entry.user.avatarUrl && (
-                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-[var(--panel-border)]" />
+                              <img src={entry.user.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-[var(--panel-border)]" loading="lazy" decoding="async" />
                             )}
                             <div>
                               <div className="font-semibold text-[var(--foreground)]">{entry.user.username}</div>
@@ -721,40 +574,29 @@ export default function LeaderboardPage() {
             )}
           </AnimatePresence>
         )}
-      </motion.div>
+      </div>
 
       {/* Pagination */}
       {(leaderboardData || coinLeaderboard || sharpTokenLeaderboard) && (
-        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="text-sm text-[var(--foreground)]/60">
-            Menampilkan {(activeTab === 'coins' ? coinLeaderboard?.entries?.length : activeTab === 'tokens' ? sharpTokenLeaderboard?.entries?.length : leaderboardData?.entries?.length) || 0} dari {formatNumber((activeTab === 'coins' ? coinLeaderboard?.total : activeTab === 'tokens' ? sharpTokenLeaderboard?.total : leaderboardData?.total) || 0)} entries
-          </div>
-          <div className="flex items-center gap-2">
-            <motion.button
-              whileHover={{ scale: page <= 1 ? 1 : 1.05 }}
-              whileTap={{ scale: page <= 1 ? 1 : 0.95 }}
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page <= 1}
-              className="flex items-center gap-1 px-4 py-2.5 rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--panel-bg)] border border-[var(--panel-border)] text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Previous</span>
-            </motion.button>
-            <span className="px-4 py-2.5 text-sm font-semibold text-[var(--foreground)] bg-[var(--panel-bg)]/50 rounded-xl border border-[var(--panel-border)]">
-              {page} / {(activeTab === 'coins' ? coinLeaderboard?.totalPages : activeTab === 'tokens' ? sharpTokenLeaderboard?.totalPages : leaderboardData?.totalPages) || 1}
-            </span>
-            <motion.button
-              whileHover={{ scale: page >= ((activeTab === 'coins' ? coinLeaderboard?.totalPages : activeTab === 'tokens' ? sharpTokenLeaderboard?.totalPages : leaderboardData?.totalPages) || 1) ? 1 : 1.05 }}
-              whileTap={{ scale: page >= ((activeTab === 'coins' ? coinLeaderboard?.totalPages : activeTab === 'tokens' ? sharpTokenLeaderboard?.totalPages : leaderboardData?.totalPages) || 1) ? 1 : 0.95 }}
-              onClick={() => setPage((activeTab === 'coins' ? coinLeaderboard?.totalPages : activeTab === 'tokens' ? sharpTokenLeaderboard?.totalPages : leaderboardData?.totalPages) || 1 > page ? page + 1 : page)}
-              disabled={page >= ((activeTab === 'coins' ? coinLeaderboard?.totalPages : activeTab === 'tokens' ? sharpTokenLeaderboard?.totalPages : leaderboardData?.totalPages) || 1)}
-              className="flex items-center gap-1 px-4 py-2.5 rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--panel-bg)] border border-[var(--panel-border)] text-[var(--foreground)] hover:bg-[var(--accent-primary)]/10 transition-colors"
-            >
-              <span className="hidden sm:inline">Next</span>
-              <ChevronRight className="w-4 h-4" />
-            </motion.button>
-          </div>
-        </motion.div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => setPage(Math.max(1, page - 1))}
+            disabled={page <= 1}
+            className="btn btn--secondary btn--sm"
+          >
+            <ChevronLeft className="w-4 h-4" /> Previous
+          </button>
+          <span className="mono text-sm font-bold">
+            {page} / {(activeTab === 'coins' ? coinLeaderboard?.totalPages : activeTab === 'tokens' ? sharpTokenLeaderboard?.totalPages : leaderboardData?.totalPages) || 1}
+          </span>
+          <button
+            onClick={() => setPage(page + 1)}
+            disabled={page >= ((activeTab === 'coins' ? coinLeaderboard?.totalPages : activeTab === 'tokens' ? sharpTokenLeaderboard?.totalPages : leaderboardData?.totalPages) || 1)}
+            className="btn btn--secondary btn--sm"
+          >
+            Next <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       )}
     </motion.div>
   );
