@@ -345,7 +345,7 @@ export default function DashboardLayout({ children }) {
         >
           <div
             className="w-12 h-12 flex items-center justify-center overflow-hidden"
-            style={{ background: 'var(--foreground)' }}
+            style={{ background: '#fff' }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="https://web.nanimeid.xyz/logo.png" alt="NanimeID" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
@@ -369,7 +369,7 @@ export default function DashboardLayout({ children }) {
       <div className="flex items-center gap-3 min-w-0">
         <div
           className="flex items-center justify-center w-9 h-9 border-2 border-[var(--border)] flex-shrink-0 overflow-hidden"
-          style={{ background: 'var(--foreground)' }}
+          style={{ background: '#fff' }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="https://web.nanimeid.xyz/logo.png" alt="NanimeID" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
