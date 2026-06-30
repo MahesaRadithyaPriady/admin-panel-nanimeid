@@ -344,10 +344,11 @@ export default function DashboardLayout({ children }) {
           style={{ border: '2px solid var(--border)', boxShadow: 'var(--shadow-md)' }}
         >
           <div
-            className="w-12 h-12 flex items-center justify-center"
-            style={{ background: 'var(--foreground)', color: 'var(--background)', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1rem' }}
+            className="w-12 h-12 flex items-center justify-center overflow-hidden"
+            style={{ background: 'var(--foreground)' }}
           >
-            N/A
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="https://web.nanimeid.xyz/logo.png" alt="NanimeID" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div className="text-sm font-bold uppercase tracking-widest" style={{ fontFamily: 'var(--font-mono)' }}>Memuat...</div>
         </div>
@@ -367,10 +368,11 @@ export default function DashboardLayout({ children }) {
     >
       <div className="flex items-center gap-3 min-w-0">
         <div
-          className="flex items-center justify-center w-9 h-9 border-2 border-[var(--border)] flex-shrink-0"
-          style={{ background: 'var(--foreground)', color: 'var(--background)', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.75rem' }}
+          className="flex items-center justify-center w-9 h-9 border-2 border-[var(--border)] flex-shrink-0 overflow-hidden"
+          style={{ background: 'var(--foreground)' }}
         >
-          N/A
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="https://web.nanimeid.xyz/logo.png" alt="NanimeID" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
         <span
           className="text-sm font-bold uppercase tracking-widest truncate"
