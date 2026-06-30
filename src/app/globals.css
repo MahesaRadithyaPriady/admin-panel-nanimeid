@@ -52,8 +52,8 @@
 
   /* Font Families */
   --font-display:  'Satoshi', 'Inter', system-ui, sans-serif;
-  --font-body:     'Inter', system-ui, sans-serif;
-  --font-mono:     'Inter', system-ui, sans-serif;
+  --font-body:     'Satoshi', 'Inter', system-ui, sans-serif;
+  --font-mono:     'Satoshi', 'Inter', system-ui, sans-serif;
 
   /* Type Scale */
   --text-xs:    0.75rem;

@@ -12,7 +12,7 @@ export default function ToasterProvider() {
           color: '#FFFFFF',
           border: '1px solid #D4D4D4',
           borderRadius: '8px',
-          fontFamily: "'Inter', sans-serif",
+          fontFamily: 'var(--font-body)',
           fontSize: '0.75rem',
           fontWeight: '700',
           letterSpacing: '0.04em',
