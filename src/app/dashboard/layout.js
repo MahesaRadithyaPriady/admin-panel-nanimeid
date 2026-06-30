@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity, Terminal, Trophy, Inbox, AlertTriangle, Film, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity, Terminal, Trophy, Inbox, Film, Sun, Moon } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import Sidebar from '@/components/dashboard/Sidebar';
 import BottomNav from '@/components/dashboard/BottomNav';
@@ -273,7 +273,6 @@ export default function DashboardLayout({ children }) {
         children: [
           { key: 'daftar-konten', label: 'Manajemen Konten', icon: Film, roles: ['superadmin', 'uploader'], href: '/dashboard/daftar-konten' },
           { key: 'anime-requests', label: 'Permintaan Anime', icon: Inbox, roles: ['superadmin', 'uploader'], href: '/dashboard/anime-requests' },
-          { key: 'episode-issue', label: 'Issue Episode', icon: AlertTriangle, roles: ['superadmin', 'uploader'], href: '/dashboard/episode-issue' },
           { key: 'manga-grab-list', label: 'Daftar Grab', icon: BadgeCheck, roles: ['superadmin'], href: '/dashboard/manga-admin/list-grab' },
           { key: 'manga-admin', label: 'Manajemen Manga', icon: BookOpen, roles: ['superadmin', 'uploader'], href: '/dashboard/manga-admin' },
           { key: 'uploader-legacy', label: 'Unggah Episode', icon: Upload, roles: ['superadmin', 'uploader'], href: '/dashboard/uploader' },

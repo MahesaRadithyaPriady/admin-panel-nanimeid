@@ -312,9 +312,9 @@ export default function LeaderboardPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <label className="label uppercase block mb-1">Search</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--muted)' }} />
-                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Username, email..." className="input w-full pl-9" />
+              <div className="input-icon">
+                <Search className="input-icon__icon" />
+                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Username, email..." className="input" />
               </div>
             </div>
             <div>

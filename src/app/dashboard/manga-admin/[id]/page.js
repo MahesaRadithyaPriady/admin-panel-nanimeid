@@ -6,7 +6,9 @@ import { toast } from 'react-hot-toast';
 import { BookOpen, Save, Trash2, ArrowLeft, Plus, Download } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { getManga, updateManga, deleteManga, listMangaChapters, createMangaChapter, deleteChapter, grabMangaChapterPlan, getMangaKomikuGrabJob } from '@/lib/api';
+import { getManga, updateManga, deleteManga, listMangaChapters, createMangaChapter, deleteChapter, grabMangaChapterPlan, getMangaKomikuGrabJob, listMangaGenres } from '@/lib/api';
+import GenreSelect from '@/components/dashboard/GenreSelect';
+import FileInput from '@/components/dashboard/FileInput';
 
 export default function MangaDetailPage() {
   const router = useRouter();
@@ -297,8 +299,7 @@ export default function MangaDetailPage() {
                       <option value="url">Gunakan URL</option>
                     </select>
                     {coverMode === 'upload' ? (
-                      <input
-                        type="file"
+                      <FileInput
                         accept="image/*"
                         onChange={(e) => {
                           const file = e.target.files?.[0] || null;
@@ -307,7 +308,7 @@ export default function MangaDetailPage() {
                           const url = URL.createObjectURL(file);
                           setCoverPreviewUrl(url);
                         }}
-                        className="input"
+                        placeholder="Pilih cover manga baru..."
                       />
                     ) : (
                       <input
@@ -327,7 +328,15 @@ export default function MangaDetailPage() {
                   </div>
                 </L>
                 <L label="Sinopsis"><input value={form.sinopsis_manga} onChange={(e)=>updateField('sinopsis_manga', e.target.value)} className="input" /></L>
-                <L label="Genre (comma)"><input value={form.genre_manga} onChange={(e)=>updateField('genre_manga', e.target.value)} className="input" placeholder="Action,Comedy" /></L>
+                <L label="Genre">
+                  <GenreSelect
+                    value={form.genre_manga}
+                    onChange={(val) => updateField('genre_manga', val)}
+                    fetchGenres={(params) => listMangaGenres({ token: getSession()?.token, ...params })}
+                    placeholder="Cari genre manga..."
+                    disabled={saving}
+                  />
+                </L>
                 <L label="Type">
                   <select value={form.type_manga} onChange={(e)=>updateField('type_manga', e.target.value)} className="select">
                     <option value="MANGA">MANGA</option>

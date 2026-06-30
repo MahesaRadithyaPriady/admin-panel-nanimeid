@@ -7,7 +7,9 @@ import { ArrowLeft, Save, Upload, Image as ImageIcon, Film, Trash2, AlertTriangl
 import { motion } from 'framer-motion';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { getAnimeDetail, updateAnime, deleteAnime } from '@/lib/api';
+import { getAnimeDetail, updateAnime, deleteAnime, listAnimeGenres } from '@/lib/api';
+import GenreSelect from '@/components/dashboard/GenreSelect';
+import FileInput from '@/components/dashboard/FileInput';
 
 const pageVariants = {
   hidden:  { opacity: 0, y: 16 },
@@ -66,7 +68,7 @@ export default function EditAnimePage() {
             nama_anime: anime.nama_anime || '',
             sinopsis_anime: anime.sinopsis_anime || '',
             fakta_menarik: anime.fakta_menarik || '',
-            genre_anime: anime.genre_anime || '',
+            genre_anime: Array.isArray(anime.genre_anime) ? anime.genre_anime.join(', ') : (anime.genre_anime || ''),
             status_anime: anime.status_anime || 'ONGOING',
             content_type: anime.content_type || anime.type || 'ANIME',
             studio_anime: anime.studio_anime || '',
@@ -117,11 +119,14 @@ export default function EditAnimePage() {
     setSaving(true);
     try {
       const token = getSession()?.token;
+      const genreArr = form.genre_anime
+        ? form.genre_anime.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
       const payload = {
         nama_anime: form.nama_anime,
         sinopsis_anime: form.sinopsis_anime,
         fakta_menarik: form.fakta_menarik || undefined,
-        genre_anime: form.genre_anime,
+        genre_anime: genreArr.length > 0 ? genreArr : undefined,
         status_anime: form.status_anime,
         content_type: form.content_type,
         studio_anime: form.studio_anime,
@@ -269,7 +274,11 @@ export default function EditAnimePage() {
               </div>
 
               {form.cover_mode === 'upload' && (
-                <input type="file" accept="image/*" onChange={onCoverChange} className="input" />
+                <FileInput
+                  accept="image/*"
+                  onChange={onCoverChange}
+                  placeholder="Pilih cover anime baru..."
+                />
               )}
               {form.cover_mode === 'url' && (
                 <div className="input-icon">
@@ -314,10 +323,13 @@ export default function EditAnimePage() {
 
             <div>
               <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Genre</label>
-              <div className="input-icon">
-                <Layers className="input-icon__icon" />
-                <input type="text" value={form.genre_anime} onChange={(e) => updateField('genre_anime', e.target.value)} className="input" />
-              </div>
+              <GenreSelect
+                value={form.genre_anime}
+                onChange={(val) => updateField('genre_anime', val)}
+                fetchGenres={(params) => listAnimeGenres({ token: getSession()?.token, ...params })}
+                placeholder="Cari genre anime..."
+                disabled={saving}
+              />
             </div>
 
             <div>
@@ -478,8 +490,7 @@ export default function EditAnimePage() {
             value={form.aliases}
             onChange={(e) => updateField('aliases', e.target.value)}
             placeholder="Masukkan alias anime (pisahkan dengan koma atau baris baru)&#10;Contoh: Naruto Shippuden, Boruto, Naruto TV"
-            className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold resize-none"
-            style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+            className="input"
           />
           <p className="text-xs text-[var(--foreground)]/60 mt-2">
             Alias membantu pencarian anime dengan nama lain

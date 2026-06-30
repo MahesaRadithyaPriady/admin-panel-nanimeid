@@ -100,7 +100,8 @@ export default function LoginPage() {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.1 }}
           >
-            N/A
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="https://web.nanimeid.xyz/logo.png" alt="NanimeID" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </motion.div>
           <motion.h1
             className="login-brand-title"
@@ -150,8 +151,9 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile logo — visible only on mobile/tablet */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="login-logo-mark" style={{ marginBottom: 0 }}>
-              N/A
+            <div className="login-logo-mark" style={{ marginBottom: 0, padding: 0, overflow: 'hidden' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="https://web.nanimeid.xyz/logo.png" alt="NanimeID" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <div>
               <h1 className="text-lg font-bold uppercase tracking-widest" style={{ fontFamily: 'var(--font-mono)', color: 'var(--foreground)' }}>
@@ -196,6 +198,7 @@ export default function LoginPage() {
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
+                    suppressHydrationWarning
                   />
                 </div>
               </div>
@@ -218,6 +221,7 @@ export default function LoginPage() {
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
+                    suppressHydrationWarning
                   />
                   <button
                     type="button"
@@ -239,6 +243,7 @@ export default function LoginPage() {
                 type="submit"
                 disabled={loading}
                 className="btn btn--primary btn--lg w-full"
+                suppressHydrationWarning
               >
                 {loading ? (
                   <>

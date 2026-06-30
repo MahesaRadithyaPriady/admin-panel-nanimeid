@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Film, Inbox, AlertTriangle, ChevronRight, Plus, Search } from 'lucide-react';
+import { Film, Inbox, ChevronRight, Plus, Search } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 
 const pageVariants = {
@@ -28,20 +28,12 @@ const CARDS = [
     href: '/dashboard/anime-requests',
     countLabel: 'permintaan',
   },
-  {
-    key: 'issues',
-    title: 'Issue Episode',
-    description: 'Pantau laporan masalah video episode dan alasan error.',
-    icon: AlertTriangle,
-    href: '/dashboard/episode-issue',
-    countLabel: 'laporan',
-  },
 ];
 
 export default function DaftarKontenPage() {
   const router = useRouter();
   const { user, loading } = useSession();
-  const [counts, setCounts] = useState({ anime: 0, requests: 0, issues: 0 });
+  const [counts, setCounts] = useState({ anime: 0, requests: 0 });
 
   useEffect(() => {
     if (!loading && !user) {
@@ -56,7 +48,7 @@ export default function DaftarKontenPage() {
           {/* Header */}
           <div>
             <h1 className="page-title">Manajemen Konten</h1>
-            <p className="label mt-1">Pilih menu di bawah untuk mengelola anime, permintaan, atau issue episode.</p>
+            <p className="label mt-1">Pilih menu di bawah untuk mengelola anime dan permintaan.</p>
           </div>
 
           {/* Cards Grid */}
@@ -94,9 +86,6 @@ export default function DaftarKontenPage() {
               </button>
               <button onClick={() => router.push('/dashboard/anime-requests')} className="btn btn--secondary btn--sm">
                 <Inbox className="w-4 h-4" /> Lihat Permintaan
-              </button>
-              <button onClick={() => router.push('/dashboard/episode-issue')} className="btn btn--secondary btn--sm">
-                <AlertTriangle className="w-4 h-4" /> Cek Issue
               </button>
             </div>
           </div>

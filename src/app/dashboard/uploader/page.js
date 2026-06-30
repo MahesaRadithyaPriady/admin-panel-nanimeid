@@ -7,6 +7,7 @@ import { Upload, ListPlus, Trash2, Plus } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { listAnime, createEpisode } from '@/lib/api';
+import FileInput from '@/components/dashboard/FileInput';
 
 export default function UploaderOverviewPage() {
   const router = useRouter();
@@ -170,8 +171,7 @@ export default function UploaderOverviewPage() {
                 <option value="url">With URL</option>
               </select>
               {(formEpisode.thumbnail_mode || 'upload') === 'upload' ? (
-                <input
-                  type="file"
+                <FileInput
                   accept="image/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
@@ -179,8 +179,7 @@ export default function UploaderOverviewPage() {
                     const url = URL.createObjectURL(file);
                     setFormEpisode((f) => ({ ...f, image: file, previewUrl: url }));
                   }}
-                  className="w-full px-3 py-2 border-2 rounded-lg"
-                  style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  placeholder="Pilih thumbnail episode..."
                 />
               ) : (
                 <input

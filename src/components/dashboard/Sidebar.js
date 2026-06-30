@@ -157,10 +157,11 @@ export default function Sidebar({
         {(!collapsed || isMobile) ? (
           <div className="flex items-center gap-3 min-w-0">
             <div
-              className="w-10 h-10 flex-shrink-0 flex items-center justify-center border-2 border-gray-300"
-              style={{ background: '#fff', color: '#000', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.875rem' }}
+              className="w-10 h-10 flex-shrink-0 flex items-center justify-center border-2 border-gray-300 overflow-hidden"
+              style={{ background: '#fff', padding: 0 }}
             >
-              N/A
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="https://web.nanimeid.xyz/logo.png" alt="NanimeID" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <div className="min-w-0">
               <div className="text-sm font-bold text-white tracking-widest uppercase" style={{ fontFamily: 'var(--font-mono)' }}>
@@ -173,10 +174,11 @@ export default function Sidebar({
           </div>
         ) : (
           <div
-            className="w-10 h-10 flex items-center justify-center border-2 border-gray-300 text-black font-bold text-xs flex-shrink-0"
-            style={{ background: '#fff', fontFamily: 'var(--font-mono)' }}
+            className="w-10 h-10 flex items-center justify-center border-2 border-gray-300 flex-shrink-0 overflow-hidden"
+            style={{ background: '#fff', padding: 0 }}
           >
-            N/A
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="https://web.nanimeid.xyz/logo.png" alt="NanimeID" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
         )}
 

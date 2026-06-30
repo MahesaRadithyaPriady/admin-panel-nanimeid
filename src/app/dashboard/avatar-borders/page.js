@@ -8,6 +8,7 @@ import { Image as ImageIcon, Pencil, Trash2, Plus, ArrowRight, ArrowLeft } from 
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { createAvatarBorder, createAvatarBorderWithFile, listAvatarBorders, updateAvatarBorder, updateAvatarBorderWithFile, deleteAvatarBorder } from '@/lib/api';
+import FileInput from '@/components/dashboard/FileInput';
 
 export default function AvatarBordersPage() {
   const router = useRouter();
@@ -299,7 +300,7 @@ export default function AvatarBordersPage() {
                     <option value="url">Gunakan URL</option>
                   </select>
                   {form.image_mode === 'upload' ? (
-                    <input type="file" accept="image/*" onChange={onFileChange} className="input w-full" />
+                    <FileInput accept="image/*" onChange={onFileChange} placeholder="Pilih gambar border..." />
                   ) : (
                     <input type="url" value={form.image_url} onChange={onChange('image_url')} placeholder="https://..." className="input w-full" />
                   )}

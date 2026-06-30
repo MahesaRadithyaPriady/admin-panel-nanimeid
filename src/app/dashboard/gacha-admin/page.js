@@ -7,6 +7,7 @@ import { Gift, Settings2, Plus, Save, RefreshCw, Trash2 } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { listGachaConfigs, upsertGachaConfig, listGachaPrizes, createGachaPrize, updateGachaPrize, deleteGachaPrize, listAvatarBorders, listBadges, listStickers, listGachaShopItems, createGachaShopItem, updateGachaShopItem, deleteGachaShopItem, uploadFileViaPresignedPut } from '@/lib/api';
+import FileInput from '@/components/dashboard/FileInput';
 
 function safeKeySegment(input) {
   return String(input || '')
@@ -779,11 +780,10 @@ export default function GachaAdminPage() {
                 />
               </F>
               <F label="Upload Banner ">
-                <input
-                  type="file"
+                <FileInput
                   accept="image/*"
-                  className="inp"
                   onChange={onUploadBannerChange}
+                  placeholder="Pilih banner..."
                 />
               </F>
             </div>

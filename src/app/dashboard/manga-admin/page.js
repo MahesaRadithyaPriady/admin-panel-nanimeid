@@ -6,7 +6,10 @@ import { toast } from 'react-hot-toast';
 import { BookOpen, Plus, ExternalLink, Trash2 } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listManga, createManga, deleteManga, grabKomikuRange } from '@/lib/api';
+import { listManga, createManga, deleteManga, grabKomikuRange, listMangaGenres, listMangaSelect } from '@/lib/api';
+import GenreSelect from '@/components/dashboard/GenreSelect';
+import MangaSelect from '@/components/dashboard/MangaSelect';
+import FileInput from '@/components/dashboard/FileInput';
 
 export default function MangaAdminPage() {
   const router = useRouter();
@@ -173,8 +176,7 @@ export default function MangaAdminPage() {
                       <option value="url">Gunakan URL</option>
                     </select>
                     {coverMode === 'upload' ? (
-                      <input
-                        type="file"
+                      <FileInput
                         accept="image/*"
                         onChange={(e) => {
                           const file = e.target.files?.[0] || null;
@@ -183,7 +185,7 @@ export default function MangaAdminPage() {
                           const url = URL.createObjectURL(file);
                           setCoverPreviewUrl(url);
                         }}
-                        className="input"
+                        placeholder="Pilih cover manga..."
                       />
                     ) : (
                       <input
@@ -203,7 +205,14 @@ export default function MangaAdminPage() {
                   </div>
                 </L>
                 <L label="Sinopsis"><input value={form.sinopsis_manga} onChange={(e)=>updateForm('sinopsis_manga', e.target.value)} className="input" /></L>
-                <L label="Genre (comma)"><input value={form.genre_manga} onChange={(e)=>updateForm('genre_manga', e.target.value)} className="input" placeholder="Action,Comedy" /></L>
+                <L label="Genre">
+                  <GenreSelect
+                    value={form.genre_manga}
+                    onChange={(val) => updateForm('genre_manga', val)}
+                    fetchGenres={(params) => listMangaGenres({ token: getSession()?.token, ...params })}
+                    placeholder="Cari genre manga..."
+                  />
+                </L>
                 <L label="Type">
                   <select value={form.type_manga} onChange={(e)=>updateForm('type_manga', e.target.value)} className="select">
                     <option value="MANGA">MANGA</option>
@@ -228,7 +237,15 @@ export default function MangaAdminPage() {
             <div className="section-title">Grab Range (Komiku)</div>
             <form onSubmit={onGrabRange} className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
-                <L label="Manga ID"><input value={grabRange.mangaId} onChange={(e)=>setGrabRange(g=>({...g, mangaId: e.target.value}))} className="input" placeholder="ID manga target" /></L>
+                <L label="Manga">
+                  <MangaSelect
+                    value={grabRange.mangaId}
+                    onChange={(val) => setGrabRange(g => ({ ...g, mangaId: val }))}
+                    fetchManga={(params) => listMangaSelect({ token: getSession()?.token, ...params })}
+                    placeholder="Cari manga target..."
+                    disabled={grabbingRange}
+                  />
+                </L>
                 <L label="Sample URL"><input value={grabRange.sample_url} onChange={(e)=>setGrabRange(g=>({...g, sample_url: e.target.value}))} className="input" placeholder="https://komiku.org/...-chapter-02/" /></L>
                 <L label="Mulai"><input type="number" value={grabRange.start} onChange={(e)=>setGrabRange(g=>({...g, start: e.target.value}))} className="input" placeholder="2" /></L>
                 <L label="Akhir"><input type="number" value={grabRange.end} onChange={(e)=>setGrabRange(g=>({...g, end: e.target.value}))} className="input" placeholder="38" /></L>

@@ -543,6 +543,26 @@ div.gradient-bg {
 
 .select:focus { box-shadow: var(--shadow-sm); }
 
+/* File Input — handled by FileInput component, this is just a fallback */
+.file-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  background-color: var(--surface);
+  color: var(--foreground);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  outline: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.file-input:hover { box-shadow: var(--shadow-md); border-style: solid; }
+.file-input:focus { box-shadow: var(--shadow-md); border-style: solid; }
+.file-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
 textarea.input {
   height: auto;
   min-height: 100px;
@@ -1216,16 +1236,12 @@ button[aria-label="Delete"]:not(.btn--danger):hover {
 .login-brand-logo {
   width: 56px;
   height: 56px;
-  background: var(--color-white);
-  color: var(--color-black);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-mono);
-  font-weight: var(--weight-bold);
-  font-size: var(--text-xl);
   margin-bottom: var(--space-6);
   border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
 .login-brand-title {
@@ -1305,17 +1321,13 @@ button[aria-label="Delete"]:not(.btn--danger):hover {
 .login-logo-mark {
   width: 48px;
   height: 48px;
-  background: var(--foreground);
-  color: var(--background);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-mono);
-  font-weight: var(--weight-bold);
-  font-size: var(--text-xl);
   margin-bottom: var(--space-6);
   box-shadow: var(--shadow-md);
   border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
 /* Input with icon wrapper */

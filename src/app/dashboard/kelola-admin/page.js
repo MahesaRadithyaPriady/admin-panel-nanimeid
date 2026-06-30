@@ -165,7 +165,6 @@ export default function KelolaAdminPage() {
         { key: 'daftar-konten', label: 'Daftar Konten' },
         { key: 'manga-admin', label: 'Manga Admin' },
         { key: 'list-grab', label: 'List Grab' },
-        { key: 'episode-video-issues', label: 'Episode Issue' },
       ],
     },
     {

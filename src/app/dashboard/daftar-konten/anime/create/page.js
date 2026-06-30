@@ -7,7 +7,9 @@ import { ArrowLeft, Save, Upload, Image as ImageIcon, X, Plus, Film, CheckCircle
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { createAnime, batchCreateEpisodes } from '@/lib/api';
+import { createAnime, batchCreateEpisodes, listAnimeGenres } from '@/lib/api';
+import GenreSelect from '@/components/dashboard/GenreSelect';
+import FileInput from '@/components/dashboard/FileInput';
 
 const pageVariants = {
   hidden:  { opacity: 0, y: 16 },
@@ -110,10 +112,13 @@ export default function CreateAnimePage() {
       const token = getSession()?.token;
 
       // Prepare payload
+      const genreArr = form.genre_anime
+        ? form.genre_anime.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
       const payload = {
         nama_anime: form.nama_anime,
         sinopsis_anime: form.sinopsis_anime,
-        genre_anime: form.genre_anime,
+        genre_anime: genreArr.length > 0 ? genreArr : undefined,
         status_anime: form.status_anime,
         content_type: form.content_type,
         studio_anime: form.studio_anime,
@@ -486,11 +491,10 @@ export default function CreateAnimePage() {
                   </div>
 
                   {form.cover_mode === 'upload' ? (
-                    <input
-                      type="file"
+                    <FileInput
                       accept="image/*"
                       onChange={onCoverChange}
-                      className="input"
+                      placeholder="Pilih cover anime..."
                     />
                   ) : (
                     <div className="input-icon">
@@ -541,10 +545,13 @@ export default function CreateAnimePage() {
 
                 <div>
                   <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Genre</label>
-                  <div className="input-icon">
-                    <Layers className="input-icon__icon" />
-                    <input type="text" value={form.genre_anime} onChange={(e) => updateField('genre_anime', e.target.value)} placeholder="Action, Comedy, Romance" className="input" />
-                  </div>
+                  <GenreSelect
+                    value={form.genre_anime}
+                    onChange={(val) => updateField('genre_anime', val)}
+                    fetchGenres={(params) => listAnimeGenres({ token: getSession()?.token, ...params })}
+                    placeholder="Cari genre anime..."
+                    disabled={saving}
+                  />
                 </div>
 
                 <div>
@@ -642,15 +649,14 @@ export default function CreateAnimePage() {
             {/* Aliases Field */}
             <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
               <h2 className="text-lg font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
-                <TagIcon className="w-5 h-5" /> Alias / Judul Lain
+                <TagIcon className="w-5 h-5" /> Anime Terkait
               </h2>
               <textarea
                 rows={3}
                 value={form.aliases}
                 onChange={(e) => updateField('aliases', e.target.value)}
                 placeholder="Masukkan alias anime (pisahkan dengan koma atau baris baru)&#10;Contoh: Naruto Shippuden, Boruto, Naruto TV"
-                className="w-full rounded-lg border-2 px-3 py-2.5 text-sm font-semibold resize-none"
-                style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                className="input"
               />
               <p className="text-xs text-[var(--foreground)]/60 mt-2">
                 Alias membantu pencarian anime dengan nama lain

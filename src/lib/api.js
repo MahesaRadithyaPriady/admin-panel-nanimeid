@@ -1016,6 +1016,43 @@ export async function getAnimeDetail({ token, id }) {
   return await handleJson(res, 'Gagal mengambil detail anime');
 }
 
+// ===== Admin Genres (permission: DAFTAR_KONTEN) =====
+const genresBase = () => `${getApiBase()}/admin/genres`;
+
+export async function listAllGenres({ token, q = '', source = 'all', page = 1, limit = 50 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (source) params.set('source', source);
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 200)));
+  const url = `${genresBase()}${params.toString() ? `?${params.toString()}` : ''}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil daftar genre');
+}
+
+export async function listAnimeGenres({ token, q = '', page = 1, limit = 50 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 200)));
+  const url = `${genresBase()}/anime${params.toString() ? `?${params.toString()}` : ''}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil genre anime');
+}
+
+export async function listMangaGenres({ token, q = '', page = 1, limit = 50 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 200)));
+  const url = `${genresBase()}/manga${params.toString() ? `?${params.toString()}` : ''}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  return await handleJson(res, 'Gagal mengambil genre manga');
+}
+
 export async function createAnime({ token, payload }) {
   // payload should include required fields and `image` (File) per docs
   if (!token) throw new Error('Token tidak tersedia');
@@ -1200,92 +1237,6 @@ export async function checkEpisodeQuality({ token, id }) {
     headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal memeriksa status quality');
-}
-
-// ===== Admin Episode Video Issues (permission: episode-video-issues) =====
-const episodeVideoIssuesBase = () => `${getApiBase()}/admin/episode-video-issues`;
-
-// Reasons
-export async function listEpisodeVideoIssueReasons({ token, include_inactive = false } = {}) {
-  if (!token) throw new Error('Token tidak tersedia');
-  const params = new URLSearchParams();
-  if (include_inactive) params.set('include_inactive', 'true');
-  const url = `${episodeVideoIssuesBase()}/reasons${params.toString() ? `?${params.toString()}` : ''}`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  return await handleJson(res, 'Gagal mengambil daftar reasons');
-}
-
-export async function createEpisodeVideoIssueReason({ token, payload }) {
-  if (!token) throw new Error('Token tidak tersedia');
-  const res = await fetch(`${episodeVideoIssuesBase()}/reasons`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload || {}),
-  });
-  return await handleJson(res, 'Gagal membuat reason');
-}
-
-export async function updateEpisodeVideoIssueReason({ token, id, payload }) {
-  if (!token) throw new Error('Token tidak tersedia');
-  const res = await fetch(`${episodeVideoIssuesBase()}/reasons/${id}`, {
-    method: 'PUT',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload || {}),
-  });
-  return await handleJson(res, 'Gagal memperbarui reason');
-}
-
-export async function deleteEpisodeVideoIssueReason({ token, id }) {
-  if (!token) throw new Error('Token tidak tersedia');
-  const res = await fetch(`${episodeVideoIssuesBase()}/reasons/${id}`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return await handleJson(res, 'Gagal menghapus reason');
-}
-
-// Reports
-export async function listEpisodeVideoIssueReports({ token, page = 1, limit = 20, status = '', episode_id = '', user_id = '', reason_id = '' } = {}) {
-  if (!token) throw new Error('Token tidak tersedia');
-  const params = new URLSearchParams();
-  if (page) params.set('page', String(page));
-  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 100)));
-  if (status) params.set('status', status);
-  if (episode_id !== '' && episode_id !== undefined && episode_id !== null) params.set('episode_id', String(episode_id));
-  if (user_id !== '' && user_id !== undefined && user_id !== null) params.set('user_id', String(user_id));
-  if (reason_id !== '' && reason_id !== undefined && reason_id !== null) params.set('reason_id', String(reason_id));
-  const url = `${episodeVideoIssuesBase()}/reports?${params.toString()}`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  return await handleJson(res, 'Gagal mengambil daftar reports');
-}
-
-export async function updateEpisodeVideoIssueReport({ token, id, payload }) {
-  if (!token) throw new Error('Token tidak tersedia');
-  const res = await fetch(`${episodeVideoIssuesBase()}/reports/${id}`, {
-    method: 'PUT',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload || {}),
-  });
-  return await handleJson(res, 'Gagal memperbarui report');
-}
-
-export async function updateEpisodeVideoIssueReportStatus({ token, id, status }) {
-  if (!token) throw new Error('Token tidak tersedia');
-  const res = await fetch(`${episodeVideoIssuesBase()}/reports/${id}/status`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
-  });
-  return await handleJson(res, 'Gagal memperbarui status report');
-}
-
-export async function deleteEpisodeVideoIssueReport({ token, id }) {
-  if (!token) throw new Error('Token tidak tersedia');
-  const res = await fetch(`${episodeVideoIssuesBase()}/reports/${id}`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return await handleJson(res, 'Gagal menghapus report');
 }
 
 // ===== Anime Relations (SUPERADMIN | UPLOADER) =====
@@ -2845,6 +2796,25 @@ export async function listManga({ token, q = '', page = 1, limit = 20 }) {
   };
 }
 
+export async function listMangaSelect({ token, q = '', genre = '', type = '', page = 1, limit = 20 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (genre) params.set('genre', genre);
+  if (type) params.set('type', type);
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(Math.min(Math.max(1, limit), 100)));
+  const url = `${mangaBase()}/select${params.toString() ? `?${params.toString()}` : ''}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar manga');
+  return {
+    items: Array.isArray(data?.items) ? data.items : (Array.isArray(data?.data) ? data.data : []),
+    total: data?.total ?? 0,
+    page: data?.page ?? page,
+    limit: data?.limit ?? limit,
+  };
+}
+
 export async function createManga({ token, payload }) {
   if (!token) throw new Error('Token tidak tersedia');
   const p0 = payload || {};
@@ -2993,6 +2963,21 @@ export async function uploadMangaChapterImages({ token, mangaId, chapterNumber, 
     body: fd,
   });
   return await handleJson(res, 'Gagal upload halaman chapter');
+}
+
+export async function uploadMangaChapterZip({ token, mangaId, chapterNumber, zipFile, title, replace = false }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!(zipFile instanceof File)) throw new Error('File zip tidak valid');
+  const fd = new FormData();
+  fd.append('zip', zipFile);
+  if (title) fd.set('title', title);
+  fd.set('replace', String(replace));
+  const res = await fetch(`${mangaBase()}/${mangaId}/chapters/${chapterNumber}/zip-upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  return await handleJson(res, 'Gagal upload zip chapter');
 }
 
 export async function getMangaChapterPages({ token, mangaId, chapterNumber }) {
