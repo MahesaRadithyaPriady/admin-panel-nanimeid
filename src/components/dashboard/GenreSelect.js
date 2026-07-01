@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, ChevronDown, Loader2 } from 'lucide-react';
+import { Search, X, ChevronDown, Loader2, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function GenreSelect({
@@ -173,6 +173,7 @@ export default function GenreSelect({
             ref={inputRef}
             type="text"
             value={query}
+            enterKeyHint="enter"
             onChange={(e) => {
               setQuery(e.target.value);
               setOpen(true);
@@ -180,6 +181,16 @@ export default function GenreSelect({
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={handleKeyDown}
+            onKeyUp={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (highlightIndex >= 0 && results[highlightIndex]) {
+                  addGenre(results[highlightIndex]);
+                } else if (query.trim() && !selected.includes(query.trim())) {
+                  addGenre(query.trim());
+                }
+              }
+            }}
             placeholder={selected.length === 0 ? placeholder : ''}
             disabled={disabled}
             style={{
@@ -197,6 +208,34 @@ export default function GenreSelect({
           />
           {loading && (
             <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'var(--muted)' }} />
+          )}
+          {!loading && query.trim() && !selected.includes(query.trim()) && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                addGenre(query.trim());
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'var(--foreground)',
+                color: 'var(--background)',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+                flexShrink: 0,
+                padding: '2px 6px',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                fontFamily: 'var(--font-body)',
+                gap: '2px',
+              }}
+            >
+              <Plus className="w-3 h-3" />
+              Add
+            </button>
           )}
           {!loading && (
             <ChevronDown
@@ -247,7 +286,7 @@ export default function GenreSelect({
                 }}
               >
                 {query.trim()
-                  ? `Tidak ada genre "${query.trim()}". Tekan Enter untuk menambahkan.`
+                  ? `Tidak ada genre "${query.trim()}". Tekan Enter atau tombol Add untuk menambahkan.`
                   : 'Ketik untuk mencari genre...'}
               </div>
             )}
