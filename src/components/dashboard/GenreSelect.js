@@ -98,7 +98,7 @@ export default function GenreSelect({
     }
   };
 
-  const filteredResults = results.filter((g) => !selected.includes(g));
+  const filteredResults = [...new Set(results.filter((g) => !selected.includes(g)))];
 
   return (
     <div ref={containerRef} className="genre-select" style={{ position: 'relative' }}>
