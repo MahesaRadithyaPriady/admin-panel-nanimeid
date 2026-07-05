@@ -77,10 +77,10 @@ export default function AnimeListPage() {
     try {
       const token = getSession()?.token;
       const res = await listAnime({ token, page: p, limit, q: q || undefined, status: status || undefined });
-      const data = res?.data || res?.items || res || [];
-      const meta = res?.meta || {};
-      setItems(Array.isArray(data) ? data : []);
-      setTotal(meta?.total ?? data?.length ?? 0);
+      const items = res?.items || [];
+      const total = res?.total ?? items.length ?? 0;
+      setItems(Array.isArray(items) ? items : []);
+      setTotal(total);
       setPage(p);
     } catch (err) {
       toast.error(err?.message || 'Gagal memuat anime');
@@ -264,15 +264,47 @@ export default function AnimeListPage() {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <button onClick={() => loadList({ page: Math.max(1, page - 1) })} disabled={page <= 1 || loadingList} className="btn btn--secondary disabled:opacity-60 inline-flex items-center gap-1">
-                <ChevronLeft className="w-4 h-4" /> Sebelumnya
+          {total > 0 && (
+            <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-center">
+              <button onClick={() => loadList({ page: 1 })} disabled={page <= 1 || loadingList} className="btn btn--secondary btn--sm disabled:opacity-60 hidden sm:inline-flex" title="Halaman pertama">
+                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-4 h-4 -ml-2" />
               </button>
-              <span className="text-sm font-extrabold">Halaman {page} dari {totalPages}</span>
-              <button onClick={() => loadList({ page: Math.min(totalPages, page + 1) })} disabled={page >= totalPages || loadingList} className="btn btn--secondary disabled:opacity-60 inline-flex items-center gap-1">
-                Selanjutnya <ChevronRight className="w-4 h-4" />
+              <button onClick={() => loadList({ page: Math.max(1, page - 1) })} disabled={page <= 1 || loadingList} className="btn btn--secondary btn--sm disabled:opacity-60 inline-flex items-center gap-1">
+                <ChevronLeft className="w-4 h-4" /> <span className="hidden sm:inline">Prev</span>
               </button>
+              {(() => {
+                const pages = [];
+                const maxButtons = typeof window !== 'undefined' && window.innerWidth < 640 ? 3 : 5;
+                let start = Math.max(1, page - Math.floor(maxButtons / 2));
+                let end = Math.min(totalPages, start + maxButtons - 1);
+                if (end - start + 1 < maxButtons) start = Math.max(1, end - maxButtons + 1);
+                if (start > 1) pages.push('...');
+                for (let i = start; i <= end; i++) pages.push(i);
+                if (end < totalPages) pages.push('...');
+                return pages.map((p, idx) =>
+                  p === '...' ? (
+                    <span key={`ellipsis-${idx}`} className="text-sm font-bold opacity-50 px-1">...</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => loadList({ page: p })}
+                      disabled={loadingList}
+                      className={`btn btn--sm disabled:opacity-60 ${p === page ? 'btn--primary' : 'btn--secondary'}`}
+                    >
+                      {p}
+                    </button>
+                  )
+                );
+              })()}
+              <button onClick={() => loadList({ page: Math.min(totalPages, page + 1) })} disabled={page >= totalPages || loadingList} className="btn btn--secondary btn--sm disabled:opacity-60 inline-flex items-center gap-1">
+                <span className="hidden sm:inline">Next</span> <ChevronRight className="w-4 h-4" />
+              </button>
+              <button onClick={() => loadList({ page: totalPages })} disabled={page >= totalPages || loadingList} className="btn btn--secondary btn--sm disabled:opacity-60 hidden sm:inline-flex" title="Halaman terakhir">
+                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4 -ml-2" />
+              </button>
+              <span className="text-xs sm:text-sm font-extrabold w-full text-center mt-1 sm:w-auto sm:ml-2 sm:mt-0">{page} / {totalPages} ({total} anime)</span>
             </div>
           )}
         </>
