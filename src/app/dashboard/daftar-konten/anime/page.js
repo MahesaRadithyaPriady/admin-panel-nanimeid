@@ -21,6 +21,13 @@ const STATUS_META = {
   UPCOMING:  { label: 'Segera' },
 };
 
+const CONTENT_TYPE_META = {
+  ANIME:     { label: 'Anime', color: '#3b82f6' },
+  FILM:      { label: 'Film', color: '#f59e0b' },
+  DONGHUA:   { label: 'Donghua', color: '#a855f7' },
+  TOKUSATSU: { label: 'Tokusatsu', color: '#ef4444' },
+};
+
 export default function AnimeListPage() {
   const router = useRouter();
   const { user, loading } = useSession();
@@ -31,6 +38,7 @@ export default function AnimeListPage() {
   const [total, setTotal] = useState(0);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
+  const [contentType, setContentType] = useState('');
   const [loadingList, setLoadingList] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [stats, setStats] = useState({ ONGOING: 0, COMPLETED: 0, HIATUS: 0, UPCOMING: 0, total: 0 });
@@ -76,7 +84,7 @@ export default function AnimeListPage() {
     setLoadingList(true);
     try {
       const token = getSession()?.token;
-      const res = await listAnime({ token, page: p, limit, q: q || undefined, status: status || undefined });
+      const res = await listAnime({ token, page: p, limit, q: q || undefined, status: status || undefined, content_type: contentType || undefined });
       const items = res?.items || [];
       const total = res?.total ?? items.length ?? 0;
       setItems(Array.isArray(items) ? items : []);
@@ -91,7 +99,7 @@ export default function AnimeListPage() {
 
   useEffect(() => {
     if (user) loadList({ page: 1 });
-  }, [user, status, limit]);
+  }, [user, status, limit, contentType]);
 
   useEffect(() => {
     const timer = setTimeout(() => { if (user) loadList({ page: 1 }); }, 400);
@@ -155,6 +163,41 @@ export default function AnimeListPage() {
                 >
                   <div className="text-xs font-extrabold uppercase tracking-wide label">{meta.label}</div>
                   <div className="mt-1 text-2xl font-black">{loadingStats ? '-' : count}</div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Content Type Filter Chips */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold opacity-60 mr-1">Tipe:</span>
+            <button
+              onClick={() => setContentType('')}
+              className="px-3 py-1.5 border-2 rounded-full font-extrabold text-sm transition-all shrink-0"
+              style={{
+                boxShadow: !contentType ? 'var(--shadow-md)' : 'var(--shadow-sm)',
+                background: !contentType ? 'var(--accent-primary)' : 'var(--panel-bg)',
+                color: !contentType ? 'var(--accent-primary-foreground)' : 'var(--foreground)',
+                borderColor: 'var(--panel-border)',
+              }}
+            >
+              Semua
+            </button>
+            {Object.entries(CONTENT_TYPE_META).map(([key, meta]) => {
+              const active = contentType === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setContentType(active ? '' : key)}
+                  className="px-3 py-1.5 border-2 rounded-full font-extrabold text-sm transition-all shrink-0"
+                  style={{
+                    boxShadow: active ? 'var(--shadow-md)' : 'var(--shadow-sm)',
+                    background: active ? meta.color : 'var(--panel-bg)',
+                    color: active ? '#111827' : 'var(--foreground)',
+                    borderColor: active ? meta.color : 'var(--panel-border)',
+                  }}
+                >
+                  {meta.label}
                 </button>
               );
             })}
@@ -232,6 +275,18 @@ export default function AnimeListPage() {
                           <span className="border-2 border-[var(--border)] px-2 py-0 text-[10px] font-extrabold uppercase tracking-wide">
                             {statusLabel}
                           </span>
+                          {item.content_type && item.content_type !== 'ANIME' && (
+                            <span
+                              className="px-2 py-0 text-[10px] font-extrabold uppercase tracking-wide rounded-full"
+                              style={{
+                                color: CONTENT_TYPE_META[item.content_type]?.color || 'var(--foreground)',
+                                borderColor: CONTENT_TYPE_META[item.content_type]?.color || 'var(--border)',
+                                border: '2px solid',
+                              }}
+                            >
+                              {CONTENT_TYPE_META[item.content_type]?.label || item.content_type}
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs opacity-60 line-clamp-1 mt-0.5">{item.sinopsis_anime || '-'}</p>
                         <div className="mt-1 flex items-center gap-3 text-xs opacity-50 flex-wrap">

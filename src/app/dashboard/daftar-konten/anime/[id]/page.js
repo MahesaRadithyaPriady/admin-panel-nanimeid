@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, Edit, Trash2, Plus, Play, List, Info, Clock, Star, Calendar, Eye, ChevronDown, ChevronUp, ExternalLink, Save, X, Upload } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Plus, Play, List, Info, Clock, Star, Calendar, Eye, ChevronDown, ChevronUp, ExternalLink, Save, X, Upload, Loader2, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { getAnimeDetail, deleteAnime, listEpisodes, createEpisode, deleteEpisode, updateEpisode, checkEpisodeQuality } from '@/lib/api';
+import { EpisodeForm, getEpisodeQualities, createEmptyEpisode } from '@/components/EpisodeForm';
 
 const pageVariants = {
   hidden:  { opacity: 0, y: 16 },
@@ -23,6 +24,7 @@ const STATUS_COLORS = {
   UPCOMING: { bg: 'rgba(139,92,246,0.15)', color: '#8b5cf6', label: 'Segera' },
 };
 
+
 export default function AnimeDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -35,7 +37,8 @@ export default function AnimeDetailPage() {
   const [episodes, setEpisodes] = useState([]);
   const [expandedEpisode, setExpandedEpisode] = useState(null);
   const [showAddEpisode, setShowAddEpisode] = useState(false);
-  const [newEpisode, setNewEpisode] = useState({ nomor_episode: '', judul_episode: '', durasi_episode: 24 });
+  const [newEpisode, setNewEpisode] = useState(createEmptyEpisode(1));
+  const [savingNewEpisode, setSavingNewEpisode] = useState(false);
   const [editingEpisode, setEditingEpisode] = useState(null);
   const [savingEpisode, setSavingEpisode] = useState(null);
   const [qualityStatus, setQualityStatus] = useState({});
@@ -84,23 +87,44 @@ export default function AnimeDetailPage() {
   };
 
   const onAddEpisode = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
+    const allQualities = getEpisodeQualities(newEpisode);
+    const hasQuality = Object.values(allQualities).some(q => q?.trim());
+    if (!newEpisode.judul_episode?.trim()) {
+      toast.error('Judul episode wajib diisi');
+      return;
+    }
+    if (!hasQuality) {
+      toast.error('Minimal 1 link video wajib diisi');
+      return;
+    }
+    setSavingNewEpisode(true);
     try {
       const token = getSession()?.token;
+      const validQualities = Object.entries(allQualities)
+        .filter(([_, url]) => url?.trim())
+        .map(([quality, url]) => ({ nama_quality: quality, source_quality: url.trim() }));
       const payload = {
         nomor_episode: Number(newEpisode.nomor_episode),
         judul_episode: newEpisode.judul_episode,
-        durasi_episode: Number(newEpisode.durasi_episode) || 24,
+        deskripsi_episode: newEpisode.deskripsi_episode || null,
+        intro_start_seconds: newEpisode.intro_start_seconds ?? 0,
+        intro_duration_seconds: newEpisode.intro_duration_seconds ?? 90,
+        outro_start_seconds: newEpisode.outro_start_seconds ?? null,
+        outro_duration_seconds: newEpisode.outro_duration_seconds ?? 90,
+        qualities: validQualities,
       };
       await createEpisode({ token, animeId: id, payload });
       toast.success('Episode ditambahkan!');
       setShowAddEpisode(false);
-      setNewEpisode({ nomor_episode: '', judul_episode: '', durasi_episode: 24 });
-      // Refresh episodes list
+      const lastEp = episodes.length > 0 ? Math.max(...episodes.map(e => Number(e.nomor_episode) || 0)) : 0;
+      setNewEpisode(createEmptyEpisode(lastEp + 1));
       const episodesRes = await listEpisodes({ token, animeId: id, page: 1, limit: 100 });
       setEpisodes(episodesRes?.items || []);
     } catch (err) {
       toast.error(err?.message || 'Gagal menambahkan episode');
+    } finally {
+      setSavingNewEpisode(false);
     }
   };
 
@@ -117,12 +141,18 @@ export default function AnimeDetailPage() {
   };
 
   const startEditEpisode = (ep) => {
+    const rawQualities = ep.qualities || [];
+    // Ensure every quality has a unique id for reliable add/remove/update
+    const qualitiesWithIds = rawQualities.map((q, idx) => ({
+      ...q,
+      id: q.id != null ? q.id : `qidx_${idx}_${Date.now()}`,
+    }));
     setEditingEpisode({
       ...ep,
-      qualities: ep.qualities || [],
+      qualities: qualitiesWithIds,
     });
     // Auto check quality saat edit
-    if (ep.qualities?.length > 0) {
+    if (rawQualities.length > 0) {
       checkEpisodeQualityStatus(ep.id);
     }
   };
@@ -159,6 +189,15 @@ export default function AnimeDetailPage() {
     }));
   };
 
+  const updateQualityLinkByIndex = (idx, newUrl) => {
+    setEditingEpisode((prev) => ({
+      ...prev,
+      qualities: prev.qualities.map((q, i) =>
+        i === idx ? { ...q, source_quality: newUrl } : q
+      ),
+    }));
+  };
+
   const removeQuality = (qualityId) => {
     if (!confirm('Hapus quality ini?')) return;
     setEditingEpisode((prev) => ({
@@ -168,9 +207,36 @@ export default function AnimeDetailPage() {
     toast.success('Quality dihapus (simpan episode untuk konfirmasi)');
   };
 
-  const addQuality = () => {
+  const removeQualityByIndex = (idx) => {
+    if (!confirm('Hapus quality ini?')) return;
+    setEditingEpisode((prev) => ({
+      ...prev,
+      qualities: prev.qualities.filter((_, i) => i !== idx),
+    }));
+    toast.success('Quality dihapus (simpan episode untuk konfirmasi)');
+  };
+
+  const addQuality = (customName) => {
     const qualitiesList = ['360p', '480p', '720p', '1080p'];
     const existing = editingEpisode.qualities.map(q => q.nama_quality);
+    
+    if (customName) {
+      const name = customName.trim();
+      if (!name) return;
+      if (existing.includes(name)) {
+        toast.error(`Quality ${name} sudah ada`);
+        return;
+      }
+      setEditingEpisode((prev) => ({
+        ...prev,
+        qualities: [
+          ...prev.qualities,
+          { id: `temp_${Date.now()}`, nama_quality: name, source_quality: '' }
+        ],
+      }));
+      return;
+    }
+    
     const available = qualitiesList.find(q => !existing.includes(q));
     
     if (!available) {
@@ -235,7 +301,6 @@ export default function AnimeDetailPage() {
       
       const payload = {
         judul_episode: editingEpisode.judul_episode,
-        durasi_episode: Number(editingEpisode.durasi_episode) || 24,
         deskripsi_episode: editingEpisode.deskripsi_episode || null,
         intro_start_seconds: editingEpisode.intro_start_seconds ?? 0,
         intro_duration_seconds: editingEpisode.intro_duration_seconds ?? 90,
@@ -243,13 +308,6 @@ export default function AnimeDetailPage() {
         outro_duration_seconds: editingEpisode.outro_duration_seconds ?? 90,
         qualities: validQualities,
       };
-      
-      // Handle thumbnail: file upload atau URL
-      if (editingEpisode.thumbnailFile instanceof File) {
-        payload.image = editingEpisode.thumbnailFile;
-      } else if (editingEpisode.thumbnail_episode && editingEpisode.thumbnail_episode.startsWith('http')) {
-        payload.thumbnail_episode = editingEpisode.thumbnail_episode;
-      }
       
       // Submit ke backend - backend akan cek URL accessibility otomatis
       const result = await updateEpisode({ token, id: editingEpisode.id, payload });
@@ -305,7 +363,23 @@ export default function AnimeDetailPage() {
               <span className="rounded-full px-2.5 py-1 text-xs font-bold" style={{ background: statusMeta.bg, color: statusMeta.color }}>
                 {statusMeta.label}
               </span>
-              <span className="text-sm text-[var(--foreground)]/60">{typeof anime.content_type === 'string' ? anime.content_type : JSON.stringify(anime.content_type)}</span>
+              {anime.content_type && anime.content_type !== 'ANIME' && (
+                <span className="rounded-full px-2.5 py-1 text-xs font-bold" style={{
+                  background: anime.content_type === 'FILM' ? 'rgba(245,158,11,0.15)' :
+                             anime.content_type === 'DONGHUA' ? 'rgba(168,85,247,0.15)' :
+                             anime.content_type === 'TOKUSATSU' ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)',
+                  color: anime.content_type === 'FILM' ? '#f59e0b' :
+                         anime.content_type === 'DONGHUA' ? '#a855f7' :
+                         anime.content_type === 'TOKUSATSU' ? '#ef4444' : '#3b82f6',
+                }}>
+                  {anime.content_type}
+                </span>
+              )}
+              {anime.label_anime && (
+                <span className="rounded-full px-2.5 py-1 text-xs font-bold bg-[var(--panel-bg)] text-[var(--foreground)]/70 border border-[var(--panel-border)]">
+                  {anime.label_anime}
+                </span>
+              )}
               <span className="text-sm text-[var(--foreground)]/60">•</span>
               <span className="text-sm text-[var(--foreground)]/60">{(Array.isArray(anime.episodes) ? anime.episodes.length : (typeof anime.episode_count === 'number' ? anime.episode_count : typeof anime.episode_count === 'string' ? anime.episode_count : '0'))} Episode</span>
               {anime.is_21_plus === true && (
@@ -457,49 +531,32 @@ export default function AnimeDetailPage() {
                       <X className="w-5 h-5 text-[var(--foreground)]" />
                     </button>
                   </div>
-                  <div className="grid sm:grid-cols-3 gap-3">
-                    <input
-                      type="number"
-                      placeholder="No. Episode"
-                      value={newEpisode.nomor_episode}
-                      onChange={(e) => setNewEpisode({ ...newEpisode, nomor_episode: e.target.value })}
-                      className="rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                      style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                      required
-                    />
-                    <input
-                      type="text"
-                      placeholder="Judul Episode"
-                      value={newEpisode.judul_episode}
-                      onChange={(e) => setNewEpisode({ ...newEpisode, judul_episode: e.target.value })}
-                      className="rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                      style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                      required
-                    />
-                    <input
-                      type="number"
-                      placeholder="Durasi (menit)"
-                      value={newEpisode.durasi_episode}
-                      onChange={(e) => setNewEpisode({ ...newEpisode, durasi_episode: Number(e.target.value) })}
-                      className="rounded-lg border-2 px-3 py-2.5 text-sm font-semibold"
-                      style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                    />
-                  </div>
-                  <div className="mt-4 flex justify-end gap-2">
+
+                  <EpisodeForm
+                    episode={newEpisode}
+                    onChange={setNewEpisode}
+                    showVideoPreview
+                  />
+
+                  {/* Submit Buttons */}
+                  <div className="flex justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => setShowAddEpisode(false)}
-                      className="rounded-lg border-2 px-4 py-2 font-bold"
+                      disabled={savingNewEpisode}
+                      className="rounded-lg border-2 px-4 py-2 font-bold disabled:opacity-60"
                       style={{ background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
                     >
                       Batal
                     </button>
                     <button
                       type="submit"
-                      className="inline-flex items-center gap-2 rounded-lg border-2 px-4 py-2 font-bold"
+                      disabled={savingNewEpisode}
+                      className="inline-flex items-center gap-2 rounded-lg border-2 px-4 py-2 font-bold disabled:opacity-60"
                       style={{ background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}
                     >
-                      <Save className="w-4 h-4" /> Simpan
+                      {savingNewEpisode ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      {savingNewEpisode ? 'Menyimpan...' : 'Simpan Episode'}
                     </button>
                   </div>
                 </motion.form>
@@ -521,7 +578,7 @@ export default function AnimeDetailPage() {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-[var(--foreground)] truncate">{typeof ep.judul_episode === 'string' ? ep.judul_episode : JSON.stringify(ep.judul_episode)}</h3>
                       <div className="flex items-center gap-3 text-xs text-[var(--foreground)]/60 flex-wrap">
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {typeof ep.durasi_episode === 'number' ? ep.durasi_episode : typeof ep.durasi_episode === 'string' ? ep.durasi_episode : '-'}m</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {typeof ep.durasi_episode === 'number' ? Math.round(ep.durasi_episode / 60) : typeof ep.durasi_episode === 'string' ? ep.durasi_episode : '-'}m</span>
                         <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {typeof ep.views === 'number' ? ep.views.toLocaleString() : typeof ep.views === 'string' ? ep.views : '0'}</span>
                         {Array.isArray(ep.qualities) && ep.qualities.length > 0 && (
                           <>
@@ -618,69 +675,35 @@ export default function AnimeDetailPage() {
                                 </div>
                               ) : null}
 
-                              {/* Thumbnail Upload */}
-                              <div className="space-y-2">
-                                <label className="block text-xs font-bold text-[var(--foreground)]/60 mb-2">Thumbnail Episode</label>
-                                <div className="flex items-center gap-3">
-                                  {(editingEpisode.thumbnail_episode || editingEpisode.thumbnailPreview) && (
-                                    <img src={editingEpisode.thumbnailPreview || editingEpisode.thumbnail_episode} 
-                                      alt="Thumbnail"
-                                      className="w-20 h-14 object-cover rounded-lg border-2"
-                                      style={{ borderColor: 'var(--panel-border)' }} loading="lazy" decoding="async" />
-                                  )}
-                                  <div className="flex-1 space-y-2">
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                          setEditingEpisode(prev => ({
-                                            ...prev,
-                                            thumbnailFile: file,
-                                            thumbnailPreview: URL.createObjectURL(file)
-                                          }));
-                                        }
-                                      }}
-                                      className="hidden"
-                                      id={`thumbnail-upload-${editingEpisode.id}`}
-                                    />
-                                    <div className="flex gap-2">
-                                      <label
-                                        htmlFor={`thumbnail-upload-${editingEpisode.id}`}
-                                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer"
-                                        style={{ background: 'var(--accent-primary)', color: 'var(--accent-primary-foreground)' }}
-                                      >
-                                        <Upload className="w-3 h-3" /> Upload File
-                                      </label>
-                                      <span className="text-[10px] text-[var(--foreground)]/50 self-center">atau</span>
-                                      <input
-                                        type="url"
-                                        value={editingEpisode.thumbnail_episode || ''}
-                                        onChange={(e) => updateEditingField('thumbnail_episode', e.target.value)}
-                                        placeholder="https://.../thumbnail.jpg"
-                                        className="flex-1 rounded-lg border-2 px-3 py-1.5 text-xs"
-                                        style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                                      />
-                                    </div>
-                                    <p className="text-[10px] text-[var(--foreground)]/50">
-                                      Upload file (max 10MB) atau paste URL. Server akan re-upload ke CDN.
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-
                               {/* Video Links Edit dengan Status */}
                               <div>
                                 <div className="flex items-center justify-between mb-2">
                                   <label className="block text-xs font-bold text-[var(--foreground)]/60">Edit Link Video</label>
-                                  <button
-                                    onClick={addQuality}
-                                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold"
-                                    style={{ background: 'var(--accent-add)', color: 'var(--accent-add-foreground)' }}
-                                  >
-                                    <Plus className="w-3 h-3" /> Tambah Quality
-                                  </button>
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="text"
+                                      placeholder="Custom quality (cth: 144p, 4K)"
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          const val = e.target.value;
+                                          if (val?.trim()) {
+                                            addQuality(val);
+                                            e.target.value = '';
+                                          }
+                                        }
+                                      }}
+                                      className="rounded-lg border-2 px-2 py-1 text-xs w-40"
+                                      style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                                    />
+                                    <button
+                                      onClick={() => addQuality()}
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold"
+                                      style={{ background: 'var(--accent-add)', color: 'var(--accent-add-foreground)' }}
+                                    >
+                                      <Plus className="w-3 h-3" /> Tambah Quality
+                                    </button>
+                                  </div>
                                 </div>
                                 
                                 {/* Quality Status Summary dari API */}
@@ -731,7 +754,7 @@ export default function AnimeDetailPage() {
                                         <input
                                           type="url"
                                           value={q.source_quality || ''}
-                                          onChange={(e) => updateQualityLink(q.id, e.target.value)}
+                                          onChange={(e) => q.id != null ? updateQualityLink(q.id, e.target.value) : updateQualityLinkByIndex(qIdx, e.target.value)}
                                           placeholder={`https://.../${q.nama_quality}.mp4`}
                                           className="flex-1 rounded-lg border-2 px-3 py-2 text-sm"
                                           style={{ 
@@ -752,7 +775,7 @@ export default function AnimeDetailPage() {
                                           <span className="text-amber-500 text-xs" title="Format: https://.../file.mp4">⚠ Format</span>
                                         ) : null}
                                         <button
-                                          onClick={() => removeQuality(q.id)}
+                                          onClick={() => q.id != null ? removeQuality(q.id) : removeQualityByIndex(qIdx)}
                                           className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10"
                                           title="Hapus quality"
                                         >
@@ -831,29 +854,17 @@ export default function AnimeDetailPage() {
                                 </div>
                               </div>
 
-                              {/* Judul, Durasi & Deskripsi Edit */}
+                              {/* Judul & Deskripsi Edit */}
                               <div className="space-y-3">
-                                <div className="grid sm:grid-cols-2 gap-3">
-                                  <div>
-                                    <label className="block text-xs font-bold text-[var(--foreground)]/60 mb-1">Judul Episode</label>
-                                    <input
-                                      type="text"
-                                      value={editingEpisode.judul_episode || ''}
-                                      onChange={(e) => updateEditingField('judul_episode', e.target.value)}
-                                      className="w-full rounded-lg border-2 px-3 py-2 text-sm"
-                                      style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-bold text-[var(--foreground)]/60 mb-1">Durasi (menit)</label>
-                                    <input
-                                      type="number"
-                                      value={editingEpisode.durasi_episode || 24}
-                                      onChange={(e) => updateEditingField('durasi_episode', Number(e.target.value))}
-                                      className="w-full rounded-lg border-2 px-3 py-2 text-sm"
-                                      style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                                    />
-                                  </div>
+                                <div>
+                                  <label className="block text-xs font-bold text-[var(--foreground)]/60 mb-1">Judul Episode</label>
+                                  <input
+                                    type="text"
+                                    value={editingEpisode.judul_episode || ''}
+                                    onChange={(e) => updateEditingField('judul_episode', e.target.value)}
+                                    className="w-full rounded-lg border-2 px-3 py-2 text-sm"
+                                    style={{ background: 'var(--background)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                                  />
                                 </div>
                                 <div>
                                   <label className="block text-xs font-bold text-[var(--foreground)]/60 mb-1">Deskripsi Episode</label>
@@ -1019,14 +1030,22 @@ export default function AnimeDetailPage() {
                                 </div>
                               )}
 
-                              {/* Edit Button */}
-                              <div className="pt-2">
+                              {/* Edit & Subtitle Buttons */}
+                              <div className="pt-2 flex flex-wrap gap-2">
                                 <button
                                   onClick={() => startEditEpisode(ep)}
                                   className="inline-flex items-center gap-2 rounded-lg border-2 px-4 py-2 font-bold text-sm"
                                   style={{ background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}
                                 >
                                   <Edit className="w-4 h-4" /> Edit Episode
+                                </button>
+                                <button
+                                  onClick={() => router.push(`/dashboard/daftar-konten/anime/${id}/episodes/${ep.id}/subtitles`)}
+                                  className="inline-flex items-center gap-2 rounded-lg border-2 px-4 py-2 font-bold text-sm"
+                                  style={{ background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                                >
+                                  <FileText className="w-4 h-4" /> Subtitle Editor
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ background: 'rgba(245,158,11,0.2)', color: '#f59e0b' }}>Beta</span>
                                 </button>
                               </div>
                             </>

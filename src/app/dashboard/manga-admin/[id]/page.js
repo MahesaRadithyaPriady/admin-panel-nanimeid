@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { BookOpen, Save, Trash2, ArrowLeft, Plus, Download } from 'lucide-react';
+import { BookOpen, Save, Trash2, ArrowLeft, Plus, Download, Loader2 } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { getManga, updateManga, deleteManga, listMangaChapters, createMangaChapter, deleteChapter, grabMangaChapterPlan, getMangaKomikuGrabJob, listMangaGenres } from '@/lib/api';
@@ -36,6 +36,8 @@ export default function MangaDetailPage() {
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState('');
   const [existingCoverUrl, setExistingCoverUrl] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deletingChapterId, setDeletingChapterId] = useState(null);
   // pages viewer moved to dedicated page per chapter
 
   useEffect(() => { if (!loading && !user) router.replace('/'); }, [loading, user, router]);
@@ -176,11 +178,14 @@ export default function MangaDetailPage() {
   const onDelete = async () => {
     const token = getSession()?.token;
     try {
+      setDeleting(true);
       await deleteManga({ token, id });
       toast.success('Manga dihapus');
       router.push('/dashboard/manga-admin');
     } catch (err) {
       toast.error(err?.message || 'Gagal menghapus manga');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -201,11 +206,14 @@ export default function MangaDetailPage() {
   const onDeleteChapter = async (cid) => {
     const token = getSession()?.token;
     try {
+      setDeletingChapterId(cid);
       await deleteChapter({ token, id: cid });
       toast.success('Chapter dihapus');
       await loadChapters();
     } catch (err) {
       toast.error(err?.message || 'Gagal menghapus chapter');
+    } finally {
+      setDeletingChapterId(null);
     }
   };
 
@@ -361,7 +369,7 @@ export default function MangaDetailPage() {
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <button disabled={saving} type="submit" className="btn btn--primary">{saving ? 'Menyimpan...' : (<><Save className="size-4" /> Simpan</>)}</button>
-                <button type="button" onClick={onDelete} className="btn btn--danger btn--sm" title="Hapus"><Trash2 className="size-4" /> Hapus</button>
+                <button type="button" onClick={onDelete} disabled={deleting} className="btn btn--danger btn--sm" title="Hapus">{deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} Hapus</button>
               </div>
             </form>
           )}
@@ -394,7 +402,7 @@ export default function MangaDetailPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2 flex-wrap">
                           <a href={`/dashboard/manga-admin/${id}/chapters/${ch.chapter_number}`} className="btn btn--secondary btn--sm">Lihat Halaman</a>
-                          <button onClick={() => onDeleteChapter(ch.id)} className="btn btn--danger btn--sm btn--icon" title="Hapus"><Trash2 className="size-4" /></button>
+                          <button onClick={() => onDeleteChapter(ch.id)} disabled={deletingChapterId === ch.id} className="btn btn--danger btn--sm btn--icon" title="Hapus">{deletingChapterId === ch.id ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}</button>
                         </div>
                       </td>
                     </tr>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity, Terminal, Trophy, Inbox, Film, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity, Terminal, Trophy, Inbox, Film, Sun, Moon, Flag, Video, Tv } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import Sidebar from '@/components/dashboard/Sidebar';
 import BottomNav from '@/components/dashboard/BottomNav';
@@ -214,6 +214,8 @@ export default function DashboardLayout({ children }) {
           { key: 'kelola-admin', label: 'Administrator', icon: Shield, roles: ['superadmin'], href: '/dashboard/kelola-admin' },
           { key: 'topup-manual', label: 'Top Up', icon: CreditCard, roles: ['superadmin'], href: '/dashboard/topup' },
           { key: 'moderation', permissionKey: 'moderation', label: 'Moderasi', icon: Shield, roles: ['superadmin'], href: '/dashboard/moderation' },
+          { key: 'clan-admin', label: 'Clan', icon: Flag, roles: ['superadmin'], href: '/dashboard/clan-admin' },
+          { key: 'feed-admin', permissionKey: 'moderation', label: 'Feed', icon: Video, roles: ['superadmin'], href: '/dashboard/feed-admin' },
           { key: 'livechat', permissionKey: 'livechat', label: 'Live Chat', icon: MessageSquareText, roles: ['superadmin'], href: '/dashboard/livechat' },
           { key: 'konfigurasi-event', permissionKey: 'event-configs', label: 'Event & Reward', icon: ListChecks, roles: ['superadmin'], href: '/dashboard/konfigurasi-event' },
           { key: 'analytics-logs', label: 'Log Analitik', icon: Activity, roles: ['superadmin'], href: '/dashboard/analytics-logs' },
@@ -287,6 +289,8 @@ export default function DashboardLayout({ children }) {
         roles: ['superadmin'],
         children: [
           { key: 'waifu-vote', label: 'Voting Waifu', icon: Heart, roles: ['superadmin'], href: '/dashboard/waifu-vote' },
+          { key: 'waifu-tournament', label: 'Tournament Waifu', icon: Trophy, roles: ['superadmin'], href: '/dashboard/waifu-tournament' },
+          { key: 'nobar-admin', label: 'Nobar Admin', icon: Tv, roles: ['superadmin'], href: '/dashboard/nobar-admin' },
         ]
       },
 

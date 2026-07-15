@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
-import { List, Plus, Pencil, Trash2, RefreshCcw, Search, RotateCcw, Image as ImageIcon } from "lucide-react";
-import { listWaifu, createWaifu, updateWaifu, deleteWaifu, resetWaifuVotes } from "@/lib/api";
+import { List, Plus, Pencil, Trash2, RefreshCcw, Search, RotateCcw, Image as ImageIcon, FolderOpen, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { listWaifu, createWaifu, updateWaifu, deleteWaifu, resetWaifuVotes, listWaifuGroups, createWaifuGroup, updateWaifuGroup, deleteWaifuGroup } from "@/lib/api";
 
 function createEmptyForm() {
   return {
@@ -13,10 +13,15 @@ function createEmptyForm() {
     image_mode: "upload",
     image_url: "",
     description: "",
+    group_id: "",
     file: null,
     preview_url: "",
     existing_image_url: "",
   };
+}
+
+function createEmptyGroupForm() {
+  return { id: null, name: "", description: "", sort_order: 0, is_active: true };
 }
 
 export default function WaifuVotePage() {
@@ -41,6 +46,17 @@ export default function WaifuVotePage() {
 
   // reset votes
   const [resetting, setResetting] = useState(false);
+
+  // groups state
+  const [groups, setGroups] = useState([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [filterGroupId, setFilterGroupId] = useState("");
+  const [groupFormOpen, setGroupFormOpen] = useState(false);
+  const [groupForm, setGroupForm] = useState(createEmptyGroupForm());
+  const [groupMode, setGroupMode] = useState("add");
+  const [submittingGroup, setSubmittingGroup] = useState(false);
+  const [groupDeleteTarget, setGroupDeleteTarget] = useState(null);
+  const [deletingGroup, setDeletingGroup] = useState(false);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / limit)), [total, limit]);
   const totalVotesOnPage = useMemo(() => items.reduce((sum, it) => sum + (Number(it?.total_votes) || 0), 0), [items]);
@@ -74,7 +90,7 @@ export default function WaifuVotePage() {
     setLoadingList(true);
     try {
       const token = typeof window !== 'undefined' ? getToken() : '';
-      const data = await listWaifu({ token, page, limit, q });
+      const data = await listWaifu({ token, page, limit, q, group_id: filterGroupId || undefined });
       setItems(data.items || []);
       setTotal(data.pagination?.total ?? 0);
     } catch (e) {
@@ -89,7 +105,25 @@ export default function WaifuVotePage() {
     const ctrl = new AbortController();
     loadList({ signal: ctrl.signal });
     return () => ctrl.abort();
-  }, [page, limit]);
+  }, [page, limit, filterGroupId]);
+
+  async function loadGroups() {
+    setLoadingGroups(true);
+    try {
+      const token = typeof window !== 'undefined' ? getToken() : '';
+      const data = await listWaifuGroups({ token, include_inactive: true });
+      setGroups(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("loadGroups error", e);
+      toast.error(e?.message || "Gagal memuat daftar grup");
+    } finally {
+      setLoadingGroups(false);
+    }
+  }
+
+  useEffect(() => {
+    loadGroups();
+  }, []);
 
   function openAdd() {
     setMode("add");
@@ -106,6 +140,7 @@ export default function WaifuVotePage() {
       image_mode: "upload",
       image_url: "",
       description: it.description || "",
+      group_id: it.group_id != null ? String(it.group_id) : "",
       file: null,
       preview_url: "",
       existing_image_url: it.image_url || "",
@@ -139,6 +174,7 @@ export default function WaifuVotePage() {
         name: String(form.name || '').trim(),
         anime_title: String(form.anime_title || '').trim(),
         description: String(form.description || '').trim(),
+        group_id: form.group_id ? Number(form.group_id) : undefined,
         image_url: imageMode === 'url' && imageUrl ? imageUrl : undefined,
         file: imageMode === 'upload' && form.file instanceof File ? form.file : undefined,
       };
@@ -185,9 +221,12 @@ export default function WaifuVotePage() {
     }
   }
 
-  async function onResetVotes() {
+  async function onResetVotes(groupId) {
     if (resetting) return;
-    const ok = confirm("Reset semua vote? Tindakan ini tidak dapat dibatalkan.");
+    const msg = groupId
+      ? `Reset vote untuk grup ini? Tindakan ini tidak dapat dibatalkan.`
+      : "Reset semua vote? Tindakan ini tidak dapat dibatalkan.";
+    const ok = confirm(msg);
     if (!ok) return;
     setResetting(true);
     try {
@@ -195,14 +234,75 @@ export default function WaifuVotePage() {
       if (!token) {
         return toast.error('Token tidak tersedia. Silakan login ulang.');
       }
-      await resetWaifuVotes({ token });
-      toast.success('Semua vote waifu berhasil direset');
+      await resetWaifuVotes({ token, group_id: groupId || undefined });
+      toast.success(groupId ? 'Vote grup berhasil direset' : 'Semua vote waifu berhasil direset');
       await loadList();
+      await loadGroups();
     } catch (e) {
       console.error("reset error", e);
       toast.error(e?.message || 'Gagal mereset vote waifu');
     } finally {
       setResetting(false);
+    }
+  }
+
+  // ===== Group CRUD =====
+  function openAddGroup() {
+    setGroupMode("add");
+    setGroupForm(createEmptyGroupForm());
+    setGroupFormOpen(true);
+  }
+
+  function openEditGroup(g) {
+    setGroupMode("edit");
+    setGroupForm({ id: g.id, name: g.name || "", description: g.description || "", sort_order: g.sort_order ?? 0, is_active: g.is_active ?? true });
+    setGroupFormOpen(true);
+  }
+
+  async function onSubmitGroup(e) {
+    e.preventDefault();
+    if (submittingGroup) return;
+    if (!String(groupForm.name || '').trim()) return toast.error('Nama grup wajib diisi');
+    setSubmittingGroup(true);
+    try {
+      const token = typeof window !== 'undefined' ? getToken() : '';
+      if (!token) return toast.error('Token tidak tersedia. Silakan login ulang.');
+      const payload = {
+        name: String(groupForm.name).trim(),
+        description: String(groupForm.description || '').trim() || undefined,
+        sort_order: Number(groupForm.sort_order) || 0,
+        is_active: !!groupForm.is_active,
+      };
+      if (groupMode === 'add') {
+        await createWaifuGroup({ token, payload });
+        toast.success('Grup berhasil dibuat');
+      } else {
+        await updateWaifuGroup({ token, id: groupForm.id, payload });
+        toast.success('Grup berhasil diperbarui');
+      }
+      setGroupFormOpen(false);
+      await loadGroups();
+    } catch (e) {
+      toast.error(e?.message || 'Gagal menyimpan grup');
+    } finally {
+      setSubmittingGroup(false);
+    }
+  }
+
+  async function onConfirmDeleteGroup() {
+    if (!groupDeleteTarget) return;
+    setDeletingGroup(true);
+    try {
+      const token = typeof window !== 'undefined' ? getToken() : '';
+      if (!token) return toast.error('Token tidak tersedia. Silakan login ulang.');
+      await deleteWaifuGroup({ token, id: groupDeleteTarget.id });
+      toast.success('Grup berhasil dihapus');
+      setGroupDeleteTarget(null);
+      await loadGroups();
+    } catch (e) {
+      toast.error(e?.message || 'Gagal menghapus grup');
+    } finally {
+      setDeletingGroup(false);
     }
   }
 
@@ -245,8 +345,11 @@ export default function WaifuVotePage() {
           <button onClick={() => loadList()} disabled={loadingList} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}>
             <RefreshCcw className="size-4 inline-block mr-1" /> {loadingList ? 'Memuat...' : 'Refresh'}
           </button>
-          <button onClick={onResetVotes} disabled={resetting} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>
+          <button onClick={() => onResetVotes()} disabled={resetting} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: 'var(--accent-edit-foreground)' }}>
             <RotateCcw className="size-4 inline-block mr-1" /> {resetting ? 'Mereset...' : 'Reset Semua Vote'}
+          </button>
+          <button onClick={openAddGroup} className="px-3 py-2 border-2 rounded-lg font-extrabold" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            <FolderOpen className="size-4 inline-block mr-1" /> Tambah Grup
           </button>
           <button onClick={openAdd} className="px-3 py-2 border-2 rounded-lg font-extrabold" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-add)', borderColor: 'var(--panel-border)', color: 'var(--accent-add-foreground)' }}>
             <Plus className="size-4 inline-block mr-1" /> Tambah Waifu
@@ -272,16 +375,83 @@ export default function WaifuVotePage() {
         </div>
       </div>
 
+      {/* Groups Section */}
+      <div className="card overflow-hidden">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-4 border-b-2 border-[var(--border)]">
+          <div>
+            <div className="text-lg font-black flex items-center gap-2"><FolderOpen className="size-4" /> Grup Waifu</div>
+            <div className="text-sm opacity-80">Kelola grup voting waifu. User dapat vote 1x per grup dalam 24 jam.</div>
+          </div>
+          <button onClick={openAddGroup} className="btn btn--primary btn--sm">
+            <Plus className="w-4 h-4" /> Tambah Grup
+          </button>
+        </div>
+        {groups.length > 0 ? (
+          <div className="overflow-auto">
+            <table className="min-w-full">
+              <thead style={{ background: 'var(--surface)' }}>
+                <tr>
+                  <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>ID</th>
+                  <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Nama Grup</th>
+                  <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Deskripsi</th>
+                  <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Sort</th>
+                  <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Waifu</th>
+                  <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Votes</th>
+                  <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Status</th>
+                  <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {groups.map((g) => (
+                  <tr key={g.id}>
+                    <td className="px-4 py-3 border-b-2 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{g.id}</td>
+                    <td className="px-4 py-3 border-b-2 font-black" style={{ borderColor: 'var(--panel-border)' }}>{g.name}</td>
+                    <td className="px-4 py-3 border-b-2 text-sm opacity-80 max-w-xs truncate" style={{ borderColor: 'var(--panel-border)' }}>{g.description || '-'}</td>
+                    <td className="px-4 py-3 border-b-2 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{g.sort_order ?? 0}</td>
+                    <td className="px-4 py-3 border-b-2 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{g.waifus_count ?? 0}</td>
+                    <td className="px-4 py-3 border-b-2 font-black" style={{ borderColor: 'var(--panel-border)' }}>{Number(g.total_votes ?? 0).toLocaleString()}</td>
+                    <td className="px-4 py-3 border-b-2" style={{ borderColor: 'var(--panel-border)' }}>
+                      {g.is_active ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold" style={{ color: '#22c55e' }}><CheckCircle className="size-3" /> Aktif</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold" style={{ color: '#ef4444' }}><XCircle className="size-3" /> Nonaktif</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 border-b-2" style={{ borderColor: 'var(--panel-border)' }}>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <button type="button" onClick={() => openEditGroup(g)} className="btn btn--secondary btn--sm btn--icon" title="Edit Grup"><Pencil className="size-4" /></button>
+                        <button type="button" onClick={() => onResetVotes(g.id)} disabled={resetting} className="btn btn--secondary btn--sm btn--icon" title="Reset Vote Grup"><RotateCcw className="size-4" /></button>
+                        <button type="button" onClick={() => setGroupDeleteTarget(g)} className="btn btn--danger btn--sm btn--icon" title="Hapus Grup"><Trash2 className="size-4" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="px-6 py-8 text-center text-sm opacity-70">
+            {loadingGroups ? <Loader2 className="size-5 animate-spin mx-auto" /> : 'Belum ada grup. Klik "Tambah Grup" untuk membuat grup voting.'}
+          </div>
+        )}
+      </div>
+
       <div className="card p-4 sm:p-5 grid gap-4">
         <div className="flex flex-col gap-1">
           <div className="text-lg font-black">Cari dan atur tampilan daftar</div>
-          <div className="text-sm opacity-80">Gunakan pencarian cepat untuk nama, anime, atau deskripsi. Kamu juga bisa atur jumlah item per halaman agar proses review lebih nyaman.</div>
+          <div className="text-sm opacity-80">Filter berdasarkan grup, cari nama waifu, atau atur jumlah item per halaman.</div>
         </div>
-        <form onSubmit={onSearch} className="grid lg:grid-cols-[minmax(0,1fr)_180px_140px] gap-3 items-center">
+        <form onSubmit={onSearch} className="grid lg:grid-cols-[minmax(0,1fr)_200px_180px_140px] gap-3 items-center">
           <div className="relative">
             <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 opacity-60" />
             <input type="text" placeholder="Cari nama waifu, anime, atau isi deskripsi..." value={q} onChange={(e) => setQ(e.target.value)} className="input pl-9" />
           </div>
+          <select value={filterGroupId} onChange={(e) => { setFilterGroupId(e.target.value); setPage(1); }} className="select">
+            <option value="">Semua Grup</option>
+            {groups.map((g) => (
+              <option key={g.id} value={String(g.id)}>{g.name}</option>
+            ))}
+          </select>
           <select value={String(limit)} onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }} className="select">
             <option value="10">10 per halaman</option>
             <option value="20">20 per halaman</option>
@@ -310,6 +480,7 @@ export default function WaifuVotePage() {
                   <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Rank</th>
                   <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Waifu</th>
                   <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Anime</th>
+                  <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Grup</th>
                   <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Votes</th>
                   <th className="text-left px-4 py-3 border-b-2 text-xs font-black uppercase tracking-wide" style={{ borderColor: 'var(--panel-border)' }}>Aksi</th>
                 </tr>
@@ -340,6 +511,15 @@ export default function WaifuVotePage() {
                       <div className="px-3 py-2 border-2 rounded-xl inline-flex" style={{ background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
                         {it.anime_title || '-'}
                       </div>
+                    </td>
+                    <td className="px-4 py-4 border-b-2 align-top" style={{ borderColor: 'var(--panel-border)' }}>
+                      {it.group_id != null ? (
+                        <span className="inline-flex px-2 py-1 text-xs font-bold border-2 rounded-lg" style={{ borderColor: 'var(--panel-border)', background: 'var(--panel-bg)' }}>
+                          {groups.find((g) => g.id === it.group_id)?.name || `#${it.group_id}`}
+                        </span>
+                      ) : (
+                        <span className="text-xs opacity-50">Tanpa grup</span>
+                      )}
                     </td>
                     <td className="px-4 py-4 border-b-2 align-top" style={{ borderColor: 'var(--panel-border)' }}>
                       <div className="inline-flex items-center px-3 py-2 border-2 rounded-xl font-black text-lg" style={{ background: '#FFD803', color: '#111827', borderColor: 'var(--panel-border)' }}>
@@ -427,6 +607,12 @@ export default function WaifuVotePage() {
                     <input type="url" value={form.image_url} onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value, preview_url: '' }))} placeholder="https://..." className="px-3 py-2 border-2 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
                   )}
                 </div>
+                <select value={form.group_id} onChange={(e) => setForm((f) => ({ ...f, group_id: e.target.value }))} className="px-3 py-2 border-2 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                  <option value="">Tanpa Grup</option>
+                  {groups.map((g) => (
+                    <option key={g.id} value={String(g.id)}>{g.name}</option>
+                  ))}
+                </select>
                 <textarea rows={5} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Deskripsi waifu" className="px-3 py-2 border-2 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
               </div>
               <div className="border-2 rounded-xl p-4 grid gap-3" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--background)', borderColor: 'var(--panel-border)' }}>
@@ -449,7 +635,41 @@ export default function WaifuVotePage() {
         </div>
       )}
 
-      {/* Delete Modal */}
+      {/* Group Form Modal */}
+      {groupFormOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => !submittingGroup && setGroupFormOpen(false)} />
+          <form onSubmit={onSubmitGroup} className="relative z-10 w-[92%] max-w-lg border-2 rounded-xl p-4 sm:p-6 grid gap-4" style={{ boxShadow: 'var(--shadow-xl)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            <div className="grid gap-1">
+              <div className="text-lg font-extrabold">{groupMode === 'add' ? 'Tambah Grup' : 'Edit Grup'}</div>
+              <div className="text-sm opacity-80">Buat grup voting waifu. User vote 1x per grup dalam 24 jam.</div>
+            </div>
+            <div className="grid gap-3">
+              <input type="text" value={groupForm.name} onChange={(e) => setGroupForm((f) => ({ ...f, name: e.target.value }))} placeholder="Nama grup (wajib)" className="px-3 py-2 border-2 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} required />
+              <textarea rows={3} value={groupForm.description} onChange={(e) => setGroupForm((f) => ({ ...f, description: e.target.value }))} placeholder="Deskripsi grup" className="px-3 py-2 border-2 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-bold opacity-70">Urutan Tampil</span>
+                  <input type="number" value={groupForm.sort_order} onChange={(e) => setGroupForm((f) => ({ ...f, sort_order: Number(e.target.value) || 0 }))} className="px-3 py-2 border-2 rounded-lg font-semibold" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-bold opacity-70">Status</span>
+                  <label className="px-3 py-2 border-2 rounded-lg font-semibold flex items-center gap-2 cursor-pointer" style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+                    <input type="checkbox" checked={groupForm.is_active} onChange={(e) => setGroupForm((f) => ({ ...f, is_active: e.target.checked }))} />
+                    Aktif
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button type="button" disabled={submittingGroup} onClick={() => setGroupFormOpen(false)} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Batal</button>
+              <button type="submit" disabled={submittingGroup} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: groupMode === 'add' ? 'var(--accent-add)' : 'var(--accent-edit)', borderColor: 'var(--panel-border)', color: groupMode === 'add' ? 'var(--accent-add-foreground)' : 'var(--accent-edit-foreground)' }}>{submittingGroup ? 'Menyimpan...' : (groupMode === 'add' ? 'Tambah' : 'Simpan')}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Delete Waifu Modal */}
       {confirmOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => !deleting && setConfirmOpen(false)} />
@@ -466,6 +686,29 @@ export default function WaifuVotePage() {
             <div className="flex items-center justify-end gap-2">
               <button onClick={() => setConfirmOpen(false)} disabled={deleting} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Batal</button>
               <button onClick={onConfirmDelete} disabled={deleting} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>{deleting ? 'Menghapus...' : 'Ya, Hapus'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Group Modal */}
+      {groupDeleteTarget && (
+        <div className="fixed inset-0 z-50 grid place-items-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => !deletingGroup && setGroupDeleteTarget(null)} />
+          <div className="relative z-10 w-[92%] max-w-md border-2 rounded-xl p-4 sm:p-6" style={{ boxShadow: 'var(--shadow-xl)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="grid place-items-center size-10 border-2 rounded-md" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+                <Trash2 className="size-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold">Hapus Grup?</h3>
+                <p className="text-sm opacity-80 break-words">{groupDeleteTarget?.name}</p>
+                <p className="text-xs opacity-70 mt-1">Waifu dan vote pada grup ini akan di-set tanpa grup (group_id = null).</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <button onClick={() => setGroupDeleteTarget(null)} disabled={deletingGroup} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}>Batal</button>
+              <button onClick={onConfirmDeleteGroup} disabled={deletingGroup} className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--accent-edit)', color: 'var(--accent-edit-foreground)', borderColor: 'var(--panel-border)' }}>{deletingGroup ? 'Menghapus...' : 'Ya, Hapus'}</button>
             </div>
           </div>
         </div>

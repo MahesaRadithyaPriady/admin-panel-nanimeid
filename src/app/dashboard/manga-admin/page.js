@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { BookOpen, Plus, ExternalLink, Trash2 } from 'lucide-react';
+import { BookOpen, Plus, ExternalLink, Trash2, Loader2 } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { listManga, createManga, deleteManga, grabKomikuRange, listMangaGenres, listMangaSelect } from '@/lib/api';
@@ -43,6 +43,7 @@ export default function MangaAdminPage() {
   const [coverPreviewUrl, setCoverPreviewUrl] = useState('');
   const [grabRange, setGrabRange] = useState({ mangaId: '', sample_url: '', start: '', end: '', title_prefix: '' });
   const [grabbingRange, setGrabbingRange] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   const loadList = async () => {
     setLoadingList(true);
@@ -131,11 +132,14 @@ export default function MangaAdminPage() {
   const onDelete = async (id) => {
     const token = getSession()?.token;
     try {
+      setDeletingId(id);
       await deleteManga({ token, id });
       toast.success('Manga dihapus');
       await loadList();
     } catch (err) {
       toast.error(err?.message || 'Gagal menghapus manga');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -276,7 +280,7 @@ export default function MangaAdminPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 flex-wrap">
                         <a href={`/dashboard/manga-admin/${it.id}`} className="btn btn--secondary btn--sm btn--icon" title="Detail/Edit"><ExternalLink className="size-4" /></a>
-                        <button onClick={() => onDelete(it.id)} className="btn btn--danger btn--sm btn--icon" title="Hapus"><Trash2 className="size-4" /></button>
+                        <button onClick={() => onDelete(it.id)} disabled={deletingId === it.id} className="btn btn--danger btn--sm btn--icon" title="Hapus">{deletingId === it.id ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}</button>
                       </div>
                     </td>
                   </tr>

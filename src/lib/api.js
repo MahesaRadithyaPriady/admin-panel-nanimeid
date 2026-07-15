@@ -960,7 +960,7 @@ export async function getAnimeStats({ token } = {}) {
   return data;
 }
 
-export async function listAnime({ token, page = 1, limit = 20, q = '', status = '', genre = '', includeEpisodes } = {}) {
+export async function listAnime({ token, page = 1, limit = 20, q = '', status = '', genre = '', content_type = '', includeEpisodes } = {}) {
   if (!token) throw new Error('Token tidak tersedia');
   const params = new URLSearchParams();
   if (page) params.set('page', String(page));
@@ -968,6 +968,7 @@ export async function listAnime({ token, page = 1, limit = 20, q = '', status = 
   if (q) params.set('q', q);
   if (status) params.set('status', status);
   if (genre) params.set('genre', genre);
+  if (content_type) params.set('content_type', content_type);
   if (includeEpisodes !== undefined && includeEpisodes !== null) params.set('includeEpisodes', String(!!includeEpisodes));
   const url = `${animeBase()}?${params.toString()}`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
@@ -1237,6 +1238,60 @@ export async function checkEpisodeQuality({ token, id }) {
     headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal memeriksa status quality');
+}
+
+// ===== Episode Subtitles (SUPERADMIN | UPLOADER) =====
+
+// Upload subtitle for episode (multipart/form-data)
+export async function uploadEpisodeSubtitle({ token, episodeId, file, language, label, isDefault }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!episodeId && episodeId !== 0) throw new Error('episodeId tidak valid');
+  if (!(file instanceof File)) throw new Error('file subtitle wajib diupload');
+  const fd = new FormData();
+  fd.set('subtitle', file);
+  fd.set('language', language);
+  fd.set('label', label);
+  if (isDefault) fd.set('is_default', 'true');
+  const res = await fetch(`${episodesBase()}/${episodeId}/subtitles`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  return await handleJson(res, 'Gagal upload subtitle');
+}
+
+// List subtitles for episode
+export async function listEpisodeSubtitles({ token, episodeId }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!episodeId && episodeId !== 0) throw new Error('episodeId tidak valid');
+  const res = await fetch(`${episodesBase()}/${episodeId}/subtitles`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil daftar subtitle');
+}
+
+// Delete subtitle
+export async function deleteEpisodeSubtitle({ token, episodeId, subtitleId }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!episodeId && episodeId !== 0) throw new Error('episodeId tidak valid');
+  if (!subtitleId && subtitleId !== 0) throw new Error('subtitleId tidak valid');
+  const res = await fetch(`${episodesBase()}/${episodeId}/subtitles/${subtitleId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus subtitle');
+}
+
+// Set default subtitle
+export async function setDefaultEpisodeSubtitle({ token, episodeId, subtitleId }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!episodeId && episodeId !== 0) throw new Error('episodeId tidak valid');
+  if (!subtitleId && subtitleId !== 0) throw new Error('subtitleId tidak valid');
+  const res = await fetch(`${episodesBase()}/${episodeId}/subtitles/${subtitleId}/default`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal set default subtitle');
 }
 
 // ===== Anime Relations (SUPERADMIN | UPLOADER) =====
@@ -2060,17 +2115,18 @@ export async function deleteBorderOwner({ token, borderId, userId }) {
 const waifuBase = () => `${getApiBase()}/waifu`;
 
 // Public/Admin: List waifu with pagination and optional q
-export async function listWaifu({ token = '', page = 1, limit = 20, q = '' }) {
+export async function listWaifu({ token = '', page = 1, limit = 20, q = '', group_id }) {
   const params = new URLSearchParams();
   if (page) params.set('page', String(page));
   if (limit) params.set('limit', String(limit));
   if (q) params.set('q', q);
+  if (group_id !== undefined && group_id !== '' && group_id !== null) params.set('group_id', String(group_id));
   const url = `${waifuBase()}?${params.toString()}`;
   const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
   const data = await handleJson(res, 'Gagal mengambil daftar waifu');
   const pg = data?.pagination || {};
   return {
-    items: Array.isArray(data?.items) ? data.items : [],
+    items: Array.isArray(data?.items) ? data.items : (Array.isArray(data?.data) ? data.data : []),
     pagination: {
       page: pg.page ?? page,
       limit: pg.limit ?? limit,
@@ -2190,14 +2246,265 @@ export async function deleteWaifu({ token, id }) {
   return await handleJson(res, 'Gagal menghapus waifu');
 }
 
-// Admin: Reset all votes
-export async function resetWaifuVotes({ token }) {
+// Admin: Reset all votes (or per group_id)
+export async function resetWaifuVotes({ token, group_id }) {
   if (!token) throw new Error('Token tidak tersedia');
   const res = await fetch(`${waifuBase()}/reset`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(group_id ? { group_id } : {}),
   });
   return await handleJson(res, 'Gagal mereset vote');
+}
+
+// ===== Waifu Groups (ADMIN) =====
+export async function listWaifuGroups({ token = '', include_inactive = false }) {
+  const params = new URLSearchParams();
+  if (include_inactive) params.set('include_inactive', 'true');
+  const res = await fetch(`${waifuBase()}/groups?${params.toString()}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  const data = await handleJson(res, 'Gagal mengambil daftar grup waifu');
+  return Array.isArray(data?.data) ? data.data : (Array.isArray(data?.items) ? data.items : []);
+}
+
+export async function getWaifuGroup({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${waifuBase()}/groups/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil detail grup waifu');
+  return data?.data ?? data;
+}
+
+export async function createWaifuGroup({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${waifuBase()}/groups`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await handleJson(res, 'Gagal membuat grup waifu');
+  return data?.data ?? data;
+}
+
+export async function updateWaifuGroup({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${waifuBase()}/groups/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await handleJson(res, 'Gagal memperbarui grup waifu');
+  return data?.data ?? data;
+}
+
+export async function deleteWaifuGroup({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${waifuBase()}/groups/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus grup waifu');
+}
+
+// ===== Waifu Tournaments (ADMIN + PUBLIC) =====
+
+// Public: List all tournaments
+export async function listWaifuTournaments({ token = '' } = {}) {
+  const res = await fetch(`${waifuBase()}/tournaments`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  const data = await handleJson(res, 'Gagal mengambil daftar tournament');
+  return Array.isArray(data?.data) ? data.data : [];
+}
+
+// Public: Get active tournament
+export async function getActiveWaifuTournament({ token = '' } = {}) {
+  const res = await fetch(`${waifuBase()}/tournaments/active`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  const data = await handleJson(res, 'Gagal mengambil tournament aktif');
+  return data?.data ?? null;
+}
+
+// Public: Get tournament detail + full bracket
+export async function getWaifuTournament({ token = '', id }) {
+  const res = await fetch(`${waifuBase()}/tournaments/${id}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  const data = await handleJson(res, 'Gagal mengambil detail tournament');
+  return data?.data ?? data;
+}
+
+// Public: Get current round matches
+export async function getWaifuTournamentMatches({ token = '', id }) {
+  const res = await fetch(`${waifuBase()}/tournaments/${id}/matches`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  const data = await handleJson(res, 'Gagal mengambil match tournament');
+  return data?.data ?? data;
+}
+
+// Admin: Create tournament
+export async function createWaifuTournament({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${waifuBase()}/tournaments`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await handleJson(res, 'Gagal membuat tournament');
+  return data?.data ?? data;
+}
+
+// Admin: Delete tournament
+export async function deleteWaifuTournament({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${waifuBase()}/tournaments/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus tournament');
+}
+
+// Admin: Generate bracket from group stage
+export async function generateWaifuBracket({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${waifuBase()}/tournaments/${id}/generate-bracket`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  });
+  const data = await handleJson(res, 'Gagal generate bracket');
+  return data?.data ?? data;
+}
+
+// Admin: Start round voting
+export async function startWaifuRound({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${waifuBase()}/tournaments/${id}/start-round`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await handleJson(res, 'Gagal membuka round voting');
+  return data?.data ?? data;
+}
+
+// Admin: Close round, determine winners, advance
+export async function closeWaifuRound({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${waifuBase()}/tournaments/${id}/close-round`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  });
+  const data = await handleJson(res, 'Gagal menutup round');
+  return data?.data ?? data;
+}
+
+// ===== Nobar Admin (Watch Party Room Management) =====
+const nobarBase = () => `${getApiBase()}/admin/nobar`;
+
+export async function getNobarStats({ token }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${nobarBase()}/stats`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil statistik nobar');
+  return data?.data ?? data;
+}
+
+export async function listNobarRooms({ token, page = 1, limit = 20, status, access_mode, q, host_id, sort, order }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  if (status) params.set('status', status);
+  if (access_mode) params.set('access_mode', access_mode);
+  if (q) params.set('q', q);
+  if (host_id) params.set('host_id', String(host_id));
+  if (sort) params.set('sort', sort);
+  if (order) params.set('order', order);
+  const url = `${nobarBase()}?${params.toString()}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil daftar nobar room');
+  return data;
+}
+
+export async function getNobarDetail({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${nobarBase()}/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil detail nobar room');
+  return data?.data ?? data;
+}
+
+export async function endNobarRoom({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${nobarBase()}/${id}/end`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  });
+  const data = await handleJson(res, 'Gagal mengakhiri nobar room');
+  return data?.data ?? data;
+}
+
+export async function deleteNobarRoom({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${nobarBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus nobar room');
+}
+
+export async function cleanupStaleNobarV2({ token, hours = 10 }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${nobarBase()}/cleanup-stale?hours=${hours}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal cleanup stale nobar V2');
+  return data?.data ?? data;
+}
+
+export async function listNobarV1Rooms({ token, page = 1, limit = 20, status, q, host_id, sort, order }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  if (status) params.set('status', status);
+  if (q) params.set('q', q);
+  if (host_id) params.set('host_id', String(host_id));
+  if (sort) params.set('sort', sort);
+  if (order) params.set('order', order);
+  const url = `${nobarBase()}/v1?${params.toString()}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil daftar nobar V1 room');
+  return data;
+}
+
+export async function deleteNobarV1Room({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${nobarBase()}/v1/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus nobar V1 room');
+}
+
+export async function cleanupStaleNobarV1({ token, hours = 10 }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${nobarBase()}/v1/cleanup-stale?hours=${hours}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal cleanup stale nobar V1');
+  return data?.data ?? data;
 }
 
 // ===== Redeem Codes (SUPERADMIN) =====
@@ -3893,5 +4200,204 @@ export async function getMysteryBoxRewardOptions({ token } = {}) {
   });
   const data = await handleJson(res, 'Gagal mengambil reward options');
   return data?.data ?? data;
+}
+
+// ===== Admin Clan Management (SUPERADMIN | clan-admin) =====
+const clansBase = () => `${getApiBase()}/admin/clans`;
+
+export async function getClanStats({ token }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${clansBase()}/stats`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil statistik clan');
+  return data?.data ?? data;
+}
+
+export async function listClans({ token, search = '', page = 1, limit = 20, is_banned, is_public, sort = 'createdAt', order = 'desc' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  if (is_banned !== undefined && is_banned !== '') params.set('is_banned', String(is_banned));
+  if (is_public !== undefined && is_public !== '') params.set('is_public', String(is_public));
+  if (sort) params.set('sort', sort);
+  if (order) params.set('order', order);
+  const res = await fetch(`${clansBase()}?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil daftar clan');
+  return {
+    items: Array.isArray(data?.data) ? data.data : (Array.isArray(data?.items) ? data.items : []),
+    page: data?.pagination?.page ?? page,
+    limit: data?.pagination?.limit ?? limit,
+    total: data?.pagination?.total ?? 0,
+    total_pages: data?.pagination?.total_pages ?? 0,
+  };
+}
+
+export async function getClanDetail({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${clansBase()}/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil detail clan');
+  return data?.data ?? data;
+}
+
+export async function banClan({ token, id, ban_reason }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  if (!ban_reason || !String(ban_reason).trim()) throw new Error('Alasan ban wajib diisi');
+  const res = await fetch(`${clansBase()}/${id}/ban`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ban_reason: String(ban_reason).trim() }),
+  });
+  const data = await handleJson(res, 'Gagal membanned clan');
+  return data?.data ?? data;
+}
+
+export async function unbanClan({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${clansBase()}/${id}/unban`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal meng-unban clan');
+  return data?.data ?? data;
+}
+
+export async function deleteClan({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${clansBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus clan');
+}
+
+// ===== Admin Feed Management (SUPERADMIN | moderation) =====
+const feedBase = () => `${getApiBase()}/admin/feed`;
+
+export async function getFeedStats({ token }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${feedBase()}/stats`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil statistik feed');
+  return data?.data ?? data;
+}
+
+export async function listFeed({ token, search = '', page = 1, limit = 20, is_deleted, user_id, has_reports, sort = 'createdAt', order = 'desc' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  if (is_deleted !== undefined && is_deleted !== '') params.set('is_deleted', String(is_deleted));
+  if (user_id !== undefined && user_id !== '' && user_id !== null) params.set('user_id', String(user_id));
+  if (has_reports !== undefined && has_reports !== '') params.set('has_reports', String(has_reports));
+  if (sort) params.set('sort', sort);
+  if (order) params.set('order', order);
+  const res = await fetch(`${feedBase()}?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil daftar feed');
+  return {
+    items: Array.isArray(data?.data) ? data.data : (Array.isArray(data?.items) ? data.items : []),
+    page: data?.pagination?.page ?? page,
+    limit: data?.pagination?.limit ?? limit,
+    total: data?.pagination?.total ?? 0,
+    total_pages: data?.pagination?.total_pages ?? 0,
+  };
+}
+
+export async function getFeedDetail({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${feedBase()}/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil detail feed');
+  return data?.data ?? data;
+}
+
+export async function softDeleteFeed({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${feedBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus feed (soft delete)');
+}
+
+export async function restoreFeed({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${feedBase()}/${id}/restore`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal memulihkan feed');
+}
+
+export async function permanentDeleteFeed({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${feedBase()}/${id}/permanent`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus feed permanen');
+}
+
+// ===== Admin Feed Comments Management =====
+export async function listFeedComments({ token, post_id, user_id, search = '', is_deleted, page = 1, limit = 20, sort = 'createdAt', order = 'desc' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  if (post_id !== undefined && post_id !== '' && post_id !== null) params.set('post_id', String(post_id));
+  if (user_id !== undefined && user_id !== '' && user_id !== null) params.set('user_id', String(user_id));
+  if (search) params.set('search', search);
+  if (is_deleted !== undefined && is_deleted !== '') params.set('is_deleted', String(is_deleted));
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  if (sort) params.set('sort', sort);
+  if (order) params.set('order', order);
+  const res = await fetch(`${feedBase()}/comments?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleJson(res, 'Gagal mengambil daftar komentar');
+  return {
+    items: Array.isArray(data?.data) ? data.data : (Array.isArray(data?.items) ? data.items : []),
+    page: data?.pagination?.page ?? page,
+    limit: data?.pagination?.limit ?? limit,
+    total: data?.pagination?.total ?? 0,
+    total_pages: data?.pagination?.total_pages ?? 0,
+  };
+}
+
+export async function softDeleteFeedComment({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${feedBase()}/comments/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus komentar (soft delete)');
+}
+
+export async function restoreFeedComment({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${feedBase()}/comments/${id}/restore`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal memulihkan komentar');
+}
+
+export async function permanentDeleteFeedComment({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${feedBase()}/comments/${id}/permanent`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus komentar permanen');
 }
 

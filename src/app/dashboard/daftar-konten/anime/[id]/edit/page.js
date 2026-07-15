@@ -16,7 +16,7 @@ const pageVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.15, ease: 'easeOut' } },
 };
 
-const CONTENT_TYPES = ['ANIME', 'DONGHUA', 'MOVIE'];
+const CONTENT_TYPES = ['ANIME', 'FILM', 'DONGHUA', 'TOKUSATSU'];
 const STATUS_OPTIONS = ['ONGOING', 'COMPLETED', 'HIATUS', 'UPCOMING'];
 
 // API functions imported from @/lib/api
@@ -129,6 +129,7 @@ export default function EditAnimePage() {
         genre_anime: genreArr.length > 0 ? genreArr : undefined,
         status_anime: form.status_anime,
         content_type: form.content_type,
+        type: form.content_type,
         studio_anime: form.studio_anime,
         rating_anime: form.rating_anime ? Number(form.rating_anime) : undefined,
         is_21_plus: form.is_21_plus,
@@ -379,11 +380,15 @@ export default function EditAnimePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Label</label>
-              <div className="input-icon">
-                <LayoutList className="input-icon__icon" />
-                <input type="text" value={form.label_anime} onChange={(e) => updateField('label_anime', e.target.value)} className="input" />
-              </div>
+              <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Format Tayang</label>
+              <select value={form.label_anime} onChange={(e) => updateField('label_anime', e.target.value)} className="select">
+                <option value="">Pilih format...</option>
+                <option value="TV">TV</option>
+                <option value="Movie">Movie</option>
+                <option value="ONA">ONA</option>
+                <option value="OVA">OVA</option>
+                <option value="Special">Special</option>
+              </select>
             </div>
           </div>
 
