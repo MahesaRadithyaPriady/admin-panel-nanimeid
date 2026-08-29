@@ -203,8 +203,12 @@ export default function TopupModerationPage() {
               const userInfo = it.user || {};
               const fullName = userInfo?.profile?.full_name || '-';
               const reference = String(it.payment_ref || '').trim();
+              const itemType = String(it.item_type || 'COIN').toUpperCase();
+              const isVipRequest = itemType === 'VIP';
               const canApprove = String(it.status || '').toUpperCase() !== 'APPROVED';
               const canReject = String(it.status || '').toUpperCase() !== 'REJECTED';
+              // user_id pada transaksi adalah ID publik NanimeID; jangan gunakan user.userID yang ambigu.
+              const publicUserId = it.user_id ?? userInfo?.id ?? userInfo?.userID ?? '-';
 
               return (
                 <div key={it.id} className="card p-4">
@@ -229,13 +233,22 @@ export default function TopupModerationPage() {
                         <div className="p-3" style={{ border: '1px solid var(--border-muted)' }}>
                           <div className="label uppercase mb-2">Request</div>
                           <div className="mono text-xs">ID: {it.id}</div>
-                          <div className="mono text-xs">User ID: {userInfo?.userID || userInfo?.id || it.user_id || '-'}</div>
+                          <div className="mono text-xs">User ID: {publicUserId}</div>
                           <div className="mono text-xs">Dibuat: {formatDateTime(it.created_at || it.createdAt)}</div>
                         </div>
                         <div className="p-3" style={{ border: '1px solid var(--border-muted)' }}>
                           <div className="label uppercase mb-2">Pembayaran</div>
-                          <div className="flex items-center gap-2 font-bold"><Coins className="w-4 h-4" /> {it.amount_coins || 0} koin</div>
-                          <div className="mono text-xs mt-1">Metode: {it.payment_method || '-'}</div>
+                          {isVipRequest ? (
+                            <>
+                              <div className="flex items-center gap-2 font-bold"><CreditCard className="w-4 h-4" /> VIP</div>
+                              <div className="mono text-xs mt-1">Plan ID: {it.vip_plan_id || '-'}</div>
+                              <div className="mono text-xs">Harga: Rp {Number(it.amount_rp || 0).toLocaleString('id-ID')}</div>
+                            </>
+                          ) : (
+                            <div className="flex items-center gap-2 font-bold"><Coins className="w-4 h-4" /> {it.amount_coins || 0} koin</div>
+                          )}
+                          <div className="mono text-xs mt-1">Jenis: {itemType}</div>
+                          <div className="mono text-xs">Metode: {it.payment_method || '-'}</div>
                         </div>
                         <div className="p-3 md:col-span-2 xl:col-span-1" style={{ border: '1px solid var(--border-muted)' }}>
                           <div className="label uppercase mb-2">Referensi</div>

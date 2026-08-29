@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { List, Plus, Trash2 } from 'lucide-react';
+import { List, Plus, Trash2, Ban } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { listStickerOwners, addStickerOwner, deleteStickerOwner, getSticker } from '@/lib/api';
@@ -27,6 +27,12 @@ export default function StickerOwnersPage() {
   const [deleting, setDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null);
+
+  // Remove with reason (moderasi) state
+  const [banRemoveOpen, setBanRemoveOpen] = useState(false);
+  const [banRemoveTarget, setBanRemoveTarget] = useState(null);
+  const [banRemoveReason, setBanRemoveReason] = useState('');
+  const [banRemoving, setBanRemoving] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -131,6 +137,40 @@ export default function StickerOwnersPage() {
     }
   };
 
+  // Remove with reason (moderasi) — hapus stiker user + kirim notif
+  const onRequestBanRemove = (it) => {
+    setBanRemoveTarget(it);
+    setBanRemoveReason('');
+    setBanRemoveOpen(true);
+  };
+
+  const onCancelBanRemove = () => {
+    setBanRemoveOpen(false);
+    setBanRemoveTarget(null);
+    setBanRemoveReason('');
+  };
+
+  const onConfirmBanRemove = async () => {
+    if (!banRemoveTarget) return;
+    if (!banRemoveReason.trim()) return toast.error('Alasan wajib diisi');
+    const token = getSession()?.token;
+    if (!token || !stickerId) return toast.error('Token atau stickerId tidak tersedia');
+    try {
+      setBanRemoving(true);
+      const uid = banRemoveTarget.user_id;
+      const res = await deleteStickerOwner({ token, stickerId, userId: uid, reason: banRemoveReason.trim() });
+      toast.success(res?.message || 'Stiker dihapus dari user & notifikasi dikirim');
+      await loadOwners();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menghapus stiker dari user');
+    } finally {
+      setBanRemoving(false);
+      setBanRemoveTarget(null);
+      setBanRemoveOpen(false);
+      setBanRemoveReason('');
+    }
+  };
+
   if (loading || !user) return null;
 
   const totalPages = Math.max(1, Math.ceil((total || 0) / (limit || 1)));
@@ -155,6 +195,9 @@ export default function StickerOwnersPage() {
         <div className="p-3 border-2 rounded-lg" style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}>
           <div className="font-extrabold mb-1">Stiker</div>
           <div className="text-sm font-semibold">{sticker.name} ({sticker.code})</div>
+          <div className="text-xs mt-1" style={{ opacity: 0.7 }}>
+            Dibuat oleh: {sticker.created_by_type === 'USER' ? `User #${sticker.created_by_id ?? '-'}` : `Admin #${sticker.created_by_id ?? '-'}`}
+          </div>
           {sticker.image_url && (
             <div className="mt-2">
               <img src={sticker.image_url}
@@ -237,14 +280,26 @@ export default function StickerOwnersPage() {
                 <td className="px-3 py-2 border-b-2 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.sticker_id}</td>
                 <td className="px-3 py-2 border-b-2 font-semibold" style={{ borderColor: 'var(--panel-border)' }}>{it.acquired_at || '-'}</td>
                 <td className="px-3 py-2 border-b-2" style={{ borderColor: 'var(--panel-border)' }}>
-                  <button
-                    type="button"
-                    onClick={() => onRequestDelete(it)}
-                    className="px-2 py-1 border-2 rounded font-extrabold"
-                    style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onRequestDelete(it)}
+                      className="px-2 py-1 border-2 rounded font-extrabold"
+                      title="Hapus ownership (tanpa notif)"
+                      style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'var(--panel-border)' }}
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onRequestBanRemove(it)}
+                      className="px-2 py-1 border-2 rounded font-extrabold"
+                      title="Hapus & kirim notif pelanggaran ke user"
+                      style={{ boxShadow: 'var(--shadow-sm)', background: '#FEB2B2', color: '#742A2A', borderColor: 'var(--panel-border)' }}
+                    >
+                      <Ban className="size-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -315,6 +370,63 @@ export default function StickerOwnersPage() {
                 style={{ boxShadow: 'var(--shadow-md)', borderColor: 'var(--panel-border)' }}
               >
                 {deleting ? 'Menghapus...' : 'Ya, Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ban Remove Modal — hapus stiker user + kirim notif dengan alasan */}
+      {banRemoveOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center">
+          <div className="absolute inset-0 bg-black/40" onClick={onCancelBanRemove} />
+          <div
+            className="relative z-10 w-[92%] max-w-md border-2 rounded-xl p-4 sm:p-6"
+            style={{ boxShadow: 'var(--shadow-xl)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div
+                className="grid place-items-center size-10 bg-[#FEB2B2] border-2 rounded-md"
+                style={{ boxShadow: 'var(--shadow-md)', borderColor: 'var(--panel-border)' }}
+              >
+                <Ban className="size-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold">Hapus Stiker & Notifikasi User?</h3>
+                <p className="text-sm opacity-80 break-words">user_id {banRemoveTarget?.user_id} untuk sticker_id {banRemoveTarget?.sticker_id}</p>
+                <p className="text-xs opacity-70 mt-1">Stiker akan dihapus dari user dan notifikasi pelanggaran akan dikirim.</p>
+              </div>
+            </div>
+            <div className="grid gap-2 mb-3">
+              <label className="text-sm font-extrabold">Alasan Pelanggaran *</label>
+              <textarea
+                value={banRemoveReason}
+                onChange={(e) => setBanRemoveReason(e.target.value)}
+                placeholder="mis. Stiker mengandung konten tidak pantas / melanggar SARA"
+                rows={3}
+                className="px-3 py-2 border-2 rounded-lg font-semibold resize-none"
+                style={{ boxShadow: 'var(--shadow-sm)', background: 'var(--background)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                autoFocus
+              />
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={banRemoving}
+                onClick={onCancelBanRemove}
+                className="px-3 py-2 border-2 rounded-lg font-extrabold disabled:opacity-60"
+                style={{ boxShadow: 'var(--shadow-md)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={banRemoving || !banRemoveReason.trim()}
+                onClick={onConfirmBanRemove}
+                className="px-3 py-2 border-2 rounded-lg bg-[#FFD803] hover:brightness-95 font-extrabold disabled:opacity-60"
+                style={{ boxShadow: 'var(--shadow-md)', borderColor: 'var(--panel-border)' }}
+              >
+                {banRemoving ? 'Memproses...' : 'Ya, Hapus & Notifikasi'}
               </button>
             </div>
           </div>

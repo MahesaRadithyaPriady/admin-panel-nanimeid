@@ -779,6 +779,16 @@ button[aria-label="Delete"]:not(.btn--danger):hover {
   white-space: nowrap;
 }
 
+/* Respect Tailwind text alignment utilities on th (higher specificity) */
+.overflow-auto > table th.text-right,
+.overflow-x-auto > table th.text-right,
+.table-wrapper > table th.text-right,
+.table th.text-right { text-align: right; }
+.overflow-auto > table th.text-center,
+.overflow-x-auto > table th.text-center,
+.table-wrapper > table th.text-center,
+.table th.text-center { text-align: center; }
+
 /* Override Tailwind border-b-2 on th with design system border */
 .overflow-auto > table th[class*="border-b"],
 .overflow-x-auto > table th[class*="border-b"],

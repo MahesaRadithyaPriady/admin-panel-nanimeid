@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Settings, AlertTriangle, Download, BadgeDollarSign, BellRing, Coins, RefreshCcw, Save, Sparkles, Eye, EyeOff, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Settings, AlertTriangle, Download, BadgeDollarSign, BellRing, Coins, RefreshCcw, Save, Sparkles, Eye, EyeOff, ToggleLeft, ToggleRight, QrCode } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { deleteInAppAnnouncement, getInAppAnnouncement, getAdminSettings, updateInAppAnnouncementMessage, updateAdminSettings, updateWatchLiteCoinPerMinute } from '@/lib/api';
@@ -30,6 +30,9 @@ function mapSettingsFromApi(s) {
     // Force update
     forceUpdateEnabled: !!s?.force_update_enabled,
     forceUpdateVersion: s?.force_update_version ?? '',
+    // QRIS
+    qrisManualEnabled: !!s?.qris_manual_enabled,
+    qrisWebUrl: s?.qris_web_url ?? '',
   };
 }
 
@@ -64,6 +67,9 @@ export default function PengaturanPage() {
     // Force update
     forceUpdateEnabled: false,
     forceUpdateVersion: '',
+    // QRIS
+    qrisManualEnabled: false,
+    qrisWebUrl: '',
   });
   const [announcement, setAnnouncement] = useState({
     message: '',
@@ -146,6 +152,9 @@ export default function PengaturanPage() {
         // Force update
         force_update_enabled: !!settings.forceUpdateEnabled,
         force_update_version: settings.forceUpdateVersion?.trim() || null,
+        // QRIS
+        qris_manual_enabled: !!settings.qrisManualEnabled,
+        qris_web_url: settings.qrisWebUrl?.trim() || null,
       };
       const updated = await updateAdminSettings({ token, payload });
       if (updated) setSettings((prev) => ({ ...mapSettingsFromApi(updated), watchLiteCoinPerMinute: prev.watchLiteCoinPerMinute }));
@@ -509,6 +518,61 @@ export default function PengaturanPage() {
                     />
                   </div>
                 )}
+              </div>
+            </div>
+          </section>
+
+          {/* QRIS Section */}
+          <section className="card p-5 sm:p-6 space-y-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2 section-title"><QrCode className="w-4 h-4" /> QRIS Topup</div>
+                <div className="text-sm opacity-75 mt-1">Konfigurasi pembayaran QRIS manual & WebView untuk topup coin.</div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* QRIS Manual Toggle */}
+              <div className="card p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-extrabold">
+                      {settings.qrisManualEnabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      QRIS Manual
+                    </div>
+                    <div className="text-xs opacity-70 mt-1">Aktifkan opsi pembayaran QRIS manual di aplikasi (user upload bukti bayar).</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggle('qrisManualEnabled')}
+                    className={`btn btn--sm ${settings.qrisManualEnabled ? 'btn--primary' : 'btn--secondary'}`}
+                    disabled={loadingSettings}
+                  >
+                    {settings.qrisManualEnabled ? 'AKTIF' : 'NONAKTIF'}
+                  </button>
+                </div>
+              </div>
+
+              {/* QRIS Web URL */}
+              <div className="card p-4 space-y-3">
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-extrabold">
+                    <QrCode className="w-4 h-4" />
+                    QRIS Web URL
+                  </div>
+                  <div className="text-xs opacity-70 mt-1">URL halaman web untuk topup via QRIS (dibuka di WebView).</div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold">URL (opsional)</label>
+                  <input
+                    value={settings.qrisWebUrl}
+                    onChange={(e) => setSettings((s) => ({ ...s, qrisWebUrl: e.target.value }))}
+                    placeholder="https://topup.nanimeid.xyz/qris"
+                    className="input mt-1"
+                    disabled={loadingSettings}
+                  />
+                  <div className="text-xs opacity-70 mt-1">Kosongkan jika tidak menggunakan WebView-based QRIS topup.</div>
+                </div>
               </div>
             </div>
           </section>

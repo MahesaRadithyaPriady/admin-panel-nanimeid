@@ -34,6 +34,10 @@ export default function VipPlansPage() {
     price_coins: "",
     color: "#FFD700",
     is_active: true,
+    is_purchasable: true,
+    tier_rank: 0,
+    unlimited_price_coins: "",
+    duration_days: 30,
   });
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -76,6 +80,10 @@ export default function VipPlansPage() {
       price_coins: "",
       color: "#FFD700",
       is_active: true,
+      is_purchasable: true,
+      tier_rank: 0,
+      unlimited_price_coins: "",
+      duration_days: 30,
     });
   };
 
@@ -99,6 +107,10 @@ export default function VipPlansPage() {
       price_coins: Number(form.price_coins),
       color: form.color,
       is_active: !!form.is_active,
+      is_purchasable: !!form.is_purchasable,
+      tier_rank: Number(form.tier_rank) || 0,
+      unlimited_price_coins: form.unlimited_price_coins ? Number(form.unlimited_price_coins) : null,
+      duration_days: Number(form.duration_days) || 30,
     };
 
     try {
@@ -131,6 +143,10 @@ export default function VipPlansPage() {
         typeof it.price_coins === "number" ? String(it.price_coins) : it.price_coins || "",
       color: it.color || "#FFD700",
       is_active: !!it.is_active,
+      is_purchasable: it.is_purchasable !== false,
+      tier_rank: it.tier_rank ?? 0,
+      unlimited_price_coins: it.unlimited_price_coins != null ? String(it.unlimited_price_coins) : "",
+      duration_days: it.duration_days ?? 30,
     });
   };
 
@@ -273,6 +289,59 @@ export default function VipPlansPage() {
             </div>
           </div>
 
+          {/* New fields: is_purchasable, tier_rank, unlimited_price_coins, duration_days */}
+          <div className="grid sm:grid-cols-2 gap-3 items-center">
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Bisa Dibeli User</div>
+              <label className="flex items-center gap-2 text-sm font-semibold px-3 py-2 border-2 border-[var(--border)]" style={{ boxShadow: 'var(--shadow-md)' }}>
+                <input
+                  type="checkbox"
+                  checked={!!form.is_purchasable}
+                  onChange={(e) => setForm((f) => ({ ...f, is_purchasable: e.target.checked }))}
+                />
+                <span>User bisa beli langsung (tidak perlu gift admin)</span>
+              </label>
+            </div>
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Tier Rank (untuk upgrade/downgrade)</div>
+              <input
+                type="number"
+                min="0"
+                value={form.tier_rank}
+                onChange={(e) => setForm((f) => ({ ...f, tier_rank: Number(e.target.value) }))}
+                placeholder="0 = terendah, 100 = tertinggi"
+                className="input w-full"
+              />
+              <div className="text-xs opacity-60">Semakin tinggi = tier lebih atas. User tidak bisa downgrade ke tier lebih rendah.</div>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-3 items-center">
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Durasi Default (hari)</div>
+              <input
+                type="number"
+                min="1"
+                value={form.duration_days}
+                onChange={(e) => setForm((f) => ({ ...f, duration_days: Number(e.target.value) }))}
+                placeholder="30"
+                className="input w-full"
+              />
+            </div>
+            <div className="grid gap-1">
+              <div className="text-xs font-extrabold">Harga Unlimited (coin)</div>
+              <input
+                type="number"
+                min="0"
+                value={form.unlimited_price_coins}
+                onChange={(e) => setForm((f) => ({ ...f, unlimited_price_coins: e.target.value }))}
+                placeholder="Kosongkan jika tidak ada opsi unlimited"
+                className="input w-full"
+              />
+              <div className="text-xs opacity-60">Jika diisi, user bisa beli VIP unlimited (no expiry) dengan harga ini</div>
+            </div>
+          </div>
+
           <div className="grid sm:grid-cols-[160px_auto] gap-3 items-center">
             <button
               type="submit"
@@ -311,7 +380,10 @@ export default function VipPlansPage() {
               <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">ID</th>
               <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Name</th>
               <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Price (coins)</th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Unlimited</th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Rank</th>
               <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Color</th>
+              <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Beli User</th>
               <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Active</th>
               <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Aksi</th>
             </tr>
@@ -323,6 +395,14 @@ export default function VipPlansPage() {
                 <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.name}</td>
                 <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.price_coins}</td>
                 <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">
+                  {it.unlimited_price_coins != null ? (
+                    <span className="text-green-600">{it.unlimited_price_coins}</span>
+                  ) : (
+                    <span className="opacity-40">-</span>
+                  )}
+                </td>
+                <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.tier_rank ?? 0}</td>
+                <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">
                   <span
                     className="inline-flex items-center gap-2 px-2 py-1 border-2 border-[var(--border)] text-xs font-bold"
                     style={{ background: it.color || "#FFF", color: "#000" }}
@@ -330,6 +410,13 @@ export default function VipPlansPage() {
                     <span className="inline-block w-3 h-3 border border-[var(--border)]/20" style={{ background: it.color || "#FFF" }} />
                     {it.color}
                   </span>
+                </td>
+                <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">
+                  {it.is_purchasable !== false ? (
+                    <span className="text-green-600 font-bold">Ya</span>
+                  ) : (
+                    <span className="text-red-500 font-bold">Tidak</span>
+                  )}
                 </td>
                 <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.is_active ? "Ya" : "Tidak"}</td>
                 <td className="px-3 py-2 border-b-2 border-[var(--border)]">
@@ -350,7 +437,7 @@ export default function VipPlansPage() {
             {items.length === 0 && (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={9}
                   className="px-3 py-6 text-center text-sm opacity-70"
                 >
                   {loadingList ? "Memuat..." : "Belum ada VIP plan."}

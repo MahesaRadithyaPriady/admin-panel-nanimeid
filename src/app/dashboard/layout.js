@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity, Terminal, Trophy, Inbox, Film, Sun, Moon, Flag, Video, Tv } from 'lucide-react';
+import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity, Terminal, Trophy, Inbox, Film, Sun, Moon, Flag, Video, Tv, BellRing } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import Sidebar from '@/components/dashboard/Sidebar';
 import BottomNav from '@/components/dashboard/BottomNav';
@@ -294,6 +294,7 @@ export default function DashboardLayout({ children }) {
         ]
       },
 
+      { key: 'push-notif', label: 'Push Notifikasi', icon: BellRing, roles: ['superadmin'], href: '/dashboard/push-notif' },
       { key: 'settings', label: 'Pengaturan', icon: Settings, roles: ['superadmin'], href: '/dashboard/pengaturan' },
     ],
     []

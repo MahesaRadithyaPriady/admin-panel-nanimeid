@@ -3,12 +3,15 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { Users, Clapperboard, List, Cpu, HardDrive, Server, RefreshCw, TrendingUp, TrendingDown, Activity, Zap, CreditCard, Crown } from 'lucide-react';
+import { Users, Clapperboard, List, Cpu, HardDrive, Server, RefreshCw, TrendingUp, TrendingDown, Activity, Zap, CreditCard, Crown, BookOpen } from 'lucide-react';
 import { lineChartOptions, doughnutOptions, BW_PALETTE, DISTINCT_PALETTE } from '@/lib/chartDefaults';
 import { getSession } from '@/lib/auth';
 import { getAdminOverviewDailyStats, getOverview, getUserRegistrationStats, getTopupRequestStats, listOnlineUsers } from '@/lib/api';
 import { Doughnut, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler } from 'chart.js';
+import ServerMetricsChart from './ServerMetricsChart';
+import TopupDetailedStats from './TopupDetailedStats';
+import OverviewDetailedStats from './OverviewDetailedStats';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler);
 
@@ -18,7 +21,7 @@ const pageVariants = {
 };
 
 export default function OverviewSuperadmin() {
-  const [metrics, setMetrics] = useState({ users: 0, anime: 0, episodes: 0 });
+  const [metrics, setMetrics] = useState({ users: 0, anime: 0, episodes: 0, manga: 0 });
   const [server, setServer] = useState({ cpu: 0, ram: 0, storage: 0 });
   const [dailyStats, setDailyStats] = useState([]);
   const [registrationStats, setRegistrationStats] = useState({
@@ -413,6 +416,17 @@ export default function OverviewSuperadmin() {
 
         <div className="stat-card">
           <div className="flex items-center gap-2 mb-1">
+            <BookOpen className="w-4 h-4" style={{ color: 'var(--muted)' }} />
+            <span className="stat-card__label">Total Manga</span>
+          </div>
+          <div className="stat-card__value">{metrics.manga.toLocaleString()}</div>
+          <div className="stat-card__delta flex items-center gap-1" style={{ color: 'var(--muted)' }}>
+            <TrendingUp className="w-3 h-3" /> Series tersedia
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center gap-2 mb-1">
             <Zap className="w-4 h-4" style={{ color: 'var(--muted)' }} />
             <span className="stat-card__label">User Online</span>
           </div>
@@ -423,6 +437,15 @@ export default function OverviewSuperadmin() {
           </div>
         </div>
       </div>
+
+      {/* Detailed Stats with filters */}
+      <section>
+        <h2 className="section-title flex items-center gap-2">
+          <Activity className="w-4 h-4" />
+          Detail Platform — User, Anime, Episode &amp; Online
+        </h2>
+        <OverviewDetailedStats />
+      </section>
 
       {/* Server Status */}
       <section>
@@ -463,6 +486,15 @@ export default function OverviewSuperadmin() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Server Metrics Historical Chart */}
+      <section>
+        <h2 className="section-title flex items-center gap-2">
+          <Activity className="w-4 h-4" />
+          Metrik Server Historis
+        </h2>
+        <ServerMetricsChart />
       </section>
 
       {/* Online Users Chart */}
@@ -562,6 +594,15 @@ export default function OverviewSuperadmin() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Topup Detailed Stats */}
+      <section>
+        <h2 className="section-title flex items-center gap-2">
+          <CreditCard className="w-4 h-4" />
+          Detail Topup — Total &amp; User List
+        </h2>
+        <TopupDetailedStats />
       </section>
     </motion.div>
   );

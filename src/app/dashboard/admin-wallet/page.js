@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { Wallet, Search, RefreshCcw, PlusCircle, MinusCircle, TrendingUp, Users as UserIcon, ArrowUpCircle, ArrowDownCircle, Calendar, Filter, Globe } from "lucide-react";
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { getUserWallet, getUserWalletTransactions, adminWalletCredit, adminWalletDebit, creditUserWallet, debitUserWallet } from "@/lib/api";
+import { getUserWallet, getUserWalletTransactions, adminWalletCredit, adminWalletDebit, creditUserWallet, debitUserWallet, getTopSpenders } from "@/lib/api";
 
 export default function AdminWalletPage() {
   const router = useRouter();
@@ -26,6 +26,17 @@ export default function AdminWalletPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Filter transaksi
+  const [filterType, setFilterType] = useState(""); // "", EARN, SPEND, ADJUST
+  const [filterStartDate, setFilterStartDate] = useState("");
+  const [filterEndDate, setFilterEndDate] = useState("");
+
+  // Top spenders
+  const [topSpenders, setTopSpenders] = useState({ period: 'thisMonth', items: [], loading: false });
+  const [spendersPeriod, setSpendersPeriod] = useState('thisMonth');
+  const [spendersCustomYear, setSpendersCustomYear] = useState(new Date().getFullYear());
+  const [spendersCustomMonth, setSpendersCustomMonth] = useState(new Date().getMonth() + 1);
+
   function getToken() {
     const session = getSession();
     return session?.token || '';
@@ -39,7 +50,7 @@ export default function AdminWalletPage() {
       if (!token) { alert('Token tidak tersedia. Silakan login ulang.'); setLoading(false); return; }
       const res = await getUserWallet({ token, userId });
       setUserInfo(res?.data || null);
-      const hist = await getUserWalletTransactions({ token, userId, page, limit });
+      const hist = await getUserWalletTransactions({ token, userId, page, limit, type: filterType, startDate: filterStartDate, endDate: filterEndDate });
       const d = hist?.data || {};
       const pg = d.pagination || {};
       setTx({
@@ -56,15 +67,52 @@ export default function AdminWalletPage() {
     }
   }
 
+  async function loadTopSpenders() {
+    setTopSpenders((s) => ({ ...s, loading: true }));
+    try {
+      const token = getToken();
+      if (!token) return;
+      const res = await getTopSpenders({
+        token,
+        period: spendersPeriod,
+        year: spendersPeriod === 'custom' ? spendersCustomYear : undefined,
+        month: spendersPeriod === 'custom' ? spendersCustomMonth : undefined,
+        limit: 20,
+      });
+      setTopSpenders({ period: res?.period || spendersPeriod, items: Array.isArray(res?.items) ? res.items : [], loading: false });
+    } catch (e) {
+      console.error('loadTopSpenders error', e);
+      setTopSpenders((s) => ({ ...s, loading: false }));
+    }
+  }
+
   useEffect(() => {
     if (userId) loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit]);
 
+  useEffect(() => {
+    loadTopSpenders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spendersPeriod, spendersCustomYear, spendersCustomMonth]);
+
   function onSearch(e) {
     e.preventDefault();
     setPage(1);
     loadAll();
+  }
+
+  function applyFilter() {
+    setPage(1);
+    loadAll();
+  }
+
+  function resetFilter() {
+    setFilterType("");
+    setFilterStartDate("");
+    setFilterEndDate("");
+    setPage(1);
+    setTimeout(() => loadAll(), 0);
   }
 
   async function onCreditGlobal(e) {
@@ -194,6 +242,185 @@ export default function AdminWalletPage() {
           <button type="button" onClick={loadAll} disabled={loading} className="btn btn--secondary disabled:opacity-60 inline-flex items-center gap-2">
             <RefreshCcw className="size-4" /> {loading ? 'Loading...' : 'Refresh'}
           </button>
+        </div>
+      </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="card p-4 space-y-3">
+          <h3 className="font-extrabold flex items-center gap-2">
+            <Filter className="size-4" /> Filter Riwayat Transaksi
+          </h3>
+          <div className="grid gap-3 md:grid-cols-4">
+            <div>
+              <label className="text-xs font-bold">Tipe Transaksi</label>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="input mt-1"
+              >
+                <option value="">Semua</option>
+                <option value="EARN">Uang Masuk (EARN)</option>
+                <option value="SPEND">Uang Keluar (SPEND)</option>
+                <option value="ADJUST">Penyesuaian (ADJUST)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-bold">Dari Tanggal</label>
+              <input
+                type="date"
+                value={filterStartDate}
+                onChange={(e) => setFilterStartDate(e.target.value)}
+                className="input mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold">Sampai Tanggal</label>
+              <input
+                type="date"
+                value={filterEndDate}
+                onChange={(e) => setFilterEndDate(e.target.value)}
+                className="input mt-1"
+              />
+            </div>
+            <div className="flex items-end gap-2">
+              <button type="button" onClick={applyFilter} className="btn btn--primary btn--sm">
+                <Search className="w-3.5 h-3.5" /> Terapkan
+              </button>
+              <button type="button" onClick={resetFilter} className="btn btn--secondary btn--sm">
+                Reset
+              </button>
+            </div>
+          </div>
+          {(filterType || filterStartDate || filterEndDate) && (
+            <div className="text-xs opacity-70">
+              Filter aktif: {[filterType && `Tipe=${filterType}`, filterStartDate && `Dari=${filterStartDate}`, filterEndDate && `Sampai=${filterEndDate}`].filter(Boolean).join(", ")}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Top Spenders Section */}
+      <div className="card overflow-hidden">
+        <div className="p-4 border-b-2 border-[var(--border)]" style={{ background: 'var(--background)' }}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="font-extrabold flex items-center gap-2 text-lg">
+                <TrendingUp className="size-5" /> Top Spenders
+              </h3>
+              <p className="text-xs opacity-70 mt-1">User dengan pengeluaran coin terbesar — diurutkan dari yang paling banyak dibelanjakan</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { key: 'today', label: 'Hari Ini' },
+                { key: 'thisWeek', label: 'Minggu Ini' },
+                { key: 'thisMonth', label: 'Bulan Ini' },
+                { key: 'lastMonth', label: 'Bulan Lalu' },
+                { key: 'custom', label: 'Pilih Bulan' },
+                { key: 'all', label: 'Semua' },
+              ].map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => setSpendersPeriod(p.key)}
+                  className="btn btn--sm"
+                  style={{
+                    background: spendersPeriod === p.key ? 'var(--accent-primary)' : 'transparent',
+                    color: spendersPeriod === p.key ? 'var(--accent-primary-foreground)' : 'var(--muted)',
+                    borderColor: spendersPeriod === p.key ? 'var(--accent-primary)' : 'var(--border-muted)',
+                    borderWidth: 1,
+                    borderStyle: 'solid',
+                    fontWeight: spendersPeriod === p.key ? 700 : 400,
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+              {spendersPeriod === 'custom' && (
+                <>
+                  <select
+                    value={spendersCustomMonth}
+                    onChange={(e) => setSpendersCustomMonth(Number(e.target.value))}
+                    className="input"
+                    style={{ width: 'auto', fontSize: '0.8rem' }}
+                  >
+                    {['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((m, i) => (
+                      <option key={i} value={i + 1}>{m}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={spendersCustomYear}
+                    onChange={(e) => setSpendersCustomYear(Number(e.target.value))}
+                    className="input"
+                    style={{ width: 'auto', fontSize: '0.8rem' }}
+                  >
+                    {[0,1,2,3].map((o) => {
+                      const y = new Date().getFullYear() - o;
+                      return <option key={y} value={y}>{y}</option>;
+                    })}
+                  </select>
+                </>
+              )}
+              <button type="button" onClick={loadTopSpenders} disabled={topSpenders.loading} className="btn btn--secondary btn--sm">
+                <RefreshCcw className={`w-3.5 h-3.5 ${topSpenders.loading ? 'animate-spin' : ''}`} /> Refresh
+              </button>
+            </div>
+          </div>
+          <div className="text-xs opacity-70 mt-2">Periode: {topSpenders.period}</div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <caption className="sr-only">Tabel Top Spenders — User dengan pengeluaran coin terbesar</caption>
+            <thead>
+              <tr style={{ background: 'var(--background)' }}>
+                <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">Peringkat</th>
+                <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wide">User</th>
+                <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Total Dibelanjakan (Coin)</th>
+                <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Jumlah Transaksi</th>
+                <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-wide">Saldo Sekarang (Coin)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topSpenders.items.map((s) => (
+                <tr key={s.user_id} className="border-t-2 border-[var(--border)] hover:bg-[var(--surface-muted)]">
+                  <td className="px-4 py-3 font-mono font-bold">
+                    {s.rank <= 3 ? (
+                      <span style={{ color: s.rank === 1 ? '#facc15' : s.rank === 2 ? '#cbd5e1' : '#d97706' }}>#{s.rank}</span>
+                    ) : (
+                      <span className="opacity-60">#{s.rank}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {s.avatar_url ? (
+                        <img src={s.avatar_url} alt={s.username} className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'var(--surface-muted)' }}>
+                          <UserIcon className="w-3.5 h-3.5 opacity-50" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="font-bold truncate">{s.username}</div>
+                        <div className="text-xs opacity-60 truncate">{s.email || '-'}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span className="font-bold text-red-500">-{formatNumber(s.total_spent)}</span>
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono">{formatNumber(s.transaction_count)}</td>
+                  <td className="px-4 py-3 text-right font-mono font-bold">{formatNumber(s.current_balance)}</td>
+                </tr>
+              ))}
+              {topSpenders.items.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm opacity-70">
+                    {topSpenders.loading ? 'Loading...' : 'Tidak ada data spender untuk periode ini'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

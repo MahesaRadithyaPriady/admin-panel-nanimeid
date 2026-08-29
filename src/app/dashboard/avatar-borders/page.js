@@ -30,6 +30,7 @@ export default function AvatarBordersPage() {
     code: '',
     title: '',
     coin_price: '', // string to allow empty -> null
+    poin_collection: '', // string to allow empty -> null (auto from tier if empty)
     is_active: true,
     starts_at: '',
     ends_at: '',
@@ -53,6 +54,7 @@ export default function AvatarBordersPage() {
       code: '',
       title: '',
       coin_price: '',
+      poin_collection: '',
       is_active: true,
       starts_at: '',
       ends_at: '',
@@ -133,6 +135,7 @@ export default function AvatarBordersPage() {
         code: form.code.trim(),
         title: form.title.trim(),
         coin_price: form.coin_price === '' ? null : Number(form.coin_price),
+        poin_collection: form.poin_collection === '' ? undefined : Number(form.poin_collection),
         is_active: !!form.is_active,
         starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
         ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
@@ -204,6 +207,7 @@ export default function AvatarBordersPage() {
       code: it.code || '',
       title: it.title || '',
       coin_price: it.coin_price == null ? '' : String(it.coin_price),
+      poin_collection: it.poin_collection == null ? '' : String(it.poin_collection),
       is_active: !!it.is_active,
       starts_at: it.starts_at ? new Date(it.starts_at).toISOString().slice(0, 16) : '',
       ends_at: it.ends_at ? new Date(it.ends_at).toISOString().slice(0, 16) : '',
@@ -321,6 +325,11 @@ export default function AvatarBordersPage() {
                 </div>
 
                 <div className="grid gap-1">
+                  <label className="text-xs font-extrabold">Poin Koleksi (kosong = auto dari tier)</label>
+                  <input type="number" value={form.poin_collection} onChange={onChange('poin_collection')} placeholder="mis. 500 (kosongkan untuk auto dari tier)" className="input w-full" />
+                </div>
+
+                <div className="grid gap-1">
                   <label className="text-xs font-extrabold">Tier</label>
                   <select value={form.tier} onChange={onChange('tier')} className="select w-full">
                     <option value="C">C</option>
@@ -378,6 +387,7 @@ export default function AvatarBordersPage() {
                       <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Code</th>
                       <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Title</th>
                       <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Harga</th>
+                      <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Poin</th>
                       <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Aktif</th>
                       <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Terbatas</th>
                       <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Stok</th>
@@ -390,6 +400,7 @@ export default function AvatarBordersPage() {
                         <td className="px-3 py-2 border-b-2 border-[var(--border)] font-extrabold">{it.code}</td>
                         <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.title}</td>
                         <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.coin_price == null ? '-' : it.coin_price}</td>
+                        <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.poin_collection == null ? '-' : it.poin_collection}</td>
                         <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.is_active ? 'Ya' : 'Tidak'}</td>
                         <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.is_limited ? 'Ya' : 'Tidak'}</td>
                         <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.total_supply == null ? '-' : it.total_supply}</td>
@@ -403,7 +414,7 @@ export default function AvatarBordersPage() {
                       </tr>
                     ))}
                     {items.length === 0 && (
-                      <tr><td colSpan={7} className="px-3 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Tidak ada data.'}</td></tr>
+                      <tr><td colSpan={8} className="px-3 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Tidak ada data.'}</td></tr>
                     )}
                   </tbody>
                 </table>

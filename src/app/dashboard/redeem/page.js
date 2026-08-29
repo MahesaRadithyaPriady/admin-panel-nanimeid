@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { Gift, Plus, Trash2, ListFilter } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listRedeemCodes, createRedeemCode, deleteRedeemCode, listAvatarBorders } from '@/lib/api';
+import { listRedeemCodes, createRedeemCode, deleteRedeemCode, listAvatarBorders, listBadges, listStickers } from '@/lib/api';
 
 export default function RedeemCodesPage() {
   const router = useRouter();
@@ -39,7 +39,7 @@ export default function RedeemCodesPage() {
     // VIP
     vip_days: '',
     vip_level: '',
-    // BADGE
+    // BADGE (legacy)
     badge_name: '',
     badge_icon: '',
     title_color: '',
@@ -49,11 +49,23 @@ export default function RedeemCodesPage() {
     voucher_valid_days: '',
     // BORDER
     border_id: '',
+    // SUPERBADGE
+    superbadge_id: '',
+    // XP_LEVEL
+    xp_amount: '',
+    // STICKER
+    sticker_id: '',
   });
 
   // Avatar borders for BORDER type
   const [borders, setBorders] = useState([]);
   const [loadingBorders, setLoadingBorders] = useState(false);
+  // Badges for SUPERBADGE type
+  const [badges, setBadges] = useState([]);
+  const [loadingBadges, setLoadingBadges] = useState(false);
+  // Stickers for STICKER type
+  const [stickers, setStickers] = useState([]);
+  const [loadingStickers, setLoadingStickers] = useState(false);
 
   const loadList = async (opts = {}) => {
     setLoadingList(true);
@@ -108,6 +120,51 @@ export default function RedeemCodesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.type, borders.length, loadingBorders]);
 
+  // Auto-load badges when SUPERBADGE type selected
+  useEffect(() => {
+    const loadBadges = async () => {
+      try {
+        setLoadingBadges(true);
+        const token = getSession()?.token;
+        if (!token) return;
+        const data = await listBadges({ token, page: 1, limit: 200, q: '', active: 'true' });
+        setBadges(Array.isArray(data.items) ? data.items : []);
+      } catch (err) {
+        toast.error(err?.message || 'Gagal memuat badges');
+      } finally {
+        setLoadingBadges(false);
+      }
+    };
+
+    if (form.type !== 'SUPERBADGE') return;
+    if (badges.length > 0 || loadingBadges) return;
+    loadBadges();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.type, badges.length, loadingBadges]);
+
+  // Auto-load stickers when STICKER type selected
+  useEffect(() => {
+    const loadStickersList = async () => {
+      try {
+        setLoadingStickers(true);
+        const token = getSession()?.token;
+        if (!token) return;
+        const data = await listStickers({ token, page: 1, limit: 200, q: '' });
+        const active = (Array.isArray(data.items) ? data.items : []).filter((s) => s.is_active);
+        setStickers(active);
+      } catch (err) {
+        toast.error(err?.message || 'Gagal memuat stickers');
+      } finally {
+        setLoadingStickers(false);
+      }
+    };
+
+    if (form.type !== 'STICKER') return;
+    if (stickers.length > 0 || loadingStickers) return;
+    loadStickersList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.type, stickers.length, loadingStickers]);
+
   const onCreate = async (e) => {
     e.preventDefault();
     const token = getSession()?.token;
@@ -134,6 +191,9 @@ export default function RedeemCodesPage() {
         voucher_discount_amount: '',
         voucher_valid_days: '',
         border_id: '',
+        superbadge_id: '',
+        xp_amount: '',
+        sticker_id: '',
       }));
       await loadList({ page: 1 });
       setPage(1);
@@ -173,9 +233,12 @@ export default function RedeemCodesPage() {
                 <select value={form.type} onChange={(e) => updateForm('type', e.target.value)} className="select w-full">
                   <option value="COIN">COIN</option>
                   <option value="VIP">VIP</option>
-                  <option value="BADGE">BADGE</option>
+                  <option value="SUPERBADGE">SUPERBADGE</option>
+                  <option value="XP_LEVEL">XP_LEVEL</option>
+                  <option value="STICKER">STICKER</option>
                   <option value="VOUCHER">VOUCHER</option>
                   <option value="BORDER">BORDER</option>
+                  <option value="BADGE" disabled>BADGE (legacy)</option>
                 </select>
               </L>
 
@@ -195,6 +258,42 @@ export default function RedeemCodesPage() {
                   <L label="Nama Badge"><input value={form.badge_name} onChange={(e) => updateForm('badge_name', e.target.value)} className="input w-full" /></L>
                   <L label="Icon URL"><input value={form.badge_icon} onChange={(e) => updateForm('badge_icon', e.target.value)} placeholder="https://..." className="input w-full" /></L>
                   <L label="Title Color"><input value={form.title_color} onChange={(e) => updateForm('title_color', e.target.value)} placeholder="#FF8800" className="input w-full" /></L>
+                </>
+              )}
+
+              {form.type === 'SUPERBADGE' && (
+                <>
+                  <L label="Super Badge">
+                    <select value={form.superbadge_id} onChange={(e) => updateForm('superbadge_id', e.target.value)} className="select w-full">
+                      <option value="">Pilih badge...</option>
+                      {badges.map((b) => (
+                        <option key={b.id} value={b.id}>{b.name || b.code} (#{b.id})</option>
+                      ))}
+                    </select>
+                  </L>
+                  {loadingBadges && (
+                    <div className="text-xs font-semibold opacity-70 col-span-1 sm:col-span-2 sm:ml-[120px]">Memuat badges...</div>
+                  )}
+                </>
+              )}
+
+              {form.type === 'XP_LEVEL' && (
+                <L label="Jumlah XP"><input type="number" value={form.xp_amount} onChange={(e) => updateForm('xp_amount', e.target.value)} placeholder="mis. 500" className="input w-full" /></L>
+              )}
+
+              {form.type === 'STICKER' && (
+                <>
+                  <L label="Stiker">
+                    <select value={form.sticker_id} onChange={(e) => updateForm('sticker_id', e.target.value)} className="select w-full">
+                      <option value="">Pilih stiker...</option>
+                      {stickers.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name || s.code} (#{s.id})</option>
+                      ))}
+                    </select>
+                  </L>
+                  {loadingStickers && (
+                    <div className="text-xs font-semibold opacity-70 col-span-1 sm:col-span-2 sm:ml-[120px]">Memuat stickers...</div>
+                  )}
                 </>
               )}
 
@@ -338,6 +437,15 @@ function buildPayload(form) {
     base.badge_name = form.badge_name;
     if (form.badge_icon) base.badge_icon = form.badge_icon;
     if (form.title_color) base.title_color = form.title_color;
+  } else if (form.type === 'SUPERBADGE') {
+    if (!form.superbadge_id) throw new Error('Super badge wajib dipilih');
+    base.superbadge_id = Number(form.superbadge_id);
+  } else if (form.type === 'XP_LEVEL') {
+    if (form.xp_amount === '' || Number(form.xp_amount) <= 0) throw new Error('Jumlah XP wajib diisi (>0)');
+    base.xp_amount = Number(form.xp_amount);
+  } else if (form.type === 'STICKER') {
+    if (!form.sticker_id) throw new Error('Stiker wajib dipilih');
+    base.sticker_id = Number(form.sticker_id);
   } else if (form.type === 'VOUCHER') {
     // Minimalnya salah satu jenis diskon atau masa berlaku harus diisi, tapi validasi detail bisa ditambah sesuai kebutuhan
     if (form.voucher_discount_percent !== '') base.voucher_discount_percent = Number(form.voucher_discount_percent);

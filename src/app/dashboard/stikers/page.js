@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { List, Plus, Pencil, Trash2, Image as ImageIcon, ArrowRight } from 'lucide-react';
+import { List, Plus, Pencil, Trash2, Image as ImageIcon, ArrowRight, Ban, ShieldCheck } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listStickers, createSticker, updateSticker, deleteSticker } from '@/lib/api';
+import { listStickers, createSticker, updateSticker, deleteSticker, banSticker, unbanSticker } from '@/lib/api';
 
 export default function StickersPage() {
   const router = useRouter();
@@ -18,6 +18,9 @@ export default function StickersPage() {
   const [limit, setLimit] = useState(50);
   const [total, setTotal] = useState(0);
   const [q, setQ] = useState('');
+  const [userIdFilter, setUserIdFilter] = useState('');
+  const [createdByType, setCreatedByType] = useState(''); // '' | 'ADMIN' | 'USER'
+  const [activeOnly, setActiveOnly] = useState(false);
   const [loadingList, setLoadingList] = useState(false);
 
   const [mode, setMode] = useState('add'); // add | edit
@@ -40,6 +43,12 @@ export default function StickersPage() {
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Ban modal state
+  const [banOpen, setBanOpen] = useState(false);
+  const [banTarget, setBanTarget] = useState(null);
+  const [banReason, setBanReason] = useState('');
+  const [banning, setBanning] = useState(false);
+
   useEffect(() => {
     if (!loading && !user) router.replace('/');
   }, [loading, user, router]);
@@ -48,7 +57,7 @@ export default function StickersPage() {
     setLoadingList(true);
     try {
       const token = getSession()?.token;
-      const params = { page, limit, q, ...opts };
+      const params = { page, limit, q, userId: userIdFilter, createdByType, activeOnly, ...opts };
       const data = await listStickers({ token, ...params });
       setItems(Array.isArray(data.items) ? data.items : []);
       setPage(data.page || 1);
@@ -65,7 +74,7 @@ export default function StickersPage() {
     if (!user) return;
     loadList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, user]);
+  }, [page, limit, user, createdByType, activeOnly]);
 
   const onSearch = (e) => {
     e.preventDefault();
@@ -198,6 +207,52 @@ export default function StickersPage() {
     }
   };
 
+  // Ban sticker
+  const onRequestBan = (it) => {
+    setBanTarget(it);
+    setBanReason('');
+    setBanOpen(true);
+  };
+
+  const onCancelBan = () => {
+    setBanOpen(false);
+    setBanTarget(null);
+    setBanReason('');
+  };
+
+  const onConfirmBan = async () => {
+    if (!banTarget) return;
+    if (!banReason.trim()) return toast.error('Alasan ban wajib diisi');
+    const token = getSession()?.token;
+    if (!token) return toast.error('Token tidak tersedia');
+    try {
+      setBanning(true);
+      const res = await banSticker({ token, stickerId: banTarget.id, reason: banReason.trim() });
+      toast.success(res?.message || 'Stiker di-ban, notifikasi dikirim ke pemilik');
+      await loadList();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal ban stiker');
+    } finally {
+      setBanning(false);
+      setBanTarget(null);
+      setBanOpen(false);
+      setBanReason('');
+    }
+  };
+
+  // Unban sticker
+  const onUnban = async (it) => {
+    const token = getSession()?.token;
+    if (!token) return toast.error('Token tidak tersedia');
+    try {
+      const res = await unbanSticker({ token, stickerId: it.id });
+      toast.success(res?.message || 'Stiker di-unban');
+      await loadList();
+    } catch (err) {
+      toast.error(err?.message || 'Gagal unban stiker');
+    }
+  };
+
   if (loading || !user) return null;
 
   const totalPages = Math.max(1, Math.ceil((total || 0) / (limit || 1)));
@@ -208,9 +263,43 @@ export default function StickersPage() {
         <h2 className="text-xl font-extrabold flex items-center gap-2"><List className="size-5" /> Stikers</h2>
       </div>
 
+      {/* Tab navigation: Semua / Admin / User */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1 p-1 border-2 border-[var(--border)] rounded-lg" style={{ background: 'var(--panel-bg)' }}>
+          {[
+            { val: '', label: 'Semua' },
+            { val: 'ADMIN', label: 'Admin' },
+            { val: 'USER', label: 'User' },
+          ].map((tab) => (
+            <button
+              key={tab.val}
+              type="button"
+              onClick={() => { setCreatedByType(tab.val); setPage(1); }}
+              className={`px-4 py-1.5 rounded-md text-sm font-extrabold transition-all ${
+                createdByType === tab.val
+                  ? 'btn btn--primary'
+                  : 'opacity-60 hover:opacity-100'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer ml-2">
+          <input
+            type="checkbox"
+            checked={activeOnly}
+            onChange={(e) => { setActiveOnly(e.target.checked); setPage(1); }}
+            className="size-4"
+          />
+          Aktif Saja
+        </label>
+      </div>
+
       {/* Search */}
-      <form onSubmit={onSearch} className="card p-3 grid sm:grid-cols-[1fr_140px] gap-3">
+      <form onSubmit={onSearch} className="card p-3 grid sm:grid-cols-[1fr_160px_140px] gap-3">
         <input type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari kode/nama/description" className="input w-full" />
+        <input type="number" value={userIdFilter} onChange={(e) => setUserIdFilter(e.target.value)} placeholder="Filter user_id (pemilik)" className="input w-full" />
         <button type="submit" disabled={loadingList} className="btn btn--primary disabled:opacity-60">{loadingList ? 'Memuat...' : 'Cari'}</button>
       </form>
 
@@ -295,7 +384,9 @@ export default function StickersPage() {
                   <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Code</th>
                   <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Name</th>
                   <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Poin</th>
-                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Active</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Pemilik</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Dibuat Oleh</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Status</th>
                   <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Sort</th>
                   <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Aksi</th>
                 </tr>
@@ -310,19 +401,40 @@ export default function StickersPage() {
                     <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.code}</td>
                     <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.name}</td>
                     <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.poin_collection ?? 500}</td>
-                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.is_active ? 'Ya' : 'Tidak'}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it._count?.owners ?? 0}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">
+                      {it.created_by_type === 'USER' ? (
+                        <span className="text-blue-400" title={`User #${it.created_by_id ?? '-'}`}>User #{it.created_by_id ?? '-'}</span>
+                      ) : (
+                        <span className="text-green-400" title={`Admin #${it.created_by_id ?? '-'}`}>Admin #{it.created_by_id ?? '-'}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">
+                      {it.banned_at ? (
+                        <span className="text-red-500 font-extrabold" title={it.banned_reason || ''}>BANNED</span>
+                      ) : it.is_active ? (
+                        'Ya'
+                      ) : (
+                        'Tidak'
+                      )}
+                    </td>
                     <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold">{it.sort_order ?? '-'}</td>
                     <td className="px-3 py-2 border-b-2 border-[var(--border)]">
                       <div className="flex items-center gap-2">
                         <button type="button" onClick={() => onEdit(it)} className="btn btn--secondary btn--sm"><Pencil className="size-4" /></button>
                         <button type="button" onClick={() => onRequestDelete(it)} className="btn btn--danger btn--sm"><Trash2 className="size-4" /></button>
+                        {it.banned_at ? (
+                          <button type="button" onClick={() => onUnban(it)} className="btn btn--secondary btn--sm" title="Unban stiker"><ShieldCheck className="size-4" /></button>
+                        ) : (
+                          <button type="button" onClick={() => onRequestBan(it)} className="btn btn--danger btn--sm" title="Ban stiker (moderasi)"><Ban className="size-4" /></button>
+                        )}
                         <Link href={`/dashboard/stikers/${it.id}/owners`} className="btn btn--secondary btn--sm" title="Kelola ownership stiker"><ArrowRight className="size-4" /></Link>
                       </div>
                     </td>
                   </tr>
                 ))}
                 {items.length === 0 && (
-                  <tr><td colSpan={8} className="px-3 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Belum ada stiker.'}</td></tr>
+                  <tr><td colSpan={10} className="px-3 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Belum ada stiker.'}</td></tr>
                 )}
               </tbody>
             </table>
@@ -352,6 +464,40 @@ export default function StickersPage() {
             <div className="flex items-center justify-end gap-2">
               <button type="button" disabled={deleting} onClick={onCancelDelete} className="btn btn--secondary disabled:opacity-60">Batal</button>
               <button type="button" disabled={deleting} onClick={onConfirmDelete} className="btn btn--danger disabled:opacity-60">{deleting ? 'Menghapus...' : 'Ya, Hapus'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ban Modal */}
+      {banOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center">
+          <div className="absolute inset-0 bg-black/40" onClick={onCancelBan} />
+          <div className="relative z-10 w-[92%] max-w-md card p-4 sm:p-6" style={{ boxShadow: 'var(--shadow-xl)' }}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="grid place-items-center size-10 bg-[#FEB2B2] border-2 border-[var(--border)]" style={{ boxShadow: 'var(--shadow-md)' }}>
+                <Ban className="size-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold">Ban Stiker?</h3>
+                <p className="text-sm opacity-80 break-words">{banTarget?.name} ({banTarget?.code})</p>
+                <p className="text-xs opacity-70 mt-1">Stiker akan dinonaktifkan, gambarnya dihapus, dan semua pemilik akan dinotifikasi.</p>
+              </div>
+            </div>
+            <div className="grid gap-2 mb-3">
+              <label className="text-sm font-extrabold">Alasan Pelanggaran *</label>
+              <textarea
+                value={banReason}
+                onChange={(e) => setBanReason(e.target.value)}
+                placeholder="mis. Stiker mengandung konten tidak pantas / melanggar SARA"
+                rows={3}
+                className="input w-full resize-none"
+                autoFocus
+              />
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <button type="button" disabled={banning} onClick={onCancelBan} className="btn btn--secondary disabled:opacity-60">Batal</button>
+              <button type="button" disabled={banning || !banReason.trim()} onClick={onConfirmBan} className="btn btn--danger disabled:opacity-60">{banning ? 'Memproses...' : 'Ya, Ban Stiker'}</button>
             </div>
           </div>
         </div>
