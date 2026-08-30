@@ -2055,6 +2055,36 @@ export default function GachaAdminPage() {
                     </div>
                   </div>
 
+                  {/* Group: Metode Pembayaran */}
+                  <div className="mb-4">
+                    <div className="text-xs font-extrabold opacity-50 mb-2 uppercase tracking-wider">Metode Pembayaran</div>
+                    <div className="flex flex-wrap gap-3">
+                      {['QRIS', 'GOOGLE_PLAY'].map((m) => {
+                        const checked = topupBonusForm.payment_methods.includes(m);
+                        return (
+                          <label key={m} className={`flex items-center gap-2 px-3 py-2 border-2 rounded-lg text-sm font-bold cursor-pointer transition-all ${checked ? 'btn--primary' : 'btn--secondary opacity-70'}`}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => {
+                                setTopupBonusForm((f) => {
+                                  const methods = e.target.checked
+                                    ? [...f.payment_methods, m]
+                                    : f.payment_methods.filter((x) => x !== m);
+                                  return { ...f, payment_methods: methods };
+                                });
+                              }}
+                            />
+                            {m === 'QRIS' ? 'QRIS' : m === 'GOOGLE_PLAY' ? 'Google Play' : m}
+                          </label>
+                        );
+                      })}
+                      {topupBonusForm.payment_methods.length === 0 && (
+                        <span className="text-xs opacity-50">Pilih minimal 1 metode (atau kosongkan untuk semua metode)</span>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Group: Pengaturan */}
                   <div className="mb-4">
                     <div className="text-xs font-extrabold opacity-50 mb-2 uppercase tracking-wider">Pengaturan</div>
@@ -2089,6 +2119,7 @@ export default function GachaAdminPage() {
                               <Th>Min Coins</Th>
                               <Th>Ticket</Th>
                               <Th>Label</Th>
+                              <Th>Metode</Th>
                               <Th>Periode</Th>
                               <Th>Status</Th>
                               <Th>Aksi</Th>
@@ -2100,6 +2131,15 @@ export default function GachaAdminPage() {
                                 <td className="font-bold">{Number(b.min_coins).toLocaleString('id-ID')} 🪙</td>
                                 <td><span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: 'var(--primary)', color: 'var(--bg-base)' }}>{b.ticket_reward} 🎟️</span></td>
                                 <td className="text-sm">{b.label || <span className="opacity-40">-</span>}</td>
+                                <td className="text-xs">
+                                  {Array.isArray(b.payment_methods) && b.payment_methods.length > 0
+                                    ? b.payment_methods.map((m) => (
+                                        <span key={m} className="inline-block px-1.5 py-0.5 mr-1 mb-1 rounded font-bold" style={{ background: 'var(--panel-bg)' }}>
+                                          {m === 'QRIS' ? 'QRIS' : m === 'GOOGLE_PLAY' ? 'GPay' : m}
+                                        </span>
+                                      ))
+                                    : <span className="opacity-50">Semua</span>}
+                                </td>
                                 <td className="text-xs">{b.period}</td>
                                 <td>
                                   <span className={`text-xs font-bold px-2 py-0.5 rounded ${b.is_active ? 'text-green-400' : 'text-red-400'}`} style={{ background: b.is_active ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)' }}>
@@ -2132,6 +2172,13 @@ export default function GachaAdminPage() {
                             <div className="flex items-center gap-2 flex-wrap text-xs">
                               <span className="font-bold px-2 py-0.5 rounded" style={{ background: 'var(--primary)', color: 'var(--bg-base)' }}>{b.ticket_reward} 🎟️</span>
                               <span className="opacity-60">{b.period}</span>
+                              {Array.isArray(b.payment_methods) && b.payment_methods.length > 0
+                                ? b.payment_methods.map((m) => (
+                                    <span key={m} className="px-1.5 py-0.5 rounded font-bold" style={{ background: 'var(--panel-bg)' }}>
+                                      {m === 'QRIS' ? 'QRIS' : m === 'GOOGLE_PLAY' ? 'GPay' : m}
+                                    </span>
+                                  ))
+                                : <span className="opacity-50">Semua metode</span>}
                             </div>
                             <div className="flex gap-2 pt-1">
                               <button onClick={() => onEditTopupBonus(b)} className="text-xs font-bold text-blue-400">✏️ Edit</button>
