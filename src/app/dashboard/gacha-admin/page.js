@@ -42,6 +42,11 @@ export default function GachaAdminPage() {
     is_active: false,
     cost_per_spin: '',
     cost_per_10: '',
+    ticket_enabled: false,
+    ticket_cost_per_spin: '',
+    ticket_cost_per_10: '',
+    initial_tickets: '',
+    ticket_exchange_rate: '',
     border_min_spins: '',
     border_spent_threshold: '',
     border_prob_high_spent: '',
@@ -419,6 +424,11 @@ export default function GachaAdminPage() {
         is_active: !!found.is_active,
         cost_per_spin: found.cost_per_spin != null ? String(found.cost_per_spin) : '',
         cost_per_10: found.cost_per_10 != null ? String(found.cost_per_10) : '',
+        ticket_enabled: found.ticket_cost_per_spin != null && Number(found.ticket_cost_per_spin) > 0,
+        ticket_cost_per_spin: found.ticket_cost_per_spin != null ? String(found.ticket_cost_per_spin) : '',
+        ticket_cost_per_10: found.ticket_cost_per_10 != null ? String(found.ticket_cost_per_10) : '',
+        initial_tickets: found.initial_tickets != null ? String(found.initial_tickets) : '',
+        ticket_exchange_rate: found.ticket_exchange_rate != null ? String(found.ticket_exchange_rate) : '',
         border_min_spins: found.border_min_spins != null ? String(found.border_min_spins) : '',
         border_spent_threshold: found.border_spent_threshold != null ? String(found.border_spent_threshold) : '',
         border_prob_high_spent: found.border_prob_high_spent != null ? String(found.border_prob_high_spent) : '',
@@ -487,6 +497,10 @@ export default function GachaAdminPage() {
         is_active: !!configForm.is_active,
         cost_per_spin: configForm.cost_per_spin !== '' ? Number(configForm.cost_per_spin) : undefined,
         cost_per_10: configForm.cost_per_10 !== '' ? Number(configForm.cost_per_10) : undefined,
+        ticket_cost_per_spin: configForm.ticket_enabled && configForm.ticket_cost_per_spin !== '' ? Number(configForm.ticket_cost_per_spin) : 0,
+        ticket_cost_per_10: configForm.ticket_enabled && configForm.ticket_cost_per_10 !== '' ? Number(configForm.ticket_cost_per_10) : undefined,
+        initial_tickets: configForm.ticket_enabled && configForm.initial_tickets !== '' ? Number(configForm.initial_tickets) : 0,
+        ticket_exchange_rate: configForm.ticket_enabled && configForm.ticket_exchange_rate !== '' ? Number(configForm.ticket_exchange_rate) : undefined,
         border_min_spins: configForm.border_min_spins !== '' ? Number(configForm.border_min_spins) : undefined,
         border_spent_threshold: configForm.border_spent_threshold !== '' ? Number(configForm.border_spent_threshold) : undefined,
         border_prob_high_spent: configForm.border_prob_high_spent !== '' ? Number(configForm.border_prob_high_spent) : undefined,
@@ -1287,6 +1301,60 @@ export default function GachaAdminPage() {
                   className="inp"
                 />
               </F>
+              <F label="Izinkan Tiket">
+                <label className="flex items-center gap-2 text-sm font-bold cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={configForm.ticket_enabled}
+                    onChange={(e) => updateConfigField('ticket_enabled', e.target.checked)}
+                  />
+                  {configForm.ticket_enabled ? 'Tiket AKTIF (spin pakai tiket)' : 'Tiket NONAKTIF (spin pakai coin)'}
+                </label>
+              </F>
+              {configForm.ticket_enabled && (
+                <>
+                  <F label="Tiket: Cost per Spin">
+                    <input
+                      type="number"
+                      min="0"
+                      value={configForm.ticket_cost_per_spin}
+                      onChange={(e) => updateConfigField('ticket_cost_per_spin', e.target.value)}
+                      className="inp"
+                      placeholder="Jumlah tiket per 1x spin"
+                    />
+                  </F>
+                  <F label="Tiket: Cost per 10x">
+                    <input
+                      type="number"
+                      min="0"
+                      value={configForm.ticket_cost_per_10}
+                      onChange={(e) => updateConfigField('ticket_cost_per_10', e.target.value)}
+                      className="inp"
+                      placeholder="Jumlah tiket per 10x spin"
+                    />
+                  </F>
+                  <F label="Tiket Awal User">
+                    <input
+                      type="number"
+                      min="0"
+                      value={configForm.initial_tickets}
+                      onChange={(e) => updateConfigField('initial_tickets', e.target.value)}
+                      className="inp"
+                      placeholder="Jumlah tiket awal yang diberikan ke user"
+                    />
+                  </F>
+                  <F label="Harga Beli Tiket (coin)">
+                    <input
+                      type="number"
+                      min="0"
+                      value={configForm.ticket_exchange_rate}
+                      onChange={(e) => updateConfigField('ticket_exchange_rate', e.target.value)}
+                      className="inp"
+                      placeholder="Berapa coin untuk beli 1 tiket"
+                    />
+                  </F>
+                </>
+              )}
               <F label="Border Min Spins">
                 <input
                   type="number"
