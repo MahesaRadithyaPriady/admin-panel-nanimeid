@@ -1116,6 +1116,41 @@ export async function deleteAnime({ token, id }) {
   return await handleJson(res, 'Gagal menghapus anime');
 }
 
+// ===== Admin Providers (anime scraping) =====
+const providersBase = () => `${getApiBase()}/admin/providers`;
+
+export async function listProviders({ token }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${providersBase()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil daftar provider');
+}
+
+export async function searchProvider({ token, provider, q }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${providersBase()}/${provider}/search?q=${encodeURIComponent(q)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mencari di provider');
+}
+
+export async function getProviderDetail({ token, provider, url }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${providersBase()}/${provider}/detail?url=${encodeURIComponent(url)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil detail dari provider');
+}
+
+export async function getProviderEpisode({ token, provider, url }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${providersBase()}/${provider}/episode?url=${encodeURIComponent(url)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil stream dari provider');
+}
+
 // ===== Admin Episodes (SUPERADMIN | UPLOADER) =====
 const episodesBase = () => `${getApiBase()}/admin/episodes`;
 

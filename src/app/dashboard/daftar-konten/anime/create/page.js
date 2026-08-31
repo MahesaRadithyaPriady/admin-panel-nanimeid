@@ -7,7 +7,7 @@ import { ArrowLeft, Save, Upload, Image as ImageIcon, X, Plus, Film, CheckCircle
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { createAnime, batchCreateEpisodes, listAnimeGenres } from '@/lib/api';
+import { createAnime, batchCreateEpisodes, listAnimeGenres, listProviders, searchProvider, getProviderDetail } from '@/lib/api';
 import GenreSelect from '@/components/dashboard/GenreSelect';
 import FileInput from '@/components/dashboard/FileInput';
 import { EpisodeForm, getEpisodeQualities, createEmptyEpisode } from '@/components/EpisodeForm';
@@ -19,6 +19,10 @@ const pageVariants = {
 
 const CONTENT_TYPES = ['ANIME', 'FILM', 'DONGHUA', 'TOKUSATSU'];
 const STATUS_OPTIONS = ['ONGOING', 'COMPLETED', 'HIATUS', 'UPCOMING'];
+const PROVIDER_OPTIONS = [
+  { value: '', label: 'Tidak ada (manual)' },
+  { value: 'kuramanime', label: 'Kuramanime' },
+];
 
 
 export default function CreateAnimePage() {
@@ -43,6 +47,8 @@ export default function CreateAnimePage() {
     cover_url: '',
     aliases: '',
     fakta_menarik: '',
+    provider_source: '',
+    provider_url: '',
   });
 
   // Schedule state for ONGOING anime
@@ -55,9 +61,61 @@ export default function CreateAnimePage() {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [expandedEpisode, setExpandedEpisode] = useState(null);
 
+  // Provider search state
+  const [providerSearchQuery, setProviderSearchQuery] = useState('');
+  const [providerSearchResults, setProviderSearchResults] = useState([]);
+  const [providerSearching, setProviderSearching] = useState(false);
+  const [providerImporting, setProviderImporting] = useState(false);
+
   useEffect(() => { if (!loading && !user) router.replace('/'); }, [loading, user, router]);
 
   const updateField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+
+  // Provider search handler
+  const onProviderSearch = async () => {
+    if (!form.provider_source || !providerSearchQuery.trim()) return;
+    setProviderSearching(true);
+    try {
+      const token = getSession()?.token;
+      const result = await searchProvider({ token, provider: form.provider_source, q: providerSearchQuery.trim() });
+      setProviderSearchResults(result?.items || []);
+    } catch (err) {
+      toast.error(err?.message || 'Gagal mencari di provider');
+    } finally {
+      setProviderSearching(false);
+    }
+  };
+
+  // Import anime detail from provider
+  const onProviderImport = async (url) => {
+    setProviderImporting(true);
+    try {
+      const token = getSession()?.token;
+      const result = await getProviderDetail({ token, provider: form.provider_source, url });
+      const data = result?.data;
+      if (!data) throw new Error('Data tidak ditemukan');
+      // Auto-fill form fields from provider data
+      setForm((f) => ({
+        ...f,
+        nama_anime: data.title || f.nama_anime,
+        sinopsis_anime: data.synopsis || f.sinopsis_anime,
+        genre_anime: (data.genres || []).join(', '),
+        status_anime: data.status ? (data.status.toUpperCase().includes('ONGOING') ? 'ONGOING' : data.status.toUpperCase().includes('COMPLETED') ? 'COMPLETED' : f.status_anime) : f.status_anime,
+        studio_anime: data.studio || f.studio_anime,
+        rating_anime: data.rating || f.rating_anime,
+        cover_mode: data.cover_url ? 'url' : f.cover_mode,
+        cover_url: data.cover_url || f.cover_url,
+        provider_url: url,
+      }));
+      if (data.cover_url) setCoverPreview(data.cover_url);
+      toast.success('Data berhasil di-import dari provider!');
+      setProviderSearchResults([]);
+    } catch (err) {
+      toast.error(err?.message || 'Gagal meng-import dari provider');
+    } finally {
+      setProviderImporting(false);
+    }
+  };
 
   const onCoverChange = (e) => {
     const file = e.target.files?.[0];
@@ -92,6 +150,8 @@ export default function CreateAnimePage() {
         label_anime: form.label_anime,
         tanggal_rilis_anime: form.tanggal_rilis_anime || undefined,
         fakta_menarik: form.fakta_menarik || undefined,
+        provider_source: form.provider_source || undefined,
+        provider_url: form.provider_url || undefined,
       };
 
       // Add aliases if filled
@@ -372,6 +432,94 @@ export default function CreateAnimePage() {
 
           {/* Form */}
           <form onSubmit={onSubmit} className="space-y-6">
+            {/* Provider Section */}
+            <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+              <h2 className="text-lg font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
+                <Layers className="w-5 h-5" /> Provider (Import Otomatis)
+              </h2>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Provider</label>
+                  <select
+                    value={form.provider_source}
+                    onChange={(e) => { updateField('provider_source', e.target.value); setProviderSearchResults([]); }}
+                    className="input"
+                  >
+                    {PROVIDER_OPTIONS.map((p) => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Provider URL</label>
+                  <div className="input-icon">
+                    <Link className="input-icon__icon" />
+                    <input
+                      type="url"
+                      placeholder="https://kuramanime.com/anime/..."
+                      value={form.provider_url}
+                      onChange={(e) => updateField('provider_url', e.target.value)}
+                      className="input"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {form.provider_source && (
+                <div className="mt-4 space-y-3">
+                  <div className="flex gap-2">
+                    <div className="input-icon flex-1">
+                      <Hash className="input-icon__icon" />
+                      <input
+                        type="text"
+                        placeholder="Cari anime di provider..."
+                        value={providerSearchQuery}
+                        onChange={(e) => setProviderSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), onProviderSearch())}
+                        className="input"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={onProviderSearch}
+                      disabled={providerSearching || !providerSearchQuery.trim()}
+                      className="rounded-xl border-2 px-4 py-2 font-bold transition-all hover:translate-y-[-2px] disabled:opacity-50"
+                      style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
+                    >
+                      {providerSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Cari'}
+                    </button>
+                  </div>
+
+                  {providerSearchResults.length > 0 && (
+                    <div className="space-y-2 max-h-64 overflow-y-auto rounded-xl border-2 p-2" style={{ borderColor: 'var(--panel-border)' }}>
+                      {providerSearchResults.map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-3 rounded-lg border p-2" style={{ borderColor: 'var(--panel-border)' }}>
+                          {item.cover_url && (
+                            <img src={item.cover_url} alt="" className="w-10 h-14 rounded object-cover flex-shrink-0" loading="lazy" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-[var(--foreground)] truncate">{item.title}</p>
+                            <p className="text-xs text-[var(--foreground)]/50 truncate">{item.url}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => onProviderImport(item.url)}
+                            disabled={providerImporting}
+                            className="rounded-lg border-2 px-3 py-1.5 text-xs font-bold transition-all hover:translate-y-[-2px] disabled:opacity-50"
+                            style={{ background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
+                          >
+                            {providerImporting ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Import'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Cover Section */}
             <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
               <h2 className="text-lg font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">

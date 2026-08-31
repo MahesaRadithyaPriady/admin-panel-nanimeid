@@ -1,0 +1,10 @@
+feat: add provider select & import UI in anime create/edit pages
+
+- Add provider dropdown (Kuramanime) in create & edit anime pages
+- Add provider URL field
+- Add provider search with result list and auto-import to form
+- Add API functions: listProviders, searchProvider, getProviderDetail, getProviderEpisode
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
