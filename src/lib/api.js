@@ -1143,12 +1143,46 @@ export async function getProviderDetail({ token, provider, url }) {
   return await handleJson(res, 'Gagal mengambil detail dari provider');
 }
 
-export async function getProviderEpisode({ token, provider, url }) {
+export async function getProviderEpisodes({ token, provider, url }) {
   if (!token) throw new Error('Token tidak tersedia');
-  const res = await fetch(`${providersBase()}/${provider}/episode?url=${encodeURIComponent(url)}`, {
+  const res = await fetch(`${providersBase()}/${provider}/episodes?url=${encodeURIComponent(url)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil episode dari provider');
+}
+
+export async function getProviderEpisode({ token, provider, url, server }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const qs = new URLSearchParams({ url });
+  if (server) qs.set('server', server);
+  const res = await fetch(`${providersBase()}/${provider}/episode?${qs.toString()}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal mengambil stream dari provider');
+}
+
+export async function grabAndSaveEpisode({ token, provider, episodeUrl, animeId, episodeNumber, server, allQualities }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${providersBase()}/${provider}/grab-episode`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      episode_url: episodeUrl,
+      anime_id: animeId,
+      episode_number: episodeNumber,
+      server: server || 'kuramadrive',
+      all_qualities: allQualities === true,
+    }),
+  });
+  return await handleJson(res, 'Gagal grab & save episode');
+}
+
+export async function getGrabProgress({ token, animeId, episodeNumber }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${providersBase()}/grab-progress?anime_id=${animeId}&episode_number=${episodeNumber}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil progress');
 }
 
 // ===== Admin Episodes (SUPERADMIN | UPLOADER) =====

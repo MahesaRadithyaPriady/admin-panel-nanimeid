@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, Save, Upload, Image as ImageIcon, Film, Trash2, AlertTriangle, Tag as TagIcon, Clock, Calendar, Plus, X, Link, Star, Layers, BookOpen, Hash, Building2, LayoutList, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Upload, Image as ImageIcon, Film, Trash2, AlertTriangle, Tag as TagIcon, Clock, Calendar, Plus, X, Link, Star, Layers, BookOpen, Hash, Building2, LayoutList, Loader2, CheckCircle2, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { getAnimeDetail, updateAnime, deleteAnime, listAnimeGenres, searchProvider, getProviderDetail } from '@/lib/api';
+import { getAnimeDetail, updateAnime, deleteAnime, listAnimeGenres, searchProvider, getProviderDetail, getProviderEpisodes, grabAndSaveEpisode } from '@/lib/api';
 import GenreSelect from '@/components/dashboard/GenreSelect';
 import FileInput from '@/components/dashboard/FileInput';
 
@@ -21,6 +21,8 @@ const STATUS_OPTIONS = ['ONGOING', 'COMPLETED', 'HIATUS', 'UPCOMING'];
 const PROVIDER_OPTIONS = [
   { value: '', label: 'Tidak ada (manual)' },
   { value: 'kuramanime', label: 'Kuramanime' },
+  { value: 'kuronime', label: 'Kuronime' },
+  { value: 'samehadaku', label: 'Samehadaku' },
 ];
 
 // API functions imported from @/lib/api
@@ -63,6 +65,14 @@ export default function EditAnimePage() {
   const [providerSearchResults, setProviderSearchResults] = useState([]);
   const [providerSearching, setProviderSearching] = useState(false);
   const [providerImporting, setProviderImporting] = useState(false);
+  const [providerEpisodes, setProviderEpisodes] = useState([]);
+  const [providerEpisodesLoading, setProviderEpisodesLoading] = useState(false);
+  const [providerUrlSaved, setProviderUrlSaved] = useState(false);
+  const [providerUrlLocked, setProviderUrlLocked] = useState(false);
+  // Existing episode numbers from DB (for edit page — to block "Ambil" on already-existing episodes)
+  const [existingEpisodeNumbers, setExistingEpisodeNumbers] = useState(new Set());
+  // Grab status per episode number: { [epNum]: 'loading' | 'success' | 'error' }
+  const [grabStatus, setGrabStatus] = useState({});
 
   useEffect(() => { if (!loading && !user) router.replace('/'); }, [loading, user, router]);
 
@@ -97,6 +107,8 @@ export default function EditAnimePage() {
             provider_source: anime.provider_source || '',
             provider_url: anime.provider_url || '',
           });
+          // Auto-lock provider URL if already set in DB
+          if (anime.provider_url) setProviderUrlLocked(true);
           // Load schedules if exists for ONGOING anime
           if (anime.schedules?.length > 0) {
             setSchedules(anime.schedules.map(s => ({
@@ -108,6 +120,10 @@ export default function EditAnimePage() {
             setSchedules([{ hari: 'Senin', jam: '20:00', is_active: true }]);
           }
           setCoverPreview(anime.cover_anime || anime.gambar_anime || null);
+          // Save existing episode numbers from DB
+          if (Array.isArray(anime.episodes)) {
+            setExistingEpisodeNumbers(new Set(anime.episodes.map(e => Number(e.nomor_episode)).filter(n => !isNaN(n))));
+          }
         }
       } catch (err) {
         toast.error(err?.message || 'Gagal memuat anime');
@@ -156,6 +172,7 @@ export default function EditAnimePage() {
         provider_url: url,
       }));
       if (data.cover_url) setCoverPreview(data.cover_url);
+      if (data.episodes?.length > 0) setProviderEpisodes(data.episodes);
       toast.success('Data berhasil di-import dari provider!');
       setProviderSearchResults([]);
     } catch (err) {
@@ -163,6 +180,88 @@ export default function EditAnimePage() {
     } finally {
       setProviderImporting(false);
     }
+  };
+
+  // Set provider URL — auto-save to DB
+  const onSetProviderUrl = async () => {
+    if (!form.provider_url.trim()) {
+      toast.error('URL provider tidak boleh kosong');
+      return;
+    }
+    setProviderUrlSaved(true);
+    try {
+      const token = getSession()?.token;
+      await updateAnime({ token, id, payload: { provider_source: form.provider_source, provider_url: form.provider_url.trim() } });
+      setProviderUrlLocked(true);
+      toast.success('Provider URL disimpan ke database!');
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menyimpan provider URL');
+    } finally {
+      setTimeout(() => setProviderUrlSaved(false), 2000);
+    }
+  };
+
+  // Fetch episode list from provider URL
+  const onFetchEpisodes = async () => {
+    if (!form.provider_source || !form.provider_url.trim()) {
+      toast.error('Pilih provider dan isi URL dulu');
+      return;
+    }
+    setProviderEpisodesLoading(true);
+    try {
+      const token = getSession()?.token;
+      const result = await getProviderEpisodes({ token, provider: form.provider_source, url: form.provider_url.trim() });
+      setProviderEpisodes(result?.episodes || []);
+      if (!result?.episodes?.length) toast.error('Tidak ada episode ditemukan');
+    } catch (err) {
+      toast.error(err?.message || 'Gagal mengambil episode');
+    } finally {
+      setProviderEpisodesLoading(false);
+    }
+  };
+
+  // Ambil episode — fetch streams from provider + save to DB
+  const onAmbilEpisode = async (ep) => {
+    setGrabStatus((s) => ({ ...s, [ep.episode_number]: 'loading' }));
+    try {
+      const token = getSession()?.token;
+      const result = await grabAndSaveEpisode({
+        token,
+        provider: form.provider_source,
+        episodeUrl: ep.url,
+        animeId: id,
+        episodeNumber: ep.episode_number,
+        server: (form.provider_source === 'samehadaku') ? 'all' : (form.provider_source === 'kuronime' ? 'auto' : 'kuramadrive'),
+      });
+      if (result?.success) {
+        setGrabStatus((s) => ({ ...s, [ep.episode_number]: 'success' }));
+        // Mark episode as existing (so button becomes "Done")
+        setExistingEpisodeNumbers((prev) => new Set([...prev, ep.episode_number]));
+        toast.success(result.message || `Episode ${ep.episode_number} berhasil di-update!`);
+      } else {
+        setGrabStatus((s) => ({ ...s, [ep.episode_number]: 'error' }));
+        toast.error(result?.message || `Gagal grab episode ${ep.episode_number}`);
+      }
+    } catch (err) {
+      setGrabStatus((s) => ({ ...s, [ep.episode_number]: 'error' }));
+      toast.error(err?.message || `Gagal grab episode ${ep.episode_number}`);
+    }
+  };
+
+  // Ambil semua episode yang belum ada di DB
+  const onAmbilSemuaEpisode = async () => {
+    const toGrab = providerEpisodes.filter((ep) => !existingEpisodeNumbers.has(ep.episode_number));
+    if (toGrab.length === 0) {
+      toast.error('Tidak ada episode baru untuk di-grab');
+      return;
+    }
+    toast.success(`Memulai grab ${toGrab.length} episode...`);
+    for (const ep of toGrab) {
+      await onAmbilEpisode(ep);
+      // Small delay between grabs to avoid overwhelming Puppeteer
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    toast.success('Selesai grab semua episode!');
   };
 
   const onCoverChange = (e) => {
@@ -298,7 +397,7 @@ export default function EditAnimePage() {
               <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Provider</label>
               <select
                 value={form.provider_source}
-                onChange={(e) => { updateField('provider_source', e.target.value); setProviderSearchResults([]); }}
+                onChange={(e) => { updateField('provider_source', e.target.value); setProviderSearchResults([]); setProviderEpisodes([]); }}
                 className="input"
               >
                 {PROVIDER_OPTIONS.map((p) => (
@@ -309,66 +408,109 @@ export default function EditAnimePage() {
 
             <div>
               <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Provider URL</label>
-              <div className="input-icon">
-                <Link className="input-icon__icon" />
-                <input
-                  type="url"
-                  placeholder="https://kuramanime.com/anime/..."
-                  value={form.provider_url}
-                  onChange={(e) => updateField('provider_url', e.target.value)}
-                  className="input"
-                />
+              <div className="flex gap-2">
+                <div className="input-icon flex-1">
+                  <Link className="input-icon__icon" />
+                  <input
+                    type="url"
+                    placeholder="https://v20.kuramanime.ing/anime/..."
+                    value={form.provider_url}
+                    onChange={(e) => updateField('provider_url', e.target.value)}
+                    disabled={providerUrlLocked}
+                    className="input"
+                    style={providerUrlLocked ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                  />
+                </div>
+                {providerUrlLocked ? (
+                  <button
+                    type="button"
+                    onClick={() => { setProviderUrlLocked(false); setProviderEpisodes([]); }}
+                    className="rounded-xl border-2 px-4 py-2 font-bold transition-all hover:translate-y-[-2px] whitespace-nowrap"
+                    style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+                  >
+                    Edit
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onSetProviderUrl}
+                    disabled={!form.provider_url.trim()}
+                    className="rounded-xl border-2 px-4 py-2 font-bold transition-all hover:translate-y-[-2px] disabled:opacity-50 whitespace-nowrap"
+                    style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: providerUrlSaved ? 'var(--accent-success, #22c55e)' : 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
+                  >
+                    {providerUrlSaved ? <CheckCircle2 className="w-4 h-4" /> : 'Set'}
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
           {form.provider_source && (
             <div className="mt-4 space-y-3">
-              <div className="flex gap-2">
-                <div className="input-icon flex-1">
-                  <Hash className="input-icon__icon" />
-                  <input
-                    type="text"
-                    placeholder="Cari anime di provider..."
-                    value={providerSearchQuery}
-                    onChange={(e) => setProviderSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), onProviderSearch())}
-                    className="input"
-                  />
+              {/* Fetch episodes button */}
+              {form.provider_url && (
+                <div className="flex items-center gap-3 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={onFetchEpisodes}
+                    disabled={providerEpisodesLoading}
+                    className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2 font-bold transition-all hover:translate-y-[-2px] disabled:opacity-50"
+                    style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
+                  >
+                    {providerEpisodesLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                    Cari Episode
+                  </button>
+                  {providerEpisodes.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={onAmbilSemuaEpisode}
+                      className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2 font-bold transition-all hover:translate-y-[-2px]"
+                      style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--accent-primary)', color: 'var(--accent-primary)' }}
+                    >
+                      Ambil Semua ({providerEpisodes.filter(ep => !existingEpisodeNumbers.has(ep.episode_number)).length})
+                    </button>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  onClick={onProviderSearch}
-                  disabled={providerSearching || !providerSearchQuery.trim()}
-                  className="rounded-xl border-2 px-4 py-2 font-bold transition-all hover:translate-y-[-2px] disabled:opacity-50"
-                  style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
-                >
-                  {providerSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Cari'}
-                </button>
-              </div>
+              )}
 
-              {providerSearchResults.length > 0 && (
-                <div className="space-y-2 max-h-64 overflow-y-auto rounded-xl border-2 p-2" style={{ borderColor: 'var(--panel-border)' }}>
-                  {providerSearchResults.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-3 rounded-lg border p-2" style={{ borderColor: 'var(--panel-border)' }}>
-                      {item.cover_url && (
-                        <img src={item.cover_url} alt="" className="w-10 h-14 rounded object-cover flex-shrink-0" loading="lazy" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-[var(--foreground)] truncate">{item.title}</p>
-                        <p className="text-xs text-[var(--foreground)]/50 truncate">{item.url}</p>
+              {/* Episode list from provider */}
+              {providerEpisodes.length > 0 && (
+                <div className="space-y-1 max-h-72 overflow-y-auto rounded-xl border-2 p-2" style={{ borderColor: 'var(--panel-border)' }}>
+                  {providerEpisodes.map((ep, idx) => {
+                    const epExists = existingEpisodeNumbers.has(ep.episode_number);
+                    const status = grabStatus[ep.episode_number];
+                    const isLoading = status === 'loading';
+                    return (
+                      <div key={idx} className="flex items-center gap-3 rounded-lg border p-2" style={{ borderColor: 'var(--panel-border)', opacity: epExists && !isLoading ? 0.6 : 1 }}>
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm" style={{ background: epExists ? 'var(--panel-border)' : 'var(--accent-primary)', color: epExists ? 'var(--foreground)' : 'var(--accent-primary-foreground)' }}>
+                          {ep.episode_number}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-[var(--foreground)] truncate">
+                            {ep.label || `Episode ${ep.episode_number}`}
+                            {epExists && <span className="ml-2 text-xs text-[var(--foreground)]/50">(sudah ada)</span>}
+                          </p>
+                          <p className="text-xs text-[var(--foreground)]/50 truncate">{ep.url}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => onAmbilEpisode(ep)}
+                          disabled={isLoading}
+                          className="inline-flex items-center gap-1.5 rounded-lg border-2 px-3 py-1.5 text-xs font-bold transition-all"
+                          style={{
+                            background: status === 'success' || epExists ? 'var(--accent-success, #22c55e)' : status === 'error' ? 'var(--accent-danger, #ef4444)' : 'var(--accent-primary)',
+                            borderColor: 'var(--panel-border)',
+                            color: 'var(--accent-primary-foreground)',
+                            cursor: isLoading ? 'wait' : 'pointer',
+                            opacity: isLoading ? 0.7 : 1,
+                          }}
+                        >
+                          {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : status === 'success' || epExists ? <CheckCircle2 className="w-3 h-3" /> : null}
+                          {isLoading ? 'Grabbing...' : status === 'success' ? 'Done' : status === 'error' ? 'Retry' : epExists ? 'Update' : 'Ambil'}
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => onProviderImport(item.url)}
-                        disabled={providerImporting}
-                        className="rounded-lg border-2 px-3 py-1.5 text-xs font-bold transition-all hover:translate-y-[-2px] disabled:opacity-50"
-                        style={{ background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
-                      >
-                        {providerImporting ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Import'}
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

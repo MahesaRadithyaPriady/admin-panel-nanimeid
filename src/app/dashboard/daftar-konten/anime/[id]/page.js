@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, Edit, Trash2, Plus, Play, List, Info, Clock, Star, Calendar, Eye, ChevronDown, ChevronUp, ExternalLink, Save, X, Upload, Loader2, FileText } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Plus, Play, List, Info, Clock, Star, Calendar, Eye, ChevronDown, ChevronUp, ExternalLink, Save, X, Upload, Loader2, FileText, Layers, Link, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { getAnimeDetail, deleteAnime, listEpisodes, createEpisode, deleteEpisode, updateEpisode, checkEpisodeQuality } from '@/lib/api';
+import { getAnimeDetail, deleteAnime, listEpisodes, createEpisode, deleteEpisode, updateEpisode, checkEpisodeQuality, getProviderEpisodes, grabAndSaveEpisode, getGrabProgress } from '@/lib/api';
 import { EpisodeForm, getEpisodeQualities, createEmptyEpisode } from '@/components/EpisodeForm';
 
 const pageVariants = {
@@ -43,6 +43,14 @@ export default function AnimeDetailPage() {
   const [savingEpisode, setSavingEpisode] = useState(null);
   const [qualityStatus, setQualityStatus] = useState({});
   const [checkingQuality, setCheckingQuality] = useState(null);
+  // Provider import state
+  const [showImport, setShowImport] = useState(false);
+  const [providerEpisodes, setProviderEpisodes] = useState([]);
+  const [providerEpisodesLoading, setProviderEpisodesLoading] = useState(false);
+  const [grabStatus, setGrabStatus] = useState({});
+  const [grabProgress, setGrabProgress] = useState({}); // { [epNum]: { phase, percent, message } }
+  const [allQualities, setAllQualities] = useState(false); // download all qualities or just best
+  const [existingEpisodeNumbers, setExistingEpisodeNumbers] = useState(new Set());
 
   useEffect(() => { if (!loading && !user) router.replace('/'); }, [loading, user, router]);
 
@@ -60,10 +68,12 @@ export default function AnimeDetailPage() {
         // Load episodes - prioritize from anime detail if available
         if (Array.isArray(animeData?.episodes) && animeData.episodes.length > 0) {
           setEpisodes(animeData.episodes);
+          setExistingEpisodeNumbers(new Set(animeData.episodes.map(e => Number(e.nomor_episode)).filter(n => !isNaN(n))));
         } else {
           const episodesRes = await listEpisodes({ token, animeId: id, page: 1, limit: 100 });
           const episodesData = episodesRes?.items || episodesRes?.data || episodesRes || [];
           setEpisodes(Array.isArray(episodesData) ? episodesData : []);
+          setExistingEpisodeNumbers(new Set((Array.isArray(episodesData) ? episodesData : []).map(e => Number(e.nomor_episode)).filter(n => !isNaN(n))));
         }
       } catch (err) {
         toast.error(err?.message || 'Gagal memuat data');
@@ -84,6 +94,87 @@ export default function AnimeDetailPage() {
     } catch (err) {
       toast.error(err?.message || 'Gagal menghapus anime');
     }
+  };
+
+  // Provider import handlers
+  const onFetchProviderEpisodes = async () => {
+    if (!anime?.provider_source || !anime?.provider_url) {
+      toast.error('Provider belum di-set di edit anime');
+      return;
+    }
+    setProviderEpisodesLoading(true);
+    try {
+      const token = getSession()?.token;
+      const result = await getProviderEpisodes({ token, provider: anime.provider_source, url: anime.provider_url.trim() });
+      setProviderEpisodes(result?.episodes || []);
+      if (!result?.episodes?.length) toast.error('Tidak ada episode ditemukan');
+    } catch (err) {
+      toast.error(err?.message || 'Gagal mengambil episode');
+    } finally {
+      setProviderEpisodesLoading(false);
+    }
+  };
+
+  const onGrabEpisode = async (ep) => {
+    setGrabStatus((s) => ({ ...s, [ep.episode_number]: 'loading' }));
+    setGrabProgress((s) => ({ ...s, [ep.episode_number]: { phase: 'init', percent: 0, message: 'Memulai...' } }));
+
+    // Start polling progress
+    const progressInterval = setInterval(async () => {
+      try {
+        const token = getSession()?.token;
+        const result = await getGrabProgress({ token, animeId: id, episodeNumber: ep.episode_number });
+        if (result?.progress) {
+          setGrabProgress((s) => ({ ...s, [ep.episode_number]: result.progress }));
+        }
+      } catch {}
+    }, 1000);
+
+    try {
+      const token = getSession()?.token;
+      const result = await grabAndSaveEpisode({
+        token,
+        provider: anime.provider_source,
+        episodeUrl: ep.url,
+        animeId: id,
+        episodeNumber: ep.episode_number,
+        server: (anime.provider_source === 'samehadaku') ? 'all' : (anime.provider_source === 'kuronime' ? 'auto' : 'kuramadrive'),
+        allQualities,
+      });
+      clearInterval(progressInterval);
+      if (result?.success) {
+        setGrabStatus((s) => ({ ...s, [ep.episode_number]: 'success' }));
+        setGrabProgress((s) => ({ ...s, [ep.episode_number]: { phase: 'done', percent: 100, message: 'Selesai!' } }));
+        setExistingEpisodeNumbers((prev) => new Set([...prev, ep.episode_number]));
+        toast.success(result.message || `Episode ${ep.episode_number} berhasil!`);
+        // Reload episodes
+        const token2 = getSession()?.token;
+        const animeRes = await getAnimeDetail({ token: token2, id });
+        const animeData = animeRes?.item || animeRes?.data || animeRes;
+        if (Array.isArray(animeData?.episodes)) setEpisodes(animeData.episodes);
+      } else {
+        setGrabStatus((s) => ({ ...s, [ep.episode_number]: 'error' }));
+        toast.error(result?.message || `Gagal grab episode ${ep.episode_number}`);
+      }
+    } catch (err) {
+      clearInterval(progressInterval);
+      setGrabStatus((s) => ({ ...s, [ep.episode_number]: 'error' }));
+      toast.error(err?.message || `Gagal grab episode ${ep.episode_number}`);
+    }
+  };
+
+  const onGrabAllEpisodes = async () => {
+    const toGrab = providerEpisodes.filter((ep) => !existingEpisodeNumbers.has(ep.episode_number));
+    if (toGrab.length === 0) {
+      toast.error('Tidak ada episode baru untuk di-grab');
+      return;
+    }
+    toast.success(`Memulai grab ${toGrab.length} episode...`);
+    for (const ep of toGrab) {
+      await onGrabEpisode(ep);
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    toast.success('Selesai grab semua episode!');
   };
 
   const onAddEpisode = async (e) => {
@@ -505,14 +596,147 @@ export default function AnimeDetailPage() {
             {/* Add Episode Button */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <h2 className="text-xl font-bold text-[var(--foreground)]">Daftar Episode ({episodes.length})</h2>
-              <button
-                onClick={() => setShowAddEpisode(true)}
-                className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 font-bold transition-all hover:translate-y-[-2px]"
-                style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}
-              >
-                <Plus className="w-4 h-4" /> Tambah Episode
-              </button>
+              <div className="flex gap-2 flex-wrap">
+                {anime?.provider_source && anime?.provider_url && (
+                  <button
+                    onClick={() => { setShowImport(!showImport); if (!showImport && providerEpisodes.length === 0) onFetchProviderEpisodes(); }}
+                    className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 font-bold transition-all hover:translate-y-[-2px]"
+                    style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', color: 'var(--accent-primary)', borderColor: 'var(--accent-primary)' }}
+                  >
+                    <Layers className="w-4 h-4" /> Import dari Provider
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowAddEpisode(true)}
+                  className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 font-bold transition-all hover:translate-y-[-2px]"
+                  style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--accent-add)', color: 'var(--accent-add-foreground)', borderColor: 'var(--panel-border)' }}
+                >
+                  <Plus className="w-4 h-4" /> Tambah Episode
+                </button>
+              </div>
             </div>
+
+            {/* Import from Provider Section */}
+            <AnimatePresence>
+              {showImport && anime?.provider_source && anime?.provider_url && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="rounded-2xl border-2 p-5 overflow-hidden"
+                  style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-[var(--foreground)] flex items-center gap-2">
+                      <Layers className="w-5 h-5" /> Import Episode dari {anime.provider_source}
+                    </h3>
+                    <button type="button" onClick={() => setShowImport(false)} className="p-1 hover:bg-[var(--background)] rounded">
+                      <X className="w-5 h-5 text-[var(--foreground)]" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-3 text-sm text-[var(--foreground)]/60">
+                    <Link className="w-4 h-4" />
+                    <span className="truncate">{anime.provider_url}</span>
+                  </div>
+
+                  <div className="flex items-center gap-3 flex-wrap mb-4">
+                    <button
+                      type="button"
+                      onClick={onFetchProviderEpisodes}
+                      disabled={providerEpisodesLoading}
+                      className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2 font-bold transition-all hover:translate-y-[-2px] disabled:opacity-50"
+                      style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
+                    >
+                      {providerEpisodesLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                      Cari Episode
+                    </button>
+                    {providerEpisodes.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={onGrabAllEpisodes}
+                        className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2 font-bold transition-all hover:translate-y-[-2px]"
+                        style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--accent-primary)', color: 'var(--accent-primary)' }}
+                      >
+                        Ambil Semua ({providerEpisodes.filter(ep => !existingEpisodeNumbers.has(ep.episode_number)).length})
+                      </button>
+                    )}
+                    {providerEpisodes.length > 0 && (
+                      <label className="inline-flex items-center gap-2 text-xs font-bold cursor-pointer" style={{ color: 'var(--foreground)' }}>
+                        <input
+                          type="checkbox"
+                          checked={allQualities}
+                          onChange={(e) => setAllQualities(e.target.checked)}
+                          className="w-4 h-4 rounded"
+                        />
+                        Semua Quality
+                      </label>
+                    )}
+                  </div>
+
+                  {providerEpisodes.length > 0 && (
+                    <div className="space-y-1 max-h-72 overflow-y-auto rounded-xl border-2 p-2" style={{ borderColor: 'var(--panel-border)' }}>
+                      {providerEpisodes.map((ep, idx) => {
+                        const epExists = existingEpisodeNumbers.has(ep.episode_number);
+                        const status = grabStatus[ep.episode_number];
+                        const isLoading = status === 'loading';
+                        return (
+                          <div key={idx} className="flex items-center gap-3 rounded-lg border p-2" style={{ borderColor: 'var(--panel-border)', opacity: epExists && !isLoading ? 0.6 : 1 }}>
+                            <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm" style={{ background: epExists ? 'var(--panel-border)' : 'var(--accent-primary)', color: epExists ? 'var(--foreground)' : 'var(--accent-primary-foreground)' }}>
+                              {ep.episode_number}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-[var(--foreground)] truncate">
+                                {ep.label || `Episode ${ep.episode_number}`}
+                                {epExists && <span className="ml-2 text-xs text-[var(--foreground)]/50">(sudah ada)</span>}
+                              </p>
+                              <p className="text-xs text-[var(--foreground)]/50 truncate">{ep.url}</p>
+                              {isLoading && grabProgress[ep.episode_number] && (
+                                <div className="mt-1 flex items-center gap-2">
+                                  <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--panel-border)' }}>
+                                    <div
+                                      className="h-full rounded-full transition-all duration-300"
+                                      style={{
+                                        width: `${grabProgress[ep.episode_number].percent || 0}%`,
+                                        background: 'var(--accent-primary)',
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-[10px] font-bold text-[var(--foreground)]/70 whitespace-nowrap">
+                                    {grabProgress[ep.episode_number].percent || 0}%
+                                  </span>
+                                </div>
+                              )}
+                              {isLoading && grabProgress[ep.episode_number]?.message && (
+                                <p className="text-[10px] text-[var(--foreground)]/50 mt-0.5 truncate">
+                                  {grabProgress[ep.episode_number].message}
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => onGrabEpisode(ep)}
+                              disabled={isLoading}
+                              className="inline-flex items-center gap-1.5 rounded-lg border-2 px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap"
+                              style={{
+                                background: status === 'success' || epExists ? 'var(--accent-success, #22c55e)' : status === 'error' ? 'var(--accent-danger, #ef4444)' : 'var(--accent-primary)',
+                                borderColor: 'var(--panel-border)',
+                                color: 'var(--accent-primary-foreground)',
+                                cursor: isLoading ? 'wait' : 'pointer',
+                                opacity: isLoading ? 0.7 : 1,
+                              }}
+                            >
+                              {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : status === 'success' || epExists ? <CheckCircle2 className="w-3 h-3" /> : null}
+                              {isLoading ? `${grabProgress[ep.episode_number]?.percent || 0}%` : status === 'success' ? 'Done' : status === 'error' ? 'Retry' : epExists ? 'Update' : 'Ambil'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Add Episode Form */}
             <AnimatePresence>
