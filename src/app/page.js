@@ -4,10 +4,11 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { LogIn, Lock, Loader2, Eye, EyeOff, User, Shield } from "lucide-react";
 import { motion } from "framer-motion";
-import { loginAdmin } from "@/lib/auth";
+import { loginAdmin, getSession } from "@/lib/auth";
 
 const PERMISSION_ROUTE_PRIORITY = [
   { key: 'overview', href: '/dashboard' },
+  { key: 'payment_add', href: '/dashboard/payment' },
   { key: 'kelola-user', href: '/dashboard/kelola-user' },
   { key: 'kelola-admin', href: '/dashboard/kelola-admin' },
   { key: 'livechat', href: '/dashboard/livechat' },
@@ -29,6 +30,14 @@ const PERMISSION_ROUTE_PRIORITY = [
   { key: 'settings', href: '/dashboard/pengaturan' },
 ];
 
+function resolveLanding(permissions, role) {
+  if (String(role || '').toLowerCase() === 'superadmin') return '/dashboard';
+  const list = Array.isArray(permissions) ? permissions : [];
+  if (list.includes('overview')) return '/dashboard';
+  const firstAllowed = PERMISSION_ROUTE_PRIORITY.find((item) => list.includes(item.key));
+  return firstAllowed?.href || '/dashboard';
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -37,7 +46,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    const session = getSession();
+    if (session?.token) {
+      router.replace(resolveLanding(session.permissions, session.role));
+    }
+  }, [router]);
 
   const getOrCreateDeviceId = () => {
     if (typeof window === 'undefined') return 'admin-web-1';
@@ -60,20 +75,7 @@ export default function LoginPage() {
       const device_id = getOrCreateDeviceId();
       const session = await loginAdmin({ username: username.trim(), password, device_id });
       toast.success(`Login berhasil sebagai ${session.role}`);
-
-      const permissions = Array.isArray(session?.permissions) ? session.permissions : [];
-
-      if (permissions.includes('overview')) {
-        router.push("/dashboard");
-        return;
-      }
-
-      const firstAllowed = PERMISSION_ROUTE_PRIORITY.find((item) =>
-        permissions.includes(item.key)
-      );
-      if (firstAllowed) {
-        router.push(firstAllowed.href);
-      }
+      router.push(resolveLanding(session?.permissions, session?.role));
     } catch (err) {
       toast.error(err?.message || "Login gagal", { icon: "⚠️" });
     } finally {

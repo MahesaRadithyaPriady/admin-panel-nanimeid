@@ -7,7 +7,7 @@ import { ArrowLeft, Inbox, CheckCircle2, XCircle, Clock, Loader2, Trash2, Refres
 import { motion } from 'framer-motion';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listAnimeRequests, deleteAnimeRequest, takeAnimeRequest, updateAnimeRequest } from '@/lib/api';
+import { listAnimeRequests, deleteAnimeRequest, takeAnimeRequest, updateAnimeRequest, getAnimeRequestStats } from '@/lib/api';
 
 const REQUEST_STATUSES = ['PENDING', 'UNDER_REVIEW', 'UPLOAD_IN_PROGRESS', 'COMPLETED', 'REJECTED'];
 
@@ -36,6 +36,7 @@ export default function AnimeRequestsPage() {
   const [status, setStatus] = useState('');
   const [loadingList, setLoadingList] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [stats, setStats] = useState({});
 
   const canManage = useMemo(() => {
     if (!user) return false;
@@ -49,8 +50,8 @@ export default function AnimeRequestsPage() {
     try {
       const token = getSession()?.token;
       const res = await listAnimeRequests({ token, page: p, limit, status: s || status || undefined });
-      const data = res?.data || res?.items || res || [];
-      const meta = res?.meta || {};
+      const data = res?.items || res?.data || [];
+      const meta = res?.pagination || res?.meta || {};
       setItems(Array.isArray(data) ? data : []);
       setTotal(meta?.total ?? data?.length ?? 0);
       setPage(p);
@@ -61,7 +62,15 @@ export default function AnimeRequestsPage() {
     }
   };
 
-  useEffect(() => { if (user) loadList({ page: 1 }); }, [user, status]);
+  const loadStats = async () => {
+    try {
+      const token = getSession()?.token;
+      const res = await getAnimeRequestStats({ token });
+      setStats(res || {});
+    } catch {}
+  };
+
+  useEffect(() => { if (user) { loadList({ page: 1 }); loadStats(); } }, [user, status]);
 
   const onDelete = async (id) => {
     if (!confirm('Hapus permintaan ini?')) return;
@@ -71,6 +80,7 @@ export default function AnimeRequestsPage() {
       await deleteAnimeRequest({ token, id });
       toast.success('Permintaan dihapus');
       loadList({ page });
+      loadStats();
     } catch (err) {
       toast.error(err?.message || 'Gagal menghapus');
     } finally {
@@ -84,6 +94,7 @@ export default function AnimeRequestsPage() {
       await takeAnimeRequest({ token, id });
       toast.success('Permintaan diambil');
       loadList({ page });
+      loadStats();
     } catch (err) {
       toast.error(err?.message || 'Gagal mengambil');
     }
@@ -95,6 +106,7 @@ export default function AnimeRequestsPage() {
       await updateAnimeRequest({ token, id, payload: { status: newStatus } });
       toast.success('Status diperbarui');
       loadList({ page });
+      loadStats();
     } catch (err) {
       toast.error(err?.message || 'Gagal memperbarui');
     }
@@ -126,7 +138,7 @@ export default function AnimeRequestsPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {REQUEST_STATUSES.map((s) => {
               const meta = STATUS_META[s];
-              const count = items.filter((it) => it.status === s).length;
+              const count = stats[s] ?? stats[s.toLowerCase()] ?? items.filter((it) => it.status === s).length;
               const Icon = meta.icon;
               const isActive = status === s;
               return (
@@ -186,14 +198,18 @@ export default function AnimeRequestsPage() {
                         <div className="flex items-center gap-2 flex-wrap mb-2">
                           <span className="badge"><Icon className="w-3 h-3" /> {meta.label}</span>
                           <span className="mono text-xs" style={{ color: 'var(--muted)' }}>
-                            {formatDate(item.created_at)}
+                            {formatDate(item.createdAt || item.created_at)}
                           </span>
                         </div>
-                        <h3 className="section-title truncate">{item.title}</h3>
-                        <p className="label line-clamp-2">{item.description || '-'}</p>
-                        {item.requested_by && (
-                          <p className="mono text-xs mt-1" style={{ color: 'var(--muted)' }}>Oleh: {item.requested_by}</p>
-                        )}
+                        <h3 className="section-title truncate">
+                          {item.nama_anime || item.title || '-'}
+                          {item.season ? ` (S${item.season})` : ''}
+                        </h3>
+                        <p className="label line-clamp-2">{item.note || item.description || '-'}</p>
+                        <p className="mono text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                          Oleh: {item.user?.username || item.requested_by || `user#${item.user_id}`}
+                          {item.admin?.username ? ` · Ditangani: ${item.admin.username}` : ''}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         {canManage && item.status === 'PENDING' && (
@@ -243,5 +259,5 @@ function formatDate(value) {
   if (!value) return '-';
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '-';
-  return d.toLocaleDateString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+  return d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
 }

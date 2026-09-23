@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity, Terminal, Trophy, Inbox, Film, Sun, Moon, Flag, Video, Tv, BellRing } from 'lucide-react';
+import { LayoutDashboard, Upload, Settings, Users as UsersIcon, Shield, ListChecks, BadgeCheck, List, CreditCard, Image, Heart, Crown, Wallet, Gift, ShoppingBag, Megaphone, BookOpen, Award, MessageSquareText, Activity, Terminal, Trophy, Inbox, Film, Sun, Moon, Flag, Video, Tv, BellRing, Gauge, Zap } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import Sidebar from '@/components/dashboard/Sidebar';
 import BottomNav from '@/components/dashboard/BottomNav';
@@ -220,6 +220,7 @@ export default function DashboardLayout({ children }) {
           { key: 'konfigurasi-event', permissionKey: 'event-configs', label: 'Event & Reward', icon: ListChecks, roles: ['superadmin'], href: '/dashboard/konfigurasi-event' },
           { key: 'analytics-logs', label: 'Log Analitik', icon: Activity, roles: ['superadmin'], href: '/dashboard/analytics-logs' },
           { key: 'client-logs', permissionKey: 'client-logs', label: 'Log Klien', icon: Terminal, roles: ['superadmin'], href: '/dashboard/client-logs' },
+          { key: 'tracking-endpoint', label: 'Endpoint Tracking', icon: Gauge, roles: ['superadmin'], href: '/dashboard/tracking-endpoint' },
         ]
       },
 
@@ -247,6 +248,7 @@ export default function DashboardLayout({ children }) {
           { key: 'vip-features', permissionKey: 'vip-tiers', label: 'Level & Syarat VIP', icon: Crown, roles: ['superadmin'], href: '/dashboard/vip-features' },
           { key: 'admin-vip', label: 'Pengaturan VIP', icon: Crown, roles: ['superadmin'], href: '/dashboard/admin-vip' },
           { key: 'admin-wallet', label: 'Manajemen Dompet', icon: Wallet, roles: ['superadmin'], href: '/dashboard/admin-wallet' },
+          { key: 'payment', label: 'Payment', icon: CreditCard, roles: ['superadmin', 'uploader'], href: '/dashboard/payment' },
           { key: 'redeem-codes', label: 'Kode Tukar', icon: Gift, roles: ['superadmin'], href: '/dashboard/redeem' },
           { key: 'avatar-borders', label: 'Bingkai Profil', icon: Image, roles: ['superadmin'], href: '/dashboard/avatar-borders' },
           { key: 'badges', label: 'Lencana', icon: Award, roles: ['superadmin'], href: '/dashboard/badges' },
@@ -274,6 +276,7 @@ export default function DashboardLayout({ children }) {
         roles: ['superadmin', 'uploader'],
         children: [
           { key: 'daftar-konten', label: 'Manajemen Konten', icon: Film, roles: ['superadmin', 'uploader'], href: '/dashboard/daftar-konten' },
+          { key: 'grab-status', label: 'Grab Anime Berjalan', icon: Zap, roles: ['superadmin', 'uploader'], href: '/dashboard/daftar-konten/grab-status' },
           { key: 'anime-requests', label: 'Permintaan Anime', icon: Inbox, roles: ['superadmin', 'uploader'], href: '/dashboard/anime-requests' },
           { key: 'manga-grab-list', label: 'Daftar Grab', icon: BadgeCheck, roles: ['superadmin'], href: '/dashboard/manga-admin/list-grab' },
           { key: 'manga-admin', label: 'Manajemen Manga', icon: BookOpen, roles: ['superadmin', 'uploader'], href: '/dashboard/manga-admin' },
@@ -316,11 +319,15 @@ export default function DashboardLayout({ children }) {
       return allMenus;
     }
 
-    // Role lain: tetap filter berdasarkan permissions
+    // Role lain: filter berdasarkan roles[] yang dideklarasikan ATAU permissions
+    const canSee = (item) =>
+      (Array.isArray(item.roles) && item.roles.includes(roleKey)) ||
+      hasPermission(item.permissionKey ?? item.key);
+
     return allMenus
       .map((m) => {
         if (m.children) {
-          const filteredChildren = m.children.filter((child) => hasPermission(child.permissionKey ?? child.key));
+          const filteredChildren = m.children.filter(canSee);
           return { ...m, children: filteredChildren };
         }
         return m;
@@ -329,7 +336,7 @@ export default function DashboardLayout({ children }) {
         if (m.children) {
           return m.children.length > 0;
         }
-        return hasPermission(m.permissionKey ?? m.key);
+        return canSee(m);
       });
   }, [allMenus, permissions, role]);
 

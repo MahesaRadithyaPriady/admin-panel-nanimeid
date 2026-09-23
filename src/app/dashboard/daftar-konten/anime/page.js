@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Plus, Search, Filter, ChevronLeft, ChevronRight, ArrowLeft, MoreHorizontal, Trash2, Pencil, Eye, Upload } from 'lucide-react';
+import { Plus, Search, Filter, ChevronLeft, ChevronRight, ArrowLeft, MoreHorizontal, Trash2, Pencil, Eye, Upload, Zap, Loader2, BellRing } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { listAnime, deleteAnime, getAnimeStats } from '@/lib/api';
+import { listAnime, deleteAnime, getAnimeStats, runAutoGrab, notifyEpisodeReady } from '@/lib/api';
 
 const pageVariants = {
   hidden:  { opacity: 0, y: 16 },
@@ -41,6 +41,9 @@ export default function AnimeListPage() {
   const [contentType, setContentType] = useState('');
   const [loadingList, setLoadingList] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [autoGrabRunning, setAutoGrabRunning] = useState(false);
+  const [grabbingId, setGrabbingId] = useState(null);
+  const [notifyingId, setNotifyingId] = useState(null);
   const [stats, setStats] = useState({ ONGOING: 0, COMPLETED: 0, HIATUS: 0, UPCOMING: 0, total: 0 });
   const [loadingStats, setLoadingStats] = useState(false);
 
@@ -127,6 +130,53 @@ export default function AnimeListPage() {
     }
   };
 
+  const onAutoGrabAll = async () => {
+    if (autoGrabRunning) return;
+    setAutoGrabRunning(true);
+    try {
+      const token = getSession()?.token;
+      const res = await runAutoGrab({ token, scope: 'today' });
+      toast.success(res?.message || 'Auto-grab dimulai');
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menjalankan auto-grab');
+    } finally {
+      setAutoGrabRunning(false);
+    }
+  };
+
+  const onAutoGrabOne = async (item) => {
+    if (grabbingId) return;
+    setGrabbingId(item.id);
+    try {
+      const token = getSession()?.token;
+      const res = await runAutoGrab({ token, animeId: item.id });
+      if (res?.grabbing > 0) {
+        toast.success(res.message);
+      } else {
+        toast(res?.message || 'Tidak ada episode baru', { icon: 'ℹ️' });
+      }
+    } catch (err) {
+      toast.error(err?.message || 'Gagal menjalankan auto-grab');
+    } finally {
+      setGrabbingId(null);
+    }
+  };
+
+  const onNotifyEpisode = async (item) => {
+    if (notifyingId) return;
+    if (!confirm(`Kirim notifikasi "episode baru" ke subscribers "${item.nama_anime}"?\n(otomatis pakai episode terbaru)`)) return;
+    setNotifyingId(item.id);
+    try {
+      const token = getSession()?.token;
+      const res = await notifyEpisodeReady({ token, animeId: item.id });
+      toast.success(res?.message || 'Notifikasi sedang dikirim');
+    } catch (err) {
+      toast.error(err?.message || 'Gagal mengirim notifikasi');
+    } finally {
+      setNotifyingId(null);
+    }
+  };
+
   const totalPages = Math.max(1, Math.ceil((total || 0) / Math.max(1, limit)));
 
   return (
@@ -144,9 +194,27 @@ export default function AnimeListPage() {
                 <p className="text-sm opacity-70">Kelola semua anime dan episode</p>
               </div>
             </div>
-            <button onClick={() => router.push('/dashboard/daftar-konten/anime/create')} className="btn btn--primary btn--sm">
-              <Plus className="w-4 h-4" /> Tambah Anime
-            </button>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => router.push('/dashboard/daftar-konten/grab-status')}
+                className="btn btn--secondary btn--sm"
+                title="Lihat grab yang sedang berjalan"
+              >
+                <Loader2 className="w-4 h-4" /> Grab Berjalan
+              </button>
+              <button
+                onClick={onAutoGrabAll}
+                disabled={autoGrabRunning}
+                className="btn btn--secondary btn--sm disabled:opacity-60"
+                title="Cek jadwal hari ini & grab episode baru dari provider"
+              >
+                {autoGrabRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                Auto Grab Hari Ini
+              </button>
+              <button onClick={() => router.push('/dashboard/daftar-konten/anime/create')} className="btn btn--primary btn--sm">
+                <Plus className="w-4 h-4" /> Tambah Anime
+              </button>
+            </div>
           </div>
 
           {/* Stats */}
@@ -299,11 +367,29 @@ export default function AnimeListPage() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-1.5 justify-end sm:flex-shrink-0">
+                      {item.provider_source && item.provider_url && (
+                        <button
+                          onClick={() => onAutoGrabOne(item)}
+                          disabled={grabbingId != null}
+                          className="btn btn--secondary btn--sm disabled:opacity-50"
+                          title={`Auto grab episode baru dari ${item.provider_source}`}
+                        >
+                          {grabbingId === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                        </button>
+                      )}
                       <button onClick={() => router.push(`/dashboard/daftar-konten/anime/${item.id}`)} className="btn btn--secondary btn--sm" title="Lihat detail">
                         <Eye className="w-4 h-4" />
                       </button>
                       <button onClick={() => router.push(`/dashboard/daftar-konten/anime/${item.id}/batch-upload`)} className="btn btn--secondary btn--sm" title="Batch Upload Episode">
                         <Upload className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => onNotifyEpisode(item)}
+                        disabled={notifyingId != null}
+                        className="btn btn--secondary btn--sm disabled:opacity-50"
+                        title="Kirim notif episode terbaru ke subscribers"
+                      >
+                        {notifyingId === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <BellRing className="w-4 h-4" />}
                       </button>
                       <button onClick={() => router.push(`/dashboard/daftar-konten/anime/${item.id}/edit`)} className="btn btn--secondary btn--sm" title="Edit">
                         <Pencil className="w-4 h-4" />

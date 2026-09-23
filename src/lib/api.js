@@ -1107,6 +1107,18 @@ export async function updateAnime({ token, id, payload }) {
   return await handleJson(res, 'Gagal memperbarui anime');
 }
 
+// POST /admin/anime/:id/notify-episode — kirim push notif "episode baru" ke subscribers
+// episodeNumber opsional — default: episode terbaru
+export async function notifyEpisodeReady({ token, animeId, episodeNumber }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${animeBase()}/${animeId}/notify-episode`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(episodeNumber != null ? { episode_number: episodeNumber } : {}),
+  });
+  return await handleJson(res, 'Gagal mengirim notifikasi episode');
+}
+
 export async function deleteAnime({ token, id }) {
   if (!token) throw new Error('Token tidak tersedia');
   const res = await fetch(`${animeBase()}/${id}`, {
@@ -1183,6 +1195,28 @@ export async function getGrabProgress({ token, animeId, episodeNumber }) {
     headers: { Authorization: `Bearer ${token}` },
   });
   return await handleJson(res, 'Gagal mengambil progress');
+}
+
+// GET /admin/providers/grab-active → daftar grab yang sedang berjalan / baru selesai
+export async function listActiveGrabs({ token }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${providersBase()}/grab-active`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil daftar grab');
+}
+
+// POST /admin/providers/auto-grab/run — trigger auto-grab manual
+// animeId: proses 1 anime (deteksi sinkron, grab di background)
+// scope: 'today' (jadwal hari ini, jam diabaikan) atau 'all' (semua jadwal aktif)
+export async function runAutoGrab({ token, animeId, scope = 'today' }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${providersBase()}/auto-grab/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ anime_id: animeId ?? null, scope }),
+  });
+  return await handleJson(res, 'Gagal menjalankan auto-grab');
 }
 
 // ===== Admin Episodes (SUPERADMIN | UPLOADER) =====
@@ -4861,3 +4895,155 @@ export async function searchUsersForNotif({ token, q, limit = 10 } = {}) {
 }
 
 
+
+// ─── Tracking Endpoint (error & slow request rekap) ──────────────────────────
+
+function trackingBase() {
+  return `${getApiBase()}/tracking`;
+}
+
+// GET /tracking/summary?hours=
+export async function getTrackingSummary({ token, hours = 24 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  params.set('hours', String(hours));
+  const res = await fetch(`${trackingBase()}/summary?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil ringkasan tracking');
+}
+
+// GET /tracking/slow/routes?q=&method=&page=&limit=&hours=
+export async function getTrackingSlowRoutes({ token, hours = 24, page = 1, limit = 20, q, method } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  params.set('hours', String(hours));
+  params.set('page', String(page));
+  params.set('limit', String(limit));
+  if (q) params.set('q', q);
+  if (method) params.set('method', method);
+  const res = await fetch(`${trackingBase()}/slow/routes?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil rekap route lambat');
+}
+
+// GET /tracking/slow/functions?q=&page=&limit=&hours=
+export async function getTrackingSlowFunctions({ token, hours = 24, page = 1, limit = 20, q } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  params.set('hours', String(hours));
+  params.set('page', String(page));
+  params.set('limit', String(limit));
+  if (q) params.set('q', q);
+  const res = await fetch(`${trackingBase()}/slow/functions?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil rekap fungsi lambat');
+}
+
+// GET /tracking/errors/recent?q=&type=&code=&page=&limit=&hours=
+export async function getTrackingErrorsRecent({ token, hours = 24, page = 1, limit = 20, q, type, code } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  params.set('hours', String(hours));
+  params.set('page', String(page));
+  params.set('limit', String(limit));
+  if (q) params.set('q', q);
+  if (type) params.set('type', type);
+  if (code) params.set('code', code);
+  const res = await fetch(`${trackingBase()}/errors/recent?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil error terbaru');
+}
+
+// ─── Payment (Wallet Gaji Admin/Uploader) ────────────────────────────────────
+
+function paymentBase() {
+  return `${getApiBase()}/admin/payment`;
+}
+
+// GET /admin/payment/my-wallet
+export async function getMySalaryWallet({ token } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${paymentBase()}/my-wallet`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil wallet gaji');
+}
+
+// GET /admin/payment/my-transactions?page=&limit=
+export async function getMySalaryTransactions({ token, page = 1, limit = 10 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${paymentBase()}/my-transactions?page=${page}&limit=${limit}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil riwayat transaksi');
+}
+
+// POST /admin/payment/withdraw/rp { amount, method, destination, bank_name? }
+export async function withdrawSalaryRupiah({ token, amount, method, destination, bank_name } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${paymentBase()}/withdraw/rp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ amount, method, destination, bank_name }),
+  });
+  return await handleJson(res, 'Gagal membuat request penarikan');
+}
+
+// POST /admin/payment/withdraw/coin { amount_rp, target_user_id }
+export async function withdrawSalaryCoin({ token, amount_rp, target_user_id } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${paymentBase()}/withdraw/coin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ amount_rp, target_user_id }),
+  });
+  return await handleJson(res, 'Gagal konversi ke koin');
+}
+
+// GET /admin/payment/admins (khusus payment_add)
+export async function listAdminSalaryWallets({ token } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${paymentBase()}/admins`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil daftar admin');
+}
+
+// POST /admin/payment/credit { admin_id, amount, note? }
+export async function creditAdminSalary({ token, admin_id, amount, note } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${paymentBase()}/credit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ admin_id, amount, note }),
+  });
+  return await handleJson(res, 'Gagal memberi gaji');
+}
+
+// GET /admin/payment/withdrawals?status=&page=&limit=
+export async function listSalaryWithdrawals({ token, status, page = 1, limit = 20 } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const params = new URLSearchParams();
+  params.set('page', String(page));
+  params.set('limit', String(limit));
+  if (status) params.set('status', status);
+  const res = await fetch(`${paymentBase()}/withdrawals?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal mengambil daftar penarikan');
+}
+
+// PATCH /admin/payment/withdrawals/:id { status: 'COMPLETED'|'REJECTED' }
+export async function updateSalaryWithdrawal({ token, id, status } = {}) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${paymentBase()}/withdrawals/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ status }),
+  });
+  return await handleJson(res, 'Gagal memproses penarikan');
+}

@@ -12,6 +12,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearSca
 import ServerMetricsChart from './ServerMetricsChart';
 import TopupDetailedStats from './TopupDetailedStats';
 import OverviewDetailedStats from './OverviewDetailedStats';
+import TrackingSummary from './TrackingSummary';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler);
 
@@ -130,10 +131,11 @@ export default function OverviewSuperadmin() {
     };
   }, [dailyStats]);
 
-  // Poll every 3s
+  // Poll setiap 30 detik — polling 3s membuat 5 endpoint stats berat
+  // dipukul terus-menerus (28.800x/hari) dan menghabiskan DB.
   useEffect(() => {
     fetchOverview(); // initial
-    const id = setInterval(fetchOverview, 3000);
+    const id = setInterval(fetchOverview, 30000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -446,6 +448,9 @@ export default function OverviewSuperadmin() {
         </h2>
         <OverviewDetailedStats />
       </section>
+
+      {/* Endpoint Tracking Summary */}
+      <TrackingSummary />
 
       {/* Server Status */}
       <section>

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { Plus, Pencil, Trash2, Shield, Search, RefreshCcw, Users, UserCog, Mail, KeyRound, ChevronLeft, ChevronRight, Crown, Wallet, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2, Shield, Search, RefreshCcw, Users, UserCog, Mail, KeyRound, ChevronLeft, ChevronRight, Crown, Wallet, Upload, Lock } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { listAdmins, createAdmin, updateAdmin, deleteAdmin } from '@/lib/api';
@@ -134,6 +134,7 @@ export default function KelolaAdminPage() {
       items: [
         { key: 'keuangan', label: 'Keuangan' },
         { key: 'topup-manual', label: 'Topup Manual' },
+        { key: 'payment_add', label: 'Payment (Gaji)', restricted: true },
       ],
     },
     {
@@ -180,6 +181,10 @@ export default function KelolaAdminPage() {
       ],
     },
   ];
+
+  // Permission restricted (payment_add) hanya bisa di-toggle oleh PiieSya
+  const isPiieSya = user?.username === 'PiieSya';
+  const canTogglePermission = (item) => !item.restricted || isPiieSya;
 
   const togglePermission = (key) => {
     setForm((f) => {
@@ -396,10 +401,29 @@ export default function KelolaAdminPage() {
                         <div className="flex flex-wrap gap-2">
                           {group.items.map((item) => {
                             const active = hasPermission(item.key);
+                            const allowed = canTogglePermission(item);
                             return (
-                              <label key={item.key} className="inline-flex cursor-pointer items-center gap-2 px-2 py-1 text-xs font-bold" style={{ border: '2px solid var(--border)', background: active ? 'var(--foreground)' : 'var(--background)', color: active ? 'var(--background)' : 'var(--foreground)' }}>
-                                <input type="checkbox" checked={active} onChange={() => togglePermission(item.key)} className="w-3 h-3" />
+                              <label
+                                key={item.key}
+                                title={allowed ? item.label : 'Hanya bisa diubah oleh PiieSya'}
+                                className="inline-flex items-center gap-2 px-2 py-1 text-xs font-bold"
+                                style={{
+                                  border: '2px solid var(--border)',
+                                  background: active ? 'var(--foreground)' : 'var(--background)',
+                                  color: active ? 'var(--background)' : 'var(--foreground)',
+                                  cursor: allowed ? 'pointer' : 'not-allowed',
+                                  opacity: allowed ? 1 : 0.5,
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={active}
+                                  disabled={!allowed}
+                                  onChange={() => allowed && togglePermission(item.key)}
+                                  className="w-3 h-3"
+                                />
                                 {item.label}
+                                {item.restricted && <Lock className="w-3 h-3" />}
                               </label>
                             );
                           })}
