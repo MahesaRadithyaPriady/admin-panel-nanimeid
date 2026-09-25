@@ -49,7 +49,7 @@ export default function AnimeDetailPage() {
   const [providerEpisodesLoading, setProviderEpisodesLoading] = useState(false);
   const [grabStatus, setGrabStatus] = useState({});
   const [grabProgress, setGrabProgress] = useState({}); // { [epNum]: { phase, percent, message } }
-  const [allQualities, setAllQualities] = useState(false); // download all qualities or just best
+  const [allQualities, setAllQualities] = useState(true); // download all qualities (default) or just best
   const [existingEpisodeNumbers, setExistingEpisodeNumbers] = useState(new Set());
 
   useEffect(() => { if (!loading && !user) router.replace('/'); }, [loading, user, router]);

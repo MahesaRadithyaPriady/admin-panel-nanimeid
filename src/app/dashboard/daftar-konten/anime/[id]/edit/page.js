@@ -232,6 +232,7 @@ export default function EditAnimePage() {
         animeId: id,
         episodeNumber: ep.episode_number,
         server: (form.provider_source === 'samehadaku') ? 'all' : (form.provider_source === 'kuronime' ? 'auto' : 'kuramadrive'),
+        allQualities: true,
       });
       if (result?.success) {
         setGrabStatus((s) => ({ ...s, [ep.episode_number]: 'success' }));
