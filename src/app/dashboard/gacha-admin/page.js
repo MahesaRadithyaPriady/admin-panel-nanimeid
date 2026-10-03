@@ -56,6 +56,10 @@ export default function GachaAdminPage() {
     special_ends_at: '',
     special_web_url: '',
     special_event_code: '',
+    view_mode: 'binggo',
+    view_theme: '1',
+    pity_fallback_type: 'COIN',
+    pity_fallback_amount: '15000',
   });
   const [savingConfig, setSavingConfig] = useState(false);
   const [specialEvent, setSpecialEvent] = useState(null);
@@ -438,6 +442,10 @@ export default function GachaAdminPage() {
         special_ends_at: toDatetimeLocal(se?.ends_at),
         special_web_url: se?.web_url || '',
         special_event_code: se?.code || '',
+        view_mode: found.view_mode || 'binggo',
+        view_theme: found.view_theme != null ? String(found.view_theme) : '1',
+        pity_fallback_type: found.pity_fallback_type || 'COIN',
+        pity_fallback_amount: found.pity_fallback_amount != null ? String(found.pity_fallback_amount) : '15000',
       });
       // Load bingo config dari GachaConfig
       setBingoConfigForm({
@@ -510,6 +518,10 @@ export default function GachaAdminPage() {
         special_ends_at: configForm.special_ends_at || undefined,
         special_web_url: configForm.special_web_url || undefined,
         special_event_code: configForm.special_event_code || undefined,
+        view_mode: configForm.view_mode || 'binggo',
+        view_theme: configForm.view_theme !== '' ? Number(configForm.view_theme) : undefined,
+        pity_fallback_type: configForm.pity_fallback_type || 'COIN',
+        pity_fallback_amount: configForm.pity_fallback_amount !== '' ? Number(configForm.pity_fallback_amount) : undefined,
         auto_special_event: true,
       };
       const res = await upsertGachaConfig({ token, payload });
@@ -1282,6 +1294,46 @@ export default function GachaAdminPage() {
                   />
                   Aktif
                 </label>
+              </F>
+              <F label="Tipe Gacha">
+                <select
+                  value={configForm.view_mode}
+                  onChange={(e) => updateConfigField('view_mode', e.target.value)}
+                  className="inp"
+                >
+                  <option value="binggo">Binggo (default)</option>
+                  <option value="spin">Spin</option>
+                </select>
+              </F>
+              <F label="Theme">
+                <select
+                  value={configForm.view_theme}
+                  onChange={(e) => updateConfigField('view_theme', e.target.value)}
+                  className="inp"
+                >
+                  <option value="1">Theme 1</option>
+                </select>
+              </F>
+              <F label="Pity Fallback (jika hadiah utama sudah dimiliki)">
+                <div className="flex gap-2">
+                  <select
+                    value={configForm.pity_fallback_type}
+                    onChange={(e) => updateConfigField('pity_fallback_type', e.target.value)}
+                    className="inp"
+                  >
+                    <option value="COIN">Coin</option>
+                    <option value="XP">XP</option>
+                    <option value="TOKEN">Sharp Token</option>
+                  </select>
+                  <input
+                    type="number"
+                    min="1"
+                    value={configForm.pity_fallback_amount}
+                    onChange={(e) => updateConfigField('pity_fallback_amount', e.target.value)}
+                    className="inp"
+                    placeholder="15000"
+                  />
+                </div>
               </F>
               <F label="Cost per Spin">
                 <input
