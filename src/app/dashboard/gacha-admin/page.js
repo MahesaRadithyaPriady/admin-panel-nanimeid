@@ -60,6 +60,8 @@ export default function GachaAdminPage() {
     view_theme: '1',
     pity_fallback_type: 'COIN',
     pity_fallback_amount: '15000',
+    kotak_orb_per_drop: '10',
+    kotak_ball_per_box: '3',
   });
   const [savingConfig, setSavingConfig] = useState(false);
   const [specialEvent, setSpecialEvent] = useState(null);
@@ -446,6 +448,8 @@ export default function GachaAdminPage() {
         view_theme: found.view_theme != null ? String(found.view_theme) : '1',
         pity_fallback_type: found.pity_fallback_type || 'COIN',
         pity_fallback_amount: found.pity_fallback_amount != null ? String(found.pity_fallback_amount) : '15000',
+        kotak_orb_per_drop: found.kotak_orb_per_drop != null ? String(found.kotak_orb_per_drop) : '10',
+        kotak_ball_per_box: found.kotak_ball_per_box != null ? String(found.kotak_ball_per_box) : '3',
       });
       // Load bingo config dari GachaConfig
       setBingoConfigForm({
@@ -522,6 +526,8 @@ export default function GachaAdminPage() {
         view_theme: configForm.view_theme !== '' ? Number(configForm.view_theme) : undefined,
         pity_fallback_type: configForm.pity_fallback_type || 'COIN',
         pity_fallback_amount: configForm.pity_fallback_amount !== '' ? Number(configForm.pity_fallback_amount) : undefined,
+        kotak_orb_per_drop: configForm.view_mode === 'spin_kotak' && configForm.kotak_orb_per_drop !== '' ? Number(configForm.kotak_orb_per_drop) : undefined,
+        kotak_ball_per_box: configForm.view_mode === 'spin_kotak' && configForm.kotak_ball_per_box !== '' ? Number(configForm.kotak_ball_per_box) : undefined,
         auto_special_event: true,
       };
       const res = await upsertGachaConfig({ token, payload });
@@ -1303,8 +1309,34 @@ export default function GachaAdminPage() {
                 >
                   <option value="binggo">Binggo (default)</option>
                   <option value="spin">Spin</option>
+                  <option value="spin_kotak">Spin + Kotak (Aspirants)</option>
+                  <option value="wish_star">Wish Star (Genshin Warp)</option>
                 </select>
               </F>
+              {configForm.view_mode === 'spin_kotak' && (
+                <>
+                  <F label="Draw per Orb (bola drop)">
+                    <input
+                      type="number"
+                      min="1"
+                      value={configForm.kotak_orb_per_drop}
+                      onChange={(e) => updateConfigField('kotak_orb_per_drop', e.target.value)}
+                      className="inp"
+                      placeholder="10"
+                    />
+                  </F>
+                  <F label="Bola per Kotak (3 kotak)">
+                    <input
+                      type="number"
+                      min="1"
+                      value={configForm.kotak_ball_per_box}
+                      onChange={(e) => updateConfigField('kotak_ball_per_box', e.target.value)}
+                      className="inp"
+                      placeholder="3"
+                    />
+                  </F>
+                </>
+              )}
               <F label="Theme">
                 <select
                   value={configForm.view_theme}

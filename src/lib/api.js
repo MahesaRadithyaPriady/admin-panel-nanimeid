@@ -1783,6 +1783,45 @@ export async function setTopupStatus({ token, id, status }) {
   return await handleJson(res, 'Gagal memperbarui status topup');
 }
 
+// ===== Admin Topup Promos — bonus topup fleksibel (double coin, border, VIP, badge, dll) =====
+const topupPromosBase = () => `${getApiBase()}/admin/topup-promos`;
+
+export async function listTopupPromos({ token }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(topupPromosBase(), { headers: { Authorization: `Bearer ${token}` } });
+  const data = await handleJson(res, 'Gagal mengambil daftar promo topup');
+  return { items: Array.isArray(data?.items) ? data.items : [] };
+}
+
+export async function createTopupPromo({ token, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(topupPromosBase(), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal membuat promo topup');
+}
+
+export async function updateTopupPromo({ token, id, payload }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${topupPromosBase()}/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  return await handleJson(res, 'Gagal mengupdate promo topup');
+}
+
+export async function deleteTopupPromo({ token, id }) {
+  if (!token) throw new Error('Token tidak tersedia');
+  const res = await fetch(`${topupPromosBase()}/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return await handleJson(res, 'Gagal menghapus promo topup');
+}
+
 // ===== Admin Badges (SUPERADMIN only) =====
 const badgesBase = () => `${getApiBase()}/admin/badges`;
 

@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { Ban, CheckCircle2, CreditCard, ListFilter, RefreshCcw, Search, UserRound, Coins, Link as LinkIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Ban, CheckCircle2, CreditCard, Gift, ListFilter, RefreshCcw, Search, UserRound, Coins, Link as LinkIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import { listTopupRequests, setTopupStatus } from '@/lib/api';
+import PromosManager from './PromosManager';
 
 const pageVariants = {
   hidden:  { opacity: 0, y: 16 },
@@ -60,6 +61,7 @@ export default function TopupModerationPage() {
   const [total, setTotal] = useState(0);
   const [loadingList, setLoadingList] = useState(false);
   const [actingId, setActingId] = useState(null);
+  const [tab, setTab] = useState('moderasi'); // moderasi | promos
 
   useEffect(() => {
     if (!loading && !user) router.replace('/');
@@ -143,14 +145,38 @@ export default function TopupModerationPage() {
                 <span className="label uppercase">Moderasi Topup</span>
               </div>
               <h1 className="page-title">Topup Manual</h1>
-              <p className="label mt-1">Tinjau permintaan topup manual dengan pencarian yang lebih fleksibel.</p>
+              <p className="label mt-1">Tinjau permintaan topup manual dan atur bonus/event topup.</p>
             </div>
-            <button type="button" onClick={() => loadList()} disabled={loadingList} className="btn btn--secondary btn--sm flex-shrink-0">
-              <RefreshCcw className={`w-4 h-4 ${loadingList ? 'animate-spin' : ''}`} />
-              {loadingList ? 'Memuat...' : 'Refresh'}
+            {tab === 'moderasi' && (
+              <button type="button" onClick={() => loadList()} disabled={loadingList} className="btn btn--secondary btn--sm flex-shrink-0">
+                <RefreshCcw className={`w-4 h-4 ${loadingList ? 'animate-spin' : ''}`} />
+                {loadingList ? 'Memuat...' : 'Refresh'}
+              </button>
+            )}
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setTab('moderasi')}
+              className={`btn btn--sm ${tab === 'moderasi' ? 'btn--primary' : 'btn--secondary'}`}
+            >
+              <CreditCard className="w-4 h-4" /> Moderasi
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('promos')}
+              className={`btn btn--sm ${tab === 'promos' ? 'btn--primary' : 'btn--secondary'}`}
+            >
+              <Gift className="w-4 h-4" /> Bonus &amp; Event
             </button>
           </div>
 
+          {tab === 'promos' ? (
+            <PromosManager />
+          ) : (
+          <>
           {/* Summary Stats */}
           <div className="stat-grid">
             <SummaryCard label="Tampil" value={summary.total} />
@@ -318,6 +344,8 @@ export default function TopupModerationPage() {
               Berikutnya <ChevronRight className="w-4 h-4" />
             </button>
           </div>
+          </>
+          )}
         </>
       )}
     </motion.div>

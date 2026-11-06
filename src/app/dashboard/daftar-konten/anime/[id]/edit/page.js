@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, Save, Upload, Image as ImageIcon, Film, Trash2, AlertTriangle, Tag as TagIcon, Clock, Calendar, Plus, X, Link, Star, Layers, BookOpen, Hash, Building2, LayoutList, Loader2, CheckCircle2, Play } from 'lucide-react';
+import { ArrowLeft, Save, Upload, Image as ImageIcon, Film, Trash2, AlertTriangle, Tag as TagIcon, Clock, Calendar, Plus, X, Link, Star, Layers, BookOpen, Hash, Building2, LayoutList, Loader2, CheckCircle2, Play, Search, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
-import { getAnimeDetail, updateAnime, deleteAnime, listAnimeGenres, searchProvider, getProviderDetail, getProviderEpisodes, grabAndSaveEpisode } from '@/lib/api';
+import { getAnimeDetail, updateAnime, deleteAnime, listAnimeGenres, listProviders, searchProvider, getProviderDetail, getProviderEpisodes, grabAndSaveEpisode } from '@/lib/api';
 import GenreSelect from '@/components/dashboard/GenreSelect';
 import FileInput from '@/components/dashboard/FileInput';
 
@@ -18,12 +18,41 @@ const pageVariants = {
 
 const CONTENT_TYPES = ['ANIME', 'FILM', 'DONGHUA', 'TOKUSATSU'];
 const STATUS_OPTIONS = ['ONGOING', 'COMPLETED', 'HIATUS', 'UPCOMING'];
-const PROVIDER_OPTIONS = [
-  { value: '', label: 'Tidak ada (manual)' },
-  { value: 'kuramanime', label: 'Kuramanime' },
-  { value: 'kuronime', label: 'Kuronime' },
-  { value: 'samehadaku', label: 'Samehadaku' },
+// Metadata sources (detail anime saja — Jikan MAL / AniList / Kusonime)
+const METADATA_FALLBACK = [
+  { value: 'jikan', label: 'Jikan (MyAnimeList)', metadata_only: true },
+  { value: 'anilist', label: 'AniList', metadata_only: true },
+  { value: 'kusonime', label: 'Kusonime', metadata_only: true },
 ];
+// Stream providers (grab episode sekaligus)
+const STREAM_FALLBACK = [
+  { value: 'kuramanime', label: 'Kuramanime', metadata_only: false },
+  { value: 'kuronime', label: 'Kuronime', metadata_only: false },
+  { value: 'samehadaku', label: 'Samehadaku', metadata_only: false },
+];
+
+// Map provider status text (ID/EN) → app status
+function mapProviderStatus(status) {
+  if (!status) return null;
+  const s = String(status).toLowerCase();
+  if (s.includes('sedang tayang') || s.includes('ongoing') || s.includes('currently airing') || s.includes('releasing')) return 'ONGOING';
+  if (s.includes('selesai') || s.includes('completed') || s.includes('finished') || s.includes('tamat')) return 'COMPLETED';
+  if (s.includes('hiatus')) return 'HIATUS';
+  if (s.includes('akan tayang') || s.includes('upcoming') || s.includes('not yet') || s.includes('belum tayang')) return 'UPCOMING';
+  return null;
+}
+
+// Map provider type text → format tayang (label_anime)
+function mapProviderType(type) {
+  if (!type) return null;
+  const t = String(type).toLowerCase();
+  if (t.includes('movie') || t.includes('film')) return 'Movie';
+  if (t.includes('ona')) return 'ONA';
+  if (t.includes('ova')) return 'OVA';
+  if (t.includes('special') || t.includes('spesial')) return 'Special';
+  if (t.includes('tv')) return 'TV';
+  return null;
+}
 
 // API functions imported from @/lib/api
 
@@ -60,11 +89,17 @@ export default function EditAnimePage() {
   // Schedule state for ONGOING anime
   const [schedules, setSchedules] = useState([{ hari: 'Senin', jam: '20:00', is_active: true }]);
 
-  // Provider search state
+  // Provider search state (metadata import — Jikan/AniList)
+  const [metadataSource, setMetadataSource] = useState('jikan');
+  const [metadataProviders, setMetadataProviders] = useState(METADATA_FALLBACK);
   const [providerSearchQuery, setProviderSearchQuery] = useState('');
   const [providerSearchResults, setProviderSearchResults] = useState([]);
   const [providerSearching, setProviderSearching] = useState(false);
   const [providerImporting, setProviderImporting] = useState(false);
+  // Duplicate warning after metadata import: { id, nama_anime } | null
+  const [existingAnime, setExistingAnime] = useState(null);
+  // Stream provider state (grab episode)
+  const [streamProviders, setStreamProviders] = useState(STREAM_FALLBACK);
   const [providerEpisodes, setProviderEpisodes] = useState([]);
   const [providerEpisodesLoading, setProviderEpisodesLoading] = useState(false);
   const [providerUrlSaved, setProviderUrlSaved] = useState(false);
@@ -75,6 +110,23 @@ export default function EditAnimePage() {
   const [grabStatus, setGrabStatus] = useState({});
 
   useEffect(() => { if (!loading && !user) router.replace('/'); }, [loading, user, router]);
+
+  // Fetch provider list from API, split by capability (metadata_only flag)
+  useEffect(() => {
+    const token = getSession()?.token;
+    if (!token) return;
+    listProviders({ token })
+      .then((result) => {
+        const list = (result?.providers || []).filter((p) => p.value);
+        if (list.length > 0) {
+          const meta = list.filter((p) => p.metadata_only).map((p) => ({ value: p.value, label: p.label, metadata_only: true }));
+          const stream = list.filter((p) => !p.metadata_only).map((p) => ({ value: p.value, label: p.label, metadata_only: false }));
+          if (meta.length) setMetadataProviders(meta);
+          if (stream.length) setStreamProviders(stream);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Load anime data (REAL API)
   useEffect(() => {
@@ -136,13 +188,15 @@ export default function EditAnimePage() {
 
   const updateField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
-  // Provider search handler
+  const activeMetadataProvider = metadataProviders.find((p) => p.value === metadataSource);
+
+  // Provider search handler (metadata sources: Jikan/AniList/Kusonime)
   const onProviderSearch = async () => {
-    if (!form.provider_source || !providerSearchQuery.trim()) return;
+    if (!metadataSource || !providerSearchQuery.trim()) return;
     setProviderSearching(true);
     try {
       const token = getSession()?.token;
-      const result = await searchProvider({ token, provider: form.provider_source, q: providerSearchQuery.trim() });
+      const result = await searchProvider({ token, provider: metadataSource, q: providerSearchQuery.trim() });
       setProviderSearchResults(result?.items || []);
     } catch (err) {
       toast.error(err?.message || 'Gagal mencari di provider');
@@ -151,29 +205,45 @@ export default function EditAnimePage() {
     }
   };
 
-  // Import anime detail from provider
+  // Import anime detail from metadata source (auto-fill ALL form fields — detail anime saja)
   const onProviderImport = async (url) => {
     setProviderImporting(true);
     try {
       const token = getSession()?.token;
-      const result = await getProviderDetail({ token, provider: form.provider_source, url });
+      const result = await getProviderDetail({ token, provider: metadataSource, url });
       const data = result?.data;
       if (!data) throw new Error('Data tidak ditemukan');
+      // Cek apakah series sudah ada di database (anime lain dengan data sama)
+      // — jika iya, JANGAN isi form dengan data anime lain
+      const existing = result?.existing;
+      if (existing?.id && String(existing.id) !== String(id)) {
+        setExistingAnime(existing);
+        setProviderSearchResults([]);
+        toast.error(`Series sudah ada di database: "${existing.nama_anime}" (ID ${existing.id}) — import diblokir`);
+        return;
+      }
+      setExistingAnime(null);
+      // Auto-fill ALL form fields from metadata source (detail anime saja)
+      const mappedStatus = mapProviderStatus(data.status);
+      const mappedType = mapProviderType(data.type);
       setForm((f) => ({
         ...f,
         nama_anime: data.title || f.nama_anime,
         sinopsis_anime: data.synopsis || f.sinopsis_anime,
-        genre_anime: (data.genres || []).join(', '),
-        status_anime: data.status ? (data.status.toUpperCase().includes('ONGOING') ? 'ONGOING' : data.status.toUpperCase().includes('COMPLETED') ? 'COMPLETED' : f.status_anime) : f.status_anime,
+        genre_anime: (data.genres || []).length ? (data.genres || []).join(', ') : f.genre_anime,
+        status_anime: mappedStatus || f.status_anime,
         studio_anime: data.studio || f.studio_anime,
         rating_anime: data.rating || f.rating_anime,
         cover_mode: data.cover_url ? 'url' : f.cover_mode,
         cover_url: data.cover_url || f.cover_url,
-        provider_url: url,
+        tanggal_rilis_anime: data.release_date || f.tanggal_rilis_anime,
+        aliases: data.aliases || f.aliases,
+        label_anime: mappedType || f.label_anime,
+        tags_anime: data.season || f.tags_anime,
+        is_21_plus: data.is_adult != null ? !!data.is_adult : f.is_21_plus,
       }));
       if (data.cover_url) setCoverPreview(data.cover_url);
-      if (data.episodes?.length > 0) setProviderEpisodes(data.episodes);
-      toast.success('Data berhasil di-import dari provider!');
+      toast.success('Detail anime berhasil di-import! Semua field terisi otomatis.');
       setProviderSearchResults([]);
     } catch (err) {
       toast.error(err?.message || 'Gagal meng-import dari provider');
@@ -201,7 +271,7 @@ export default function EditAnimePage() {
     }
   };
 
-  // Fetch episode list from provider URL
+  // Fetch episode list from provider URL (stream providers only)
   const onFetchEpisodes = async () => {
     if (!form.provider_source || !form.provider_url.trim()) {
       toast.error('Pilih provider dan isi URL dulu');
@@ -387,21 +457,131 @@ export default function EditAnimePage() {
 
       {/* Form */}
       <form onSubmit={onSubmit} className="space-y-6">
-        {/* Provider Section */}
+        {/* ── Section: Import Detail Anime (Metadata — Jikan MAL / AniList) ── */}
         <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
-          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
-            <Layers className="w-5 h-5" /> Provider (Import Otomatis)
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-1 flex items-center gap-2">
+            <BookOpen className="w-5 h-5" /> Import Detail Anime (Metadata)
           </h2>
+          <p className="text-xs text-[var(--foreground)]/60 mb-4">
+            Isi semua detail anime otomatis dari Jikan (MyAnimeList) / AniList — poster, sinopsis, genre, studio, rating, tanggal rilis, alias. <b>Tidak termasuk episode</b> — episode diambil lewat Provider Streaming di bawah.
+          </p>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Sumber Metadata</label>
+              <select
+                value={metadataSource}
+                onChange={(e) => { setMetadataSource(e.target.value); setProviderSearchResults([]); }}
+                className="input"
+              >
+                {metadataProviders.map((p) => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Search in metadata source */}
+          <div className="mt-4 flex gap-2">
+            <div className="input-icon flex-1">
+              <Search className="input-icon__icon" />
+              <input
+                type="text"
+                placeholder={`Cari judul anime di ${activeMetadataProvider?.label || 'sumber metadata'}...`}
+                value={providerSearchQuery}
+                onChange={(e) => setProviderSearchQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onProviderSearch(); } }}
+                className="input"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={onProviderSearch}
+              disabled={providerSearching || !providerSearchQuery.trim()}
+              className="inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2 font-bold transition-all hover:translate-y-[-2px] disabled:opacity-50 whitespace-nowrap"
+              style={{ boxShadow: '4px 4px 0 rgba(212,212,212,0.15)', background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
+            >
+              {providerSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              Cari
+            </button>
+          </div>
+
+          {/* Duplicate warning — series sudah ada di database */}
+          {existingAnime && (
+            <div className="flex items-center gap-2 rounded-xl border-2 p-3 text-xs mt-3" style={{ borderColor: 'var(--accent-danger, #ef4444)', background: 'var(--background)', color: 'var(--foreground)' }}>
+              <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: 'var(--accent-danger, #ef4444)' }} />
+              <span className="flex-1">
+                <b>Import diblokir — data sama dengan:</b> {existingAnime.nama_anime} (ID {existingAnime.id}). Buka halaman itu untuk mengubahnya.
+              </span>
+              <a
+                href={`/dashboard/daftar-konten/anime/${existingAnime.id}/edit`}
+                className="inline-flex items-center gap-1 rounded-lg border-2 px-2.5 py-1.5 text-xs font-bold whitespace-nowrap shrink-0"
+                style={{ background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
+              >
+                Buka Edit
+              </a>
+              <button
+                type="button"
+                onClick={() => setExistingAnime(null)}
+                className="inline-flex items-center gap-1 rounded-lg border-2 px-2.5 py-1.5 text-xs font-bold whitespace-nowrap shrink-0"
+                style={{ background: 'var(--panel-bg)', borderColor: 'var(--panel-border)', color: 'var(--foreground)' }}
+              >
+                Bukan duplikat, lanjutkan
+              </button>
+            </div>
+          )}
+
+          {/* Search results */}
+          {providerSearchResults.length > 0 && (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-72 overflow-y-auto rounded-xl border-2 p-2 mt-3" style={{ borderColor: 'var(--panel-border)' }}>
+              {providerSearchResults.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-2 rounded-lg border p-2" style={{ borderColor: 'var(--panel-border)' }}>
+                  {item.cover_url ? (
+                    <img src={item.cover_url} alt="" className="w-10 h-14 object-cover rounded shrink-0" loading="lazy" decoding="async" />
+                  ) : (
+                    <div className="w-10 h-14 rounded shrink-0 flex items-center justify-center" style={{ background: 'var(--background)' }}>
+                      <ImageIcon className="w-4 h-4 text-[var(--foreground)]/30" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-[var(--foreground)] line-clamp-2">{item.title}</p>
+                    {item.year && <p className="text-[10px] text-[var(--foreground)]/50">{item.year}{item.type ? ` · ${item.type}` : ''}</p>}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onProviderImport(item.url)}
+                    disabled={providerImporting}
+                    className="inline-flex items-center gap-1 rounded-lg border-2 px-2.5 py-1.5 text-xs font-bold whitespace-nowrap shrink-0"
+                    style={{ background: 'var(--accent-primary)', borderColor: 'var(--panel-border)', color: 'var(--accent-primary-foreground)' }}
+                  >
+                    {providerImporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                    Import
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Section: Provider Streaming (Grab Episode Sekaligus) ── */}
+        <div className="rounded-2xl border-2 p-5" style={{ boxShadow: '6px 6px 0 rgba(212,212,212,0.15)', background: 'var(--panel-bg)', borderColor: 'var(--panel-border)' }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-1 flex items-center gap-2">
+            <Layers className="w-5 h-5" /> Provider Streaming (Grab Episode)
+          </h2>
+          <p className="text-xs text-[var(--foreground)]/60 mb-4">
+            Ambil list episode dari situs streaming lalu grab video ke CDN (bisa sekaligus semua). Kosongkan jika ingin manual.
+          </p>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-[var(--foreground)] mb-1.5">Provider</label>
               <select
                 value={form.provider_source}
-                onChange={(e) => { updateField('provider_source', e.target.value); setProviderSearchResults([]); setProviderEpisodes([]); }}
+                onChange={(e) => { updateField('provider_source', e.target.value); setProviderEpisodes([]); }}
                 className="input"
               >
-                {PROVIDER_OPTIONS.map((p) => (
+                <option value="">Tidak ada (manual)</option>
+                {streamProviders.map((p) => (
                   <option key={p.value} value={p.value}>{p.label}</option>
                 ))}
               </select>
