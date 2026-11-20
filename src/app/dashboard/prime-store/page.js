@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { ShoppingBag, Plus, Trash2, ListFilter, Percent, CalendarDays, Edit3 } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
+import { listProfileAnimations } from '@/lib/profileAnimationsApi';
 import { getSession } from '@/lib/auth';
 import {
   listPrimeStoreItems,
@@ -52,6 +53,7 @@ export default function PrimeStoreAdminPage() {
     super_badge_id: '',
     border_id: '',
     sticker_id: '',
+    profile_animation_id: '',
     voucher_template_code: '',
     is_active: true,
     sort_order: '',
@@ -63,6 +65,8 @@ export default function PrimeStoreAdminPage() {
   const [badges, setBadges] = useState([]);
   const [loadingBadges, setLoadingBadges] = useState(false);
   const [stickers, setStickers] = useState([]);
+  const [animations, setAnimations] = useState([]);
+  const [loadingAnimations, setLoadingAnimations] = useState(false);
   const [loadingStickers, setLoadingStickers] = useState(false);
   const [borders, setBorders] = useState([]);
   const [loadingBorders, setLoadingBorders] = useState(false);
@@ -178,6 +182,24 @@ export default function PrimeStoreAdminPage() {
     // eslint-disable-next-line react-hooks-exhaustive-deps
   }, [form.item_type, user, borders.length]);
 
+  useEffect(() => {
+    if (!user) return;
+    if (form.item_type !== 'PROFILE_ANIMATION') return;
+    if (animations.length > 0 || loadingAnimations) return;
+    (async () => {
+      setLoadingAnimations(true);
+      try {
+        const data = await listProfileAnimations({ token: getSession()?.token });
+        setAnimations(Array.isArray(data?.items) ? data.items.filter((a) => a.is_active) : []);
+      } catch (err) {
+        toast.error(err?.message || 'Gagal memuat animasi profil');
+      } finally {
+        setLoadingAnimations(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.item_type, user, animations.length]);
+
   const onSearch = (e) => {
     e.preventDefault();
     setPage(1);
@@ -208,6 +230,7 @@ export default function PrimeStoreAdminPage() {
         super_badge_id: '',
         border_id: '',
         sticker_id: '',
+        profile_animation_id: '',
         voucher_template_code: '',
         is_active: true,
         sort_order: '',
@@ -386,6 +409,7 @@ export default function PrimeStoreAdminPage() {
               <option value="SUPERBADGE">SUPERBADGE (pilih dari badge)</option>
               <option value="BORDER">BORDER (pilih avatar border)</option>
               <option value="STICKER">STICKER (pilih stiker)</option>
+              <option value="PROFILE_ANIMATION">ANIMASI PROFIL (GIF / bawaan)</option>
               <option value="VOUCHER">VOUCHER (kode template voucher)</option>
             </select>
           </L>
@@ -524,6 +548,32 @@ export default function PrimeStoreAdminPage() {
               {loadingStickers && (
                 <div className="text-xs font-semibold opacity-70">Memuat daftar stiker...</div>
               )}
+            </>
+          )}
+
+          {form.item_type === 'PROFILE_ANIMATION' && (
+            <>
+              <L label="Animasi profil">
+                <select
+                  value={form.profile_animation_id}
+                  onChange={(e) => updateForm('profile_animation_id', e.target.value)}
+                  className="select w-full"
+                >
+                  <option value="">Pilih animasi... (wajib)</option>
+                  {animations.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.title} · {String(a.tier || '').replace(/_PLUS/g, '+')} · {Number(a.poin_collection || 0).toLocaleString('id-ID')} poin{a.gif_url ? '' : ' (bawaan)'}
+                    </option>
+                  ))}
+                </select>
+              </L>
+              {loadingAnimations && <div className="text-xs font-semibold opacity-70">Memuat daftar animasi...</div>}
+              {(() => {
+                const sel = animations.find((a) => String(a.id) === String(form.profile_animation_id));
+                return sel?.gif_url ? (
+                  <img src={sel.gif_url} alt="" className="max-h-40 object-contain bg-black border-2 border-[var(--border)]" />
+                ) : null;
+              })()}
             </>
           )}
 
@@ -868,6 +918,8 @@ function buildPrimeItemPayload(form) {
     if (form.border_id !== '') p.border_id = Number(form.border_id);
   } else if (form.item_type === 'STICKER') {
     if (form.sticker_id !== '') p.sticker_id = Number(form.sticker_id);
+  } else if (form.item_type === 'PROFILE_ANIMATION') {
+    if (form.profile_animation_id !== '') p.profile_animation_id = Number(form.profile_animation_id);
   } else if (form.item_type === 'VOUCHER') {
     if (form.voucher_template_code) p.voucher_template_code = form.voucher_template_code;
   }
