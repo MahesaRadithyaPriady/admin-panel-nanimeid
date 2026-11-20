@@ -251,6 +251,7 @@ export default function DashboardLayout({ children }) {
           { key: 'payment', label: 'Payment', icon: CreditCard, roles: ['superadmin', 'uploader'], href: '/dashboard/payment' },
           { key: 'redeem-codes', label: 'Kode Tukar', icon: Gift, roles: ['superadmin'], href: '/dashboard/redeem' },
           { key: 'avatar-borders', label: 'Bingkai Profil', icon: Image, roles: ['superadmin'], href: '/dashboard/avatar-borders' },
+          { key: 'profile-animations', permissionKey: 'avatar-borders', label: 'Animasi Profil (GIF)', icon: Image, roles: ['superadmin'], href: '/dashboard/profile-animations' },
           { key: 'badges', label: 'Lencana', icon: Award, roles: ['superadmin'], href: '/dashboard/badges' },
           { key: 'stickers', label: 'Stiker', icon: Image, roles: ['superadmin'], href: '/dashboard/stikers' },
         ]
