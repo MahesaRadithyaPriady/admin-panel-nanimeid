@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Sparkles, Pencil, Trash2, ArrowLeft, Gift } from 'lucide-react';
+import Link from 'next/link';
+import { Sparkles, Pencil, Trash2, ArrowLeft, Gift, Users } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { getSession } from '@/lib/auth';
 import FileInput from '@/components/dashboard/FileInput';
@@ -193,7 +194,7 @@ export default function ProfileAnimationsPage() {
   if (loading || !user) return null;
 
   return (
-    <>
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-extrabold flex items-center gap-2">
           <Sparkles className="size-5" /> Animasi Profil (GIF)
@@ -208,7 +209,7 @@ export default function ProfileAnimationsPage() {
         <button type="submit" className="btn btn--primary">Cari</button>
       </form>
 
-      <div className="grid lg:grid-cols-[360px_minmax(0,1fr)] gap-6 items-start">
+      <div className="grid lg:grid-cols-[340px_minmax(0,1fr)] gap-6 items-start">
         <div className="lg:sticky lg:top-4">
           <form onSubmit={onSubmit} className="card p-4 space-y-3">
             <div className="text-sm font-extrabold border-b-2 border-[var(--border)] pb-2 mb-1">
@@ -218,16 +219,16 @@ export default function ProfileAnimationsPage() {
               Wajib GIF, wajib tier, poin koleksi minimal {fmt(MIN_POIN)}. GIF diputar layar penuh saat profil dibuka.
             </p>
 
-            <div className="grid gap-1">
+            <div className="grid gap-1 min-w-0">
               <label className="text-xs font-extrabold">Judul *</label>
               <input type="text" value={form.title} onChange={onChange('title')} placeholder="Sakura Bloom" className="input w-full" />
             </div>
-            <div className="grid gap-1">
+            <div className="grid gap-1 min-w-0">
               <label className="text-xs font-extrabold">Kode {mode === 'add' ? '(kosong = otomatis)' : '(tidak bisa diubah)'}</label>
               <input type="text" value={form.code} onChange={onChange('code')} disabled={mode === 'edit'} placeholder="sakura_bloom" className="input w-full" />
             </div>
 
-            <div className="grid gap-1">
+            <div className="grid gap-1 min-w-0">
               <label className="text-xs font-extrabold">GIF * {mode === 'edit' ? '(kosong = tidak diubah)' : ''}</label>
               <select value={form.gif_mode} onChange={onChange('gif_mode')} className="select w-full">
                 <option value="upload">Upload file .gif</option>
@@ -241,20 +242,20 @@ export default function ProfileAnimationsPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-1">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="grid gap-1 min-w-0">
                 <label className="text-xs font-extrabold">Tier *</label>
                 <select value={form.tier} onChange={onChange('tier')} className="select w-full">
                   {TIERS.map((t) => <option key={t} value={t}>{tierLabel(t)}</option>)}
                 </select>
               </div>
-              <div className="grid gap-1">
+              <div className="grid gap-1 min-w-0">
                 <label className="text-xs font-extrabold">Warna aksen</label>
                 <input type="color" value={form.accent_color} onChange={onChange('accent_color')} className="input w-full h-10 p-1" />
               </div>
             </div>
 
-            <div className="grid gap-1">
+            <div className="grid gap-1 min-w-0">
               <label className="text-xs font-extrabold">Poin koleksi * (min {fmt(MIN_POIN)})</label>
               <input type="number" min={MIN_POIN} step={1000} value={form.poin_collection} onChange={onChange('poin_collection')} className="input w-full" />
               {Number(form.poin_collection) > 0 && Number(form.poin_collection) < MIN_POIN && (
@@ -262,35 +263,37 @@ export default function ProfileAnimationsPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-1">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="grid gap-1 min-w-0">
                 <label className="text-xs font-extrabold">Harga koin (kosong = tidak dijual)</label>
                 <input type="number" min={0} value={form.coin_price} onChange={onChange('coin_price')} className="input w-full" />
               </div>
-              <div className="grid gap-1">
+              <div className="grid gap-1 min-w-0">
                 <label className="text-xs font-extrabold">Batas / user</label>
                 <input type="number" min={1} value={form.per_user_limit} onChange={onChange('per_user_limit')} className="input w-full" />
               </div>
             </div>
 
-            <div className="grid gap-1">
+            <div className="grid gap-1 min-w-0">
               <label className="text-xs font-extrabold">Deskripsi</label>
               <textarea value={form.description} onChange={onChange('description')} rows={2} className="input w-full" />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-1">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="grid gap-1 min-w-0">
                 <label className="text-xs font-extrabold">Mulai</label>
-                <input type="datetime-local" value={form.starts_at} onChange={onChange('starts_at')} className="input w-full" />
+                <input type="datetime-local" value={form.starts_at} onChange={onChange('starts_at')} className="input w-full min-w-0 text-xs" />
               </div>
-              <div className="grid gap-1">
+              <div className="grid gap-1 min-w-0">
                 <label className="text-xs font-extrabold">Selesai</label>
-                <input type="datetime-local" value={form.ends_at} onChange={onChange('ends_at')} className="input w-full" />
+                <input type="datetime-local" value={form.ends_at} onChange={onChange('ends_at')} className="input w-full min-w-0 text-xs" />
               </div>
             </div>
 
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_active} onChange={onChange('is_active')} /> Aktif</label>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_limited} onChange={onChange('is_limited')} /> Limited (tidak bisa dibeli)</label>
+            <div className="flex items-center gap-4 text-sm font-semibold">
+              <label className="flex items-center gap-2"><input type="checkbox" checked={form.is_active} onChange={onChange('is_active')} /> Aktif</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={form.is_limited} onChange={onChange('is_limited')} /> Eksklusif (tidak dijual)</label>
+            </div>
             {form.is_limited && (
               <input type="number" min={1} value={form.total_supply} onChange={onChange('total_supply')} placeholder="Total supply" className="input w-full" />
             )}
@@ -308,60 +311,61 @@ export default function ProfileAnimationsPage() {
           </form>
         </div>
 
-        <div className="card p-3 overflow-x-auto">
-          {loadingList ? (
-            <div className="p-6 text-center text-sm opacity-70">Memuat…</div>
-          ) : items.length === 0 ? (
-            <div className="p-6 text-center text-sm opacity-70">Belum ada animasi. Buat yang pertama di form kiri.</div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs opacity-70">
-                  <th className="p-2">GIF</th>
-                  <th className="p-2">Animasi</th>
-                  <th className="p-2">Tier</th>
-                  <th className="p-2">Poin</th>
-                  <th className="p-2">Harga</th>
-                  <th className="p-2">Pemilik</th>
-                  <th className="p-2">Status</th>
-                  <th className="p-2"></th>
+        <div className="space-y-4 min-w-0">
+          <div className="overflow-auto">
+            <table className="min-w-full border-2 border-[var(--border)] text-sm" style={{ boxShadow: 'var(--shadow-lg)' }}>
+              <thead className="bg-[var(--panel-bg)]">
+                <tr>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">GIF</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Animasi</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Tier</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Poin</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Harga</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Pemilik</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Status</th>
+                  <th className="text-left px-3 py-2 font-extrabold border-b-2 border-[var(--border)]">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((it) => (
-                  <tr key={it.id} className="border-t border-[var(--border)] align-middle">
-                    <td className="p-2">
+                  <tr key={it.id}>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)]">
                       {it.gif_url
-                        ? <img src={it.gif_url} alt="" className="size-14 object-cover bg-black rounded" loading="lazy" />
-                        : <span className="text-xs opacity-60" title="Animasi bawaan berbasis kode — tambahkan GIF saat edit">bawaan</span>}
+                        ? <img src={it.gif_url} alt="" className="w-16 h-16 object-cover bg-black border-2 border-[var(--border)]" loading="lazy" />
+                        : <span className="text-xs font-semibold opacity-60" title="Animasi bawaan berbasis kode">bawaan</span>}
                     </td>
-                    <td className="p-2">
-                      <div className="font-bold">{it.title}</div>
-                      <div className="text-xs opacity-60">{it.code}</div>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)]">
+                      <div className="font-extrabold">{it.title}</div>
+                      <div className="text-xs opacity-60 break-all">{it.code}</div>
                     </td>
-                    <td className="p-2 font-bold">{tierLabel(it.tier)}</td>
-                    <td className="p-2">{fmt(it.poin_collection)}</td>
-                    <td className="p-2">{it.coin_price == null ? '—' : fmt(it.coin_price)}</td>
-                    <td className="p-2">{fmt(it.owners_count)}</td>
-                    <td className="p-2">{it.is_active ? 'Aktif' : 'Nonaktif'}</td>
-                    <td className="p-2">
-                      <div className="flex gap-1 justify-end">
-                        <button onClick={() => { setGrantFor(it); setGrantUser(''); }} className="btn btn--secondary p-2" title="Berikan ke user"><Gift className="size-4" /></button>
-                        <button onClick={() => startEdit(it)} className="btn btn--secondary p-2" title="Edit"><Pencil className="size-4" /></button>
-                        <button onClick={() => onDelete(it)} className="btn btn--secondary p-2" title="Hapus"><Trash2 className="size-4" /></button>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-extrabold whitespace-nowrap">{tierLabel(it.tier)}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold whitespace-nowrap">{fmt(it.poin_collection)}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold whitespace-nowrap">{it.coin_price == null ? '-' : fmt(it.coin_price)}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold whitespace-nowrap">{fmt(it.owners_count)}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)] font-semibold whitespace-nowrap">{it.is_active ? 'Aktif' : 'Nonaktif'}</td>
+                    <td className="px-3 py-2 border-b-2 border-[var(--border)]">
+                      <div className="flex items-center gap-2">
+                        <Link href={`/dashboard/profile-animations/${it.id}/owners`} className="btn btn--secondary btn--sm" title="Lihat pemilik"><Users className="size-4" /></Link>
+                        <button onClick={() => { setGrantFor(it); setGrantUser(''); }} className="btn btn--secondary btn--sm" title="Berikan ke user"><Gift className="size-4" /></button>
+                        <button onClick={() => startEdit(it)} className="btn btn--secondary btn--sm" title="Edit"><Pencil className="size-4" /></button>
+                        <button onClick={() => onDelete(it)} className="btn btn--danger btn--sm" title="Hapus"><Trash2 className="size-4" /></button>
                       </div>
                     </td>
                   </tr>
                 ))}
+                {items.length === 0 && (
+                  <tr><td colSpan={8} className="px-3 py-6 text-center text-sm opacity-70">{loadingList ? 'Memuat...' : 'Belum ada animasi. Buat yang pertama di form kiri.'}</td></tr>
+                )}
               </tbody>
             </table>
-          )}
+          </div>
         </div>
       </div>
 
       {grantFor && (
-        <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4" onClick={() => setGrantFor(null)}>
-          <form onSubmit={onGrant} onClick={(e) => e.stopPropagation()} className="card p-4 w-full max-w-sm space-y-3">
+        <div className="fixed inset-0 z-50 grid place-items-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setGrantFor(null)} />
+          <form onSubmit={onGrant} className="relative z-10 w-[92%] max-w-sm card p-4 sm:p-6 space-y-3" style={{ boxShadow: 'var(--shadow-xl)' }}>
             <div className="font-extrabold">Berikan &quot;{grantFor.title}&quot;</div>
             <input type="number" autoFocus value={grantUser} onChange={(e) => setGrantUser(e.target.value)} placeholder="ID user" className="input w-full" />
             <div className="flex gap-2">
@@ -371,6 +375,6 @@ export default function ProfileAnimationsPage() {
           </form>
         </div>
       )}
-    </>
+    </div>
   );
 }

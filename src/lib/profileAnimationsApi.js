@@ -65,3 +65,24 @@ export async function grantProfileAnimation({ token, id, userId }) {
   });
   return handle(res, 'Gagal memberikan animasi');
 }
+
+export async function listProfileAnimationOwners({ token, id, page = 1, limit = 20, q = '' }) {
+  const p = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (q) p.set('q', q);
+  const res = await fetch(`${base()}/${id}/owners?${p.toString()}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+  return handle(res, 'Gagal memuat pemilik');
+}
+
+export async function setProfileAnimationOwnerActive({ token, id, userId, active }) {
+  const res = await fetch(`${base()}/${id}/owners/${userId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_active: !!active }),
+  });
+  return handle(res, 'Gagal mengubah status');
+}
+
+export async function removeProfileAnimationOwner({ token, id, userId }) {
+  const res = await fetch(`${base()}/${id}/owners/${userId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+  return handle(res, 'Gagal menghapus kepemilikan');
+}
